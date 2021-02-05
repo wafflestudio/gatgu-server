@@ -33,10 +33,10 @@ jobs:
 #           # MYSQL_PASSWORD - specified superuser password which user is power for created database
 #           mysql password: # optional, default is 
       
-      - name: Set up Python 3.8.3
+      - name: Set up Python 3.8
         uses: actions/setup-python@v1
         with:
-          python-version: 3.8.3
+          python-version: 3.8
       - name: Install Dependencies
         working-directory: ./
         run: |
