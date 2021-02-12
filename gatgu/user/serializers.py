@@ -10,43 +10,28 @@ from user.models import UserProfile
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(allow_blank=False)
-    password = serializers.CharField(write_only=True)
+    #password = serializers.CharField(write_only=True)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
-    last_login = serializers.DateTimeField(read_only=True)
-    joined_at = serializers.DateTimeField(read_only=True)
+    #last_login = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
-    user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
-    area = serializers.CharField(write_only=True, allow_blank=False, required=False)
-    nickname = serializers.CharField(write_only=True, allow_blank=False, required=False)
-    phone = serializers.CharField(write_only=True,
-                                  allow_blank=False,
-                                  max_length=13,
-                                  required=False,
-                                  validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
-                                                             message="Phone number must be entered in the format '000-0000-0000'",
-                                                             )
-                                              ]
-                                  )
-    profile_pics = serializers.ImageField(write_only=True, required=False, allow_null=True, use_url=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    is_active = serializers.BooleanField(default=True)
+    #area = serializers.CharField(write_only=True, allow_blank=False, required=False)
 
     class Meta:
         model = User
         fields = (
             'id',
             'username',
-            'user_type',
             'email',
-            'password',
             'first_name',
             'last_name',
-            'last_login',
-            'joined_at',
             'userprofile',
-            'area',
-            'nickname',
-            'phone',
-            'profile_pics',
+            'created_at',
+            'updated_at',
+            'is_active',
         )
 
     def get_userprofile(self, user):
@@ -76,33 +61,33 @@ class UserSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data.pop('area', '')
+        validated_data.pop('address', '')
         validated_data.pop('nickname', '')
-        validated_data.pop('phone', '')
+        validated_data.pop('phonenumber', '')
         validated_data.pop('user_type', None)
-        validated_data.pop('profile_pics', None)
+        validated_data.pop('picture', None)
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
 
         return user
 
     def update(self, user, validated_data):
-        area = validated_data.get('area')
+        address = validated_data.get('address')
         nickname = validated_data.get('nickname')
-        phone = validated_data.get('phone')
-        profile_pics = validated_data.get('profile_pics')
+        phonenumber = validated_data.get('phonenumber')
+        picture = validated_data.get('picture')
 
         # user_type = validated_data.pop('user_type', '')
 
         profile = user.userprofile
-        if area is not None:
-            profile.area = area
+        if address is not None:
+            profile.address = address
         if nickname is not None:
             profile.nickname = nickname
-        if phone is not None:
-            profile.phone = phone
-        if profile_pics is not None:
-            profile.profile_pics = profile_pics
+        if phonenumber is not None:
+            profile.phonenumber = phonenumber
+        if picture is not None:
+            profile.picture = picture
         #        if user_type is not None:
         #            profile.user_type = user_type
         profile.save()
@@ -111,13 +96,29 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    profile_id = serializers.IntegerField(source='id')
+    user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
+    nickname = serializers.CharField(write_only=True, allow_blank=False, required=False)
+    phonenumber = serializers.CharField(write_only=True,
+                                  allow_blank=False,
+                                  max_length=13,
+                                  required=False,
+                                  validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
+                                                             message="Phone number must be entered in the format '000-0000-0000'",
+                                                             )
+                                              ]
+                                  )
+    withdrew_at = serializers.DateTimeField(read_only=True,allow_null=True)
+    picture = serializers.ImageField(write_only=True, required=False, allow_null=True, use_url=True)
+    #profile_pics = serializers.ImageField(write_only=True, required=False, allow_null=True, use_url=True)
+    
     class Meta:
         model = UserProfile
         fields = [
-            'id',
+            'profile_id',
             'user_type',
-            'area',
+            'address',
             'nickname',
-            'phone',
-            'profile_pics',
+            'phonenumber',
+            'picture',
         ]
