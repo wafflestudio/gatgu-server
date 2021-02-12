@@ -5,6 +5,7 @@ from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 from user.models import UserProfile
+import datetime
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -15,10 +16,24 @@ class UserSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(required=False)
     #last_login = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
-    created_at = serializers.DateTimeField(read_only=True)
+    #created_at = serializers.DateTimeField(source='date_joined')
     updated_at = serializers.DateTimeField(read_only=True)
     is_active = serializers.BooleanField(default=True)
-    #area = serializers.CharField(write_only=True, allow_blank=False, required=False)
+    #user data
+    user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
+    address = serializers.CharField(write_only=True,allow_blank=False, required=False)
+    nickname = serializers.CharField(write_only=True,allow_blank=False, required=False)
+    phonenumber = serializers.CharField(
+                                  write_only=True,
+                                  allow_blank=False,
+                                  max_length=13,
+                                  required=False,
+                                  validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
+                                                             message="Phone number must be entered in the format '000-0000-0000'",
+                                                             )
+                                              ]
+                                  )
+    picture = serializers.ImageField(write_only=True, required=False, allow_null=True, use_url=True)
 
     class Meta:
         model = User
@@ -29,14 +44,22 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'userprofile',
-            'created_at',
+            #'created_at',
             'updated_at',
             'is_active',
+            'user_type',
+            'address',
+            'nickname',
+            'phonenumber',
+            'picture',
         )
-
+    
+    
     def get_userprofile(self, user):
         return UserProfileSerializer(user.userprofile,
                                      context=self.context).data
+    def get_updated_at(self, user):
+        return datetime.datetime.now()
 
     def validate_password(self, value):
         return make_password(value)
@@ -72,12 +95,13 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, user, validated_data):
+        
         address = validated_data.get('address')
         nickname = validated_data.get('nickname')
         phonenumber = validated_data.get('phonenumber')
         picture = validated_data.get('picture')
 
-        # user_type = validated_data.pop('user_type', '')
+        #print(address)
 
         profile = user.userprofile
         if address is not None:
@@ -96,10 +120,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    profile_id = serializers.IntegerField(source='id')
+    #profile_id = serializers.IntegerField(source='id')
     user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
-    nickname = serializers.CharField(write_only=True, allow_blank=False, required=False)
-    phonenumber = serializers.CharField(write_only=True,
+    address = serializers.CharField(allow_blank=False, required=False)
+    nickname = serializers.CharField(allow_blank=False, required=False)
+    phonenumber = serializers.CharField(
                                   allow_blank=False,
                                   max_length=13,
                                   required=False,
@@ -109,16 +134,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
                                               ]
                                   )
     withdrew_at = serializers.DateTimeField(read_only=True,allow_null=True)
-    picture = serializers.ImageField(write_only=True, required=False, allow_null=True, use_url=True)
-    #profile_pics = serializers.ImageField(write_only=True, required=False, allow_null=True, use_url=True)
+    picture = serializers.ImageField(required=False, allow_null=True, use_url=True)
     
     class Meta:
         model = UserProfile
         fields = [
-            'profile_id',
+            'id',
             'user_type',
             'address',
             'nickname',
             'phonenumber',
+            'withdrew_at',
             'picture',
         ]
