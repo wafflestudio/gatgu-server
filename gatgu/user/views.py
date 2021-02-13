@@ -73,6 +73,9 @@ class UserViewSet(viewsets.GenericViewSet):
             else:  # 신규 유저의 카카오 로그인
                 data = {"username": username, "email": email, "user_type": 'kakao'}  ###
         #               data['profile_image'] = profile_image
+        elif usertype == 3:
+            pass
+
 
         address = request.data.get('address')
         nickname = request.data.get('nickname')
@@ -146,7 +149,8 @@ class UserViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
         
-        users = User.objects.filter(is_active=True)
+        #users = User.objects.filter(is_active=True)
+        users = User.objects.all()
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
 
@@ -173,8 +177,6 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response({"error": "Can't update other Users information"}, status=status.HTTP_400_BAD_REQUEST)
 
         user = request.user
-
-        #print(request.data)
 
         serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

@@ -11,15 +11,12 @@ import datetime
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(allow_blank=False)
-    #password = serializers.CharField(write_only=True)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
-    #last_login = serializers.DateTimeField(read_only=True)
+    last_login = serializers.DateTimeField(read_only=True)
+    date_joined = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
-    #created_at = serializers.DateTimeField(source='date_joined')
-    updated_at = serializers.DateTimeField(read_only=True)
     is_active = serializers.BooleanField(default=True)
-    #user data
     user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
     address = serializers.CharField(write_only=True,allow_blank=False, required=False)
     nickname = serializers.CharField(write_only=True,allow_blank=False, required=False)
@@ -43,9 +40,9 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'first_name',
             'last_name',
+            'date_joined',
+            'last_login',
             'userprofile',
-            #'created_at',
-            'updated_at',
             'is_active',
             'user_type',
             'address',
@@ -58,8 +55,6 @@ class UserSerializer(serializers.ModelSerializer):
     def get_userprofile(self, user):
         return UserProfileSerializer(user.userprofile,
                                      context=self.context).data
-    def get_updated_at(self, user):
-        return datetime.datetime.now()
 
     def validate_password(self, value):
         return make_password(value)
@@ -76,10 +71,6 @@ class UserSerializer(serializers.ModelSerializer):
             api_exception = serializers.ValidationError("First name or last name should not have number.")
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
-
-        # profile_serializer = UserProfileSerializer(data=data, context=self.context)
-        # profile_serializer.is_valid(raise_exception=True)
-
         return data
 
     @transaction.atomic
@@ -101,8 +92,6 @@ class UserSerializer(serializers.ModelSerializer):
         phonenumber = validated_data.get('phonenumber')
         picture = validated_data.get('picture')
 
-        #print(address)
-
         profile = user.userprofile
         if address is not None:
             profile.address = address
@@ -112,15 +101,13 @@ class UserSerializer(serializers.ModelSerializer):
             profile.phonenumber = phonenumber
         if picture is not None:
             profile.picture = picture
-        #        if user_type is not None:
-        #            profile.user_type = user_type
+       
         profile.save()
 
         return super(UserSerializer, self).update(user, validated_data)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    #profile_id = serializers.IntegerField(source='id')
     user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
     address = serializers.CharField(allow_blank=False, required=False)
     nickname = serializers.CharField(allow_blank=False, required=False)
@@ -133,6 +120,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
                                                              )
                                               ]
                                   )
+    updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True,allow_null=True)
     picture = serializers.ImageField(required=False, allow_null=True, use_url=True)
     
@@ -144,6 +132,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'address',
             'nickname',
             'phonenumber',
+            'updated_at',
             'withdrew_at',
             'picture',
         ]

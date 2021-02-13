@@ -9,6 +9,7 @@ class UserProfile(models.Model):
     nickname = models.CharField(max_length=10, db_index=True, blank=True, unique=True)
     address = models.CharField(max_length=20, blank=True) 
     phonenumber = models.CharField(max_length=13, db_index=True, blank=True, unique=True)
+    updated_at = models.DateTimeField(auto_now=True)
     withdrew_at = models.DateTimeField(null=True)
 
     USER_TYPE = (
