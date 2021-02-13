@@ -11,7 +11,6 @@ from .models import User, UserProfile
 import requests
 import datetime
 
-
 class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -24,19 +23,20 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # POST /user/ 회원가입
     def create(self, request):
-        
+
         data = request.data
-        
+
         usertype = request.data.get('user_type')
-        
+
         if usertype == 2:
-            
+
             access_token = request.POST.get('access_token', '')
 
             # no token error
 
             if access_token == '' or None:
-                return Response({"error": "Received no access token in request"}, status=status.HTTP_400_BAD_REQUEST)
+                response_data = {"error": "Received no access token in request"}
+                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
             profile_request = requests.post(
                 "https://kapi.kakao.com/v2/user/me",
@@ -45,7 +45,8 @@ class UserViewSet(viewsets.GenericViewSet):
             profile_json = profile_request.json()
 
             if profile_json == None:
-                return Response({"error": "Received no response from Kakao database"}, status=status.HTTP_404_NOT_FOUND)
+                response_data = {"error": "Received no response from Kakao database"}
+                return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
             try:  # parsing json
                 kakao_account = profile_json.get("kakao_account")
@@ -54,7 +55,8 @@ class UserViewSet(viewsets.GenericViewSet):
                 username = profile.get("nickname")
             #               profile_image = profile.get("thumbnail_image_url")
             except KeyError:
-                return Response({"error": "Need to agree to terms"}, status=status.HTTP_400_BAD_REQUEST)
+                response_data = {"error": "Need to agree to terms"}
+                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
             if (User.objects.filter(username=username).exists()):  # 기존에 가입된 유저가 카카오 로그인
                 user = User.objects.get(username=username)
@@ -62,7 +64,8 @@ class UserViewSet(viewsets.GenericViewSet):
 
                 if usertype == 'django':
                     User.objects.filter(username=username).update(email=email)  ###
-                    UserProfile.objects.filter(user=user).update(nickname=username, user_type='kakao')  ###
+                    UserProfile.objects.filter(user=user).update(nickname=username,
+                                                                    user_type='kakao')
 
                 # 위치 옮김
                 data = self.get_serializer(user).data
@@ -73,6 +76,7 @@ class UserViewSet(viewsets.GenericViewSet):
             else:  # 신규 유저의 카카오 로그인
                 data = {"username": username, "email": email, "user_type": 'kakao'}  ###
         #               data['profile_image'] = profile_image
+
         elif usertype == 3:
             pass
 
@@ -87,23 +91,27 @@ class UserViewSet(viewsets.GenericViewSet):
             picture = 'default.jpg'
 
         if UserProfile.objects.filter(nickname__iexact=nickname):
-            return Response({"error": "A user with that Nickname already exists."}, status=status.HTTP_400_BAD_REQUEST)
+            response_data = {"error": "A user with that Nickname already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         if UserProfile.objects.filter(phonenumber=phonenumber):
-            return Response({"error": "A user with that Phone Number already exists."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            response_data = {"error": "A user with that Phone Number already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        # should be updated 
+        # should be updated
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         try:
             user = serializer.save()
-            user_profile = UserProfile.objects.create(user_id=user.id, address=address, nickname=nickname, phonenumber=phonenumber,
-                                                      picture=picture)
+            user_profile = UserProfile.objects.create(user_id=user.id,
+                                                        address=address,
+                                                        nickname=nickname,
+                                                        phonenumber=phonenumber,
+                                                        picture=picture)
         except IntegrityError:
-            return Response({"error": "A user with that username or userprofile already exists."}, status=status.HTTP_400_BAD_REQUEST)
+            response_data = {"error": "A user with that username or userprofile already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-       
         #################
 
         login(request, user)
@@ -119,7 +127,7 @@ class UserViewSet(viewsets.GenericViewSet):
         password = request.data.get('password')
 
         user = authenticate(request, username=username, password=password)
-        
+
         if user:
             login(request, user)
 
@@ -128,7 +136,8 @@ class UserViewSet(viewsets.GenericViewSet):
             data['token'] = token.key
             return Response(data)
 
-        return Response({"error": "Wrong username or wrong password"}, status=status.HTTP_403_FORBIDDEN)
+        response_data = {"error": "Wrong username or wrong password"}
+        return Response(response_data, status=status.HTTP_403_FORBIDDEN)
 
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
@@ -143,12 +152,13 @@ class UserViewSet(viewsets.GenericViewSet):
             try:
                 user = User.objects.get(pk=pk)
             except User.DoesNotExist:
-                return Response({"message": "There is no such user."}, status=status.HTTP_404_NOT_FOUND)
+                response_data = {"message": "There is no such user."}
+                return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
     def list(self, request):
-        
+
         #users = User.objects.filter(is_active=True)
         users = User.objects.all()
 
@@ -174,7 +184,8 @@ class UserViewSet(viewsets.GenericViewSet):
     def update(self, request, pk=None):
 
         if pk != 'me':
-            return Response({"error": "Can't update other Users information"}, status=status.HTTP_400_BAD_REQUEST)
+            response_data = {"error": "Can't update other Users information"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         user = request.user
 
@@ -188,5 +199,3 @@ class UserViewSet(viewsets.GenericViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data)
-
-    

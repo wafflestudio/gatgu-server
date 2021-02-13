@@ -17,7 +17,8 @@ class UserSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(default=True)
-    user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
+    user_type = serializers.ChoiceField(write_only=True, allow_null=True,
+                                            required=False, choices=UserProfile.USER_TYPE)
     address = serializers.CharField(write_only=True,allow_blank=False, required=False)
     nickname = serializers.CharField(write_only=True,allow_blank=False, required=False)
     phonenumber = serializers.CharField(
@@ -50,8 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
             'phonenumber',
             'picture',
         )
-    
-    
+
     def get_userprofile(self, user):
         return UserProfileSerializer(user.userprofile,
                                      context=self.context).data
@@ -64,11 +64,13 @@ class UserSerializer(serializers.ModelSerializer):
         last_name = data.get('last_name')
 
         if bool(first_name) ^ bool(last_name):
-            api_exception = serializers.ValidationError("First name and last name should appear together.")
+            message = "First name and last name should appear together."
+            api_exception = serializers.ValidationError(message)
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
         if first_name and last_name and not (first_name.isalpha() and last_name.isalpha()):
-            api_exception = serializers.ValidationError("First name or last name should not have number.")
+            message = "First name or last name should not have number."
+            api_exception = serializers.ValidationError(message)
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
         return data
@@ -86,7 +88,7 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, user, validated_data):
-        
+
         address = validated_data.get('address')
         nickname = validated_data.get('nickname')
         phonenumber = validated_data.get('phonenumber')
@@ -101,14 +103,15 @@ class UserSerializer(serializers.ModelSerializer):
             profile.phonenumber = phonenumber
         if picture is not None:
             profile.picture = picture
-       
+
         profile.save()
 
         return super(UserSerializer, self).update(user, validated_data)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    user_type = serializers.ChoiceField(write_only=True, allow_null=True, required=False, choices=UserProfile.USER_TYPE)
+    user_type = serializers.ChoiceField(write_only=True, allow_null=True,
+                                            required=False, choices=UserProfile.USER_TYPE)
     address = serializers.CharField(allow_blank=False, required=False)
     nickname = serializers.CharField(allow_blank=False, required=False)
     phonenumber = serializers.CharField(
@@ -123,7 +126,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True,allow_null=True)
     picture = serializers.ImageField(required=False, allow_null=True, use_url=True)
-    
+
     class Meta:
         model = UserProfile
         fields = [
