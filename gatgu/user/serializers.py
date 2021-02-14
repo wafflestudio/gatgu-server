@@ -17,19 +17,22 @@ class UserSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(default=True)
-    address = serializers.CharField(write_only=True,allow_blank=False, required=False)
-    nickname = serializers.CharField(write_only=True,allow_blank=False, required=False)
+    address = serializers.CharField(
+        write_only=True, allow_blank=False, required=False)
+    nickname = serializers.CharField(
+        write_only=True, allow_blank=False, required=False)
     phonenumber = serializers.CharField(
-                                  write_only=True,
-                                  allow_blank=False,
-                                  max_length=13,
-                                  required=False,
-                                  validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
-                                                             message="Phone number must be entered in the format '000-0000-0000'",
-                                                             )
-                                              ]
-                                  )
-    picture = serializers.ImageField(write_only=True, required=False, allow_null=True, use_url=True)
+        write_only=True,
+        allow_blank=False,
+        max_length=13,
+        required=False,
+        validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
+                                   message="Phone number must be entered in the format '000-0000-0000'",
+                                   )
+                    ]
+    )
+    picture = serializers.ImageField(
+        write_only=True, required=False, allow_null=True, use_url=True)
 
     class Meta:
         model = User
@@ -109,18 +112,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
     address = serializers.CharField(allow_blank=False, required=False)
     nickname = serializers.CharField(allow_blank=False, required=False)
     phonenumber = serializers.CharField(
-                                  allow_blank=False,
-                                  max_length=13,
-                                  required=False,
-                                  validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
-                                                             message="Phone number must be entered in the format '000-0000-0000'",
-                                                             )
-                                              ]
-                                  )
-    is_snu = serializers.BooleanField(read_only=True,default=False)
+        allow_blank=False,
+        max_length=13,
+        required=False,
+        validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
+                                   message="Phone number must be entered in the format '000-0000-0000'",
+                                   )
+                    ]
+    )
+    is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
-    withdrew_at = serializers.DateTimeField(read_only=True,allow_null=True)
-    picture = serializers.ImageField(required=False, allow_null=True, use_url=True)
+    withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    picture = serializers.ImageField(
+        required=False, allow_null=True, use_url=True)
 
     class Meta:
         model = UserProfile

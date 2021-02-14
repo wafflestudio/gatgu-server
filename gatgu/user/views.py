@@ -11,6 +11,7 @@ from .models import User, UserProfile
 import requests
 import datetime
 
+
 class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -32,15 +33,17 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if request.data.get('picture') is not None:
             picture = request.data.get('picture')
-        else :
+        else:
             picture = 'default.jpg'
 
         if UserProfile.objects.filter(nickname__iexact=nickname):
-            response_data = {"error": "A user with that Nickname already exists."}
+            response_data = {
+                "error": "A user with that Nickname already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         if UserProfile.objects.filter(phonenumber=phonenumber):
-            response_data = {"error": "A user with that Phone Number already exists."}
+            response_data = {
+                "error": "A user with that Phone Number already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         # should be updated
@@ -49,12 +52,13 @@ class UserViewSet(viewsets.GenericViewSet):
         try:
             user = serializer.save()
             user_profile = UserProfile.objects.create(user_id=user.id,
-                                                        address=address,
-                                                        nickname=nickname,
-                                                        phonenumber=phonenumber,
-                                                        picture=picture)
+                                                      address=address,
+                                                      nickname=nickname,
+                                                      phonenumber=phonenumber,
+                                                      picture=picture)
         except IntegrityError:
-            response_data = {"error": "A user with that username already exists."}
+            response_data = {
+                "error": "A user with that username already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         #################
@@ -109,8 +113,9 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['PUT'],url_path='withdrawal',url_name='withdrawal')  # 로그아웃
-    def withdrawal(self,request):
+    # 로그아웃
+    @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
+    def withdrawal(self, request):
 
         user = request.user
 
@@ -120,7 +125,7 @@ class UserViewSet(viewsets.GenericViewSet):
             profile.save()
             user.is_active = False
             user.save()
-        else :
+        else:
             pass
 
         return Response({"message": "Successfully withdrawed."}, status=status.HTTP_200_OK)
