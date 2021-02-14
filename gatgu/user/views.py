@@ -21,121 +21,14 @@ class UserViewSet(viewsets.GenericViewSet):
             return (AllowAny(),)
         return super(UserViewSet, self).get_permissions()
 
-    def google(self, data):
-
-        id_token = data.get('token')
-        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
-
-        response = requests.get(url)
-
-        if response.status_code != status.HTTP_200_OK:
-            return False
-        response_data = response.json()
-
-        return response_data
-
-    def google_format(self,data):
-        data['username'] = data.get('name')
-        data['first_name'] = data.get('given_name')
-        data['last_name'] = data.get('family_name')
-        data['password'] = "google"
-        return data
-
-
     # POST /user/ 회원가입
     def create(self, request):
 
         data = request.data
 
-        usertype = request.data.get('user_type')
-
-        if usertype == 2:
-
-            access_token = request.POST.get('access_token', '')
-
-            # no token error
-
-            if access_token == '' or None:
-                response_data = {"error": "Received no access token in request"}
-                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-            profile_request = requests.post(
-                "https://kapi.kakao.com/v2/user/me",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            profile_json = profile_request.json()
-
-            if profile_json == None:
-                response_data = {"error": "Received no response from Kakao database"}
-                return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-            try:  # parsing json
-                kakao_account = profile_json.get("kakao_account")
-                email = kakao_account.get("email", None)
-                profile = kakao_account.get("profile")
-                username = profile.get("nickname")
-            #               profile_image = profile.get("thumbnail_image_url")
-            except KeyError:
-                response_data = {"error": "Need to agree to terms"}
-                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-            if (User.objects.filter(username=username).exists()):  # 기존에 가입된 유저가 카카오 로그인
-                user = User.objects.get(username=username)
-                login(request, user)
-
-                if usertype != 'kakao':
-                    User.objects.filter(username=username).update(email=email)  ###
-                    UserProfile.objects.filter(user=user).update(nickname=username,
-                                                                    user_type='kakao')
-
-                # 위치 옮김
-                data = self.get_serializer(user).data
-                token, created = Token.objects.get_or_create(user=user)
-                data['token'] = token.key
-
-                return Response(data, status=status.HTTP_200_OK)
-            else:  # 신규 유저의 카카오 로그인
-                data = {"username": username, "email": email, "user_type": 'kakao'}  ###
-        #               data['profile_image'] = profile_image
-
-        elif usertype == 3:
-
-            data = self.google(data)
-
-            if bool(data):
-                response_data = {"error": "Invalid token"}
-                return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
-
-            data = self.google_format(data)
-
-            try:
-                username = data['username']
-            except KeyError:
-                response_data = {"error": "Cannot found usernmae"}
-                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-            if (User.objects.filter(username=username).exists()):  # 기존에 가입된 유저가 카카오 로그인
-                user = User.objects.get(username=username)
-                login(request, user)
-
-                if usertype != 'google':
-                    User.objects.filter(username=username).update(email=email)  ###
-                    UserProfile.objects.filter(user=user).update(nickname=username,
-                                                                    user_type='google')
-
-                # 위치 옮김
-                data = self.get_serializer(user).data
-                token, created = Token.objects.get_or_create(user=user)
-                data['token'] = token.key
-
-                return Response(data, status=status.HTTP_200_OK)
-            else:  # 신규 유저의 카카오 로그인
-                data["email"] = email
-                data["user_type"] = "google"
-
-        address = request.data.get('address')
-        nickname = request.data.get('nickname')
-        phonenumber = request.data.get('phonenumber')
+        address = data.get('address')
+        nickname = data.get('nickname')
+        phonenumber = data.get('phonenumber')
 
         if request.data.get('picture') is not None:
             picture = request.data.get('picture')
@@ -161,7 +54,7 @@ class UserViewSet(viewsets.GenericViewSet):
                                                         phonenumber=phonenumber,
                                                         picture=picture)
         except IntegrityError:
-            response_data = {"error": "A user with that username or userprofile already exists."}
+            response_data = {"error": "A user with that username already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         #################

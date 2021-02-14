@@ -17,8 +17,6 @@ class UserSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(default=True)
-    user_type = serializers.ChoiceField(write_only=True, allow_null=True,
-                                            required=False, choices=UserProfile.USER_TYPE)
     address = serializers.CharField(write_only=True,allow_blank=False, required=False)
     nickname = serializers.CharField(write_only=True,allow_blank=False, required=False)
     phonenumber = serializers.CharField(
@@ -45,7 +43,6 @@ class UserSerializer(serializers.ModelSerializer):
             'last_login',
             'userprofile',
             'is_active',
-            'user_type',
             'address',
             'nickname',
             'phonenumber',
@@ -80,7 +77,6 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.pop('address', '')
         validated_data.pop('nickname', '')
         validated_data.pop('phonenumber', '')
-        validated_data.pop('user_type', None)
         validated_data.pop('picture', None)
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -110,8 +106,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    user_type = serializers.ChoiceField(write_only=True, allow_null=True,
-                                            required=False, choices=UserProfile.USER_TYPE)
     address = serializers.CharField(allow_blank=False, required=False)
     nickname = serializers.CharField(allow_blank=False, required=False)
     phonenumber = serializers.CharField(
@@ -123,6 +117,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
                                                              )
                                               ]
                                   )
+    is_snu = serializers.BooleanField(read_only=True,default=False)
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True,allow_null=True)
     picture = serializers.ImageField(required=False, allow_null=True, use_url=True)
@@ -131,10 +126,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             'id',
-            'user_type',
             'address',
             'nickname',
             'phonenumber',
+            'is_snu',
             'updated_at',
             'withdrew_at',
             'picture',

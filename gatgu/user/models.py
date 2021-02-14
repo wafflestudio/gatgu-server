@@ -9,13 +9,7 @@ class UserProfile(models.Model):
     nickname = models.CharField(max_length=10, db_index=True, blank=True, unique=True)
     address = models.CharField(max_length=20, blank=True)
     phonenumber = models.CharField(max_length=13, db_index=True, blank=True, unique=True)
+    is_snu = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     withdrew_at = models.DateTimeField(null=True)
 
-    USER_TYPE = (
-        (1, 'django'),
-        (2, 'kakao'),
-        (3, 'google'),
-    )
-
-    user_type = models.PositiveSmallIntegerField(choices=USER_TYPE, default=1, null=True)
