@@ -21,6 +21,27 @@ class UserViewSet(viewsets.GenericViewSet):
             return (AllowAny(),)
         return super(UserViewSet, self).get_permissions()
 
+    def google(self, data):
+
+        id_token = data.get('token')
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
+
+        response = requests.get(url)
+
+        if response.status_code != status.HTTP_200_OK:
+            return False
+        response_data = response.json()
+
+        return response_data
+
+    def google_format(self,data):
+        data['username'] = data.get('name')
+        data['first_name'] = data.get('given_name')
+        data['last_name'] = data.get('family_name')
+        data['password'] = "google"
+        return data
+
+
     # POST /user/ 회원가입
     def create(self, request):
 
@@ -62,7 +83,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 user = User.objects.get(username=username)
                 login(request, user)
 
-                if usertype == 'django':
+                if usertype != 'kakao':
                     User.objects.filter(username=username).update(email=email)  ###
                     UserProfile.objects.filter(user=user).update(nickname=username,
                                                                     user_type='kakao')
@@ -78,8 +99,39 @@ class UserViewSet(viewsets.GenericViewSet):
         #               data['profile_image'] = profile_image
 
         elif usertype == 3:
-            pass
 
+            data = self.google(data)
+
+            if bool(data):
+                response_data = {"error": "Invalid token"}
+                return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
+
+            data = self.google_format(data)
+
+            try:
+                username = data['username']
+            except KeyError:
+                response_data = {"error": "Cannot found usernmae"}
+                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+            if (User.objects.filter(username=username).exists()):  # 기존에 가입된 유저가 카카오 로그인
+                user = User.objects.get(username=username)
+                login(request, user)
+
+                if usertype != 'google':
+                    User.objects.filter(username=username).update(email=email)  ###
+                    UserProfile.objects.filter(user=user).update(nickname=username,
+                                                                    user_type='google')
+
+                # 위치 옮김
+                data = self.get_serializer(user).data
+                token, created = Token.objects.get_or_create(user=user)
+                data['token'] = token.key
+
+                return Response(data, status=status.HTTP_200_OK)
+            else:  # 신규 유저의 카카오 로그인
+                data["email"] = email
+                data["user_type"] = "google"
 
         address = request.data.get('address')
         nickname = request.data.get('nickname')
