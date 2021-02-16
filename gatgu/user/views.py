@@ -24,6 +24,7 @@ class UserViewSet(viewsets.GenericViewSet):
         return self.permission_classes
 
     # POST /user/ 회원가입
+    @transaction.atomic
     def create(self, request):
 
         data = request.data
@@ -56,7 +57,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "A user with that Phone Number already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        # should be updated
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
@@ -71,8 +71,6 @@ class UserViewSet(viewsets.GenericViewSet):
             response_data = {
                 "error": "A user with that username already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        #################
 
         login(request, user)
 
