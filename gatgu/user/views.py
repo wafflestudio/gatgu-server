@@ -118,18 +118,18 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
     def list(self, request):
-        
+
         tot = request.GET.get('tot', None)
 
         if tot:
             if tot == "yes":
                 users = User.objects.all()
-            elif tot =='no':
+            elif tot == 'no':
                 users = User.objects.filter(is_active=True)
-            else :
+            else:
                 response_data = {"message": "Invalid parameter."}
                 return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-        else :
+        else:
             users = User.objects.filter(is_active=True)
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)

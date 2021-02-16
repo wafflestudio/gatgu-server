@@ -8,6 +8,7 @@ from user.models import UserProfile
 
 # Create your tests here.
 
+
 class PostUserTestCase(TestCase):
     client = Client()
 
@@ -20,9 +21,9 @@ class PostUserTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
@@ -36,9 +37,9 @@ class PostUserTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
@@ -55,9 +56,9 @@ class PostUserTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
@@ -70,9 +71,9 @@ class PostUserTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
@@ -85,9 +86,9 @@ class PostUserTestCase(TestCase):
                 "password": "password",
                 "first_name": "Sunjae",
                 "last_name": "Park",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
@@ -105,9 +106,9 @@ class PostUserTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
@@ -124,9 +125,9 @@ class PostUserTestCase(TestCase):
                 "first_name": "ae",
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
-                "nickname" : "lds",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7588",
+                "nickname": "lds",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7588",
             }),
             content_type='application/json'
         )
@@ -142,7 +143,6 @@ class PostUserTestCase(TestCase):
         self.assertIn("date_joined", data)
         self.assertIn("token", data)
 
-
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
@@ -152,7 +152,7 @@ class PostUserTestCase(TestCase):
 
         user_count = User.objects.count()
         self.assertEqual(user_count, 2)
-    
+
     def test_post_wront_phonenumber_user(self):
         response = self.client.post(
             '/v1/user/',
@@ -162,12 +162,12 @@ class PostUserTestCase(TestCase):
                 "first_name": "ae",
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
-                "nickname" : "lds",
-                "address" : "Seoul",
-                "phonenumber" : "abcd",
+                "nickname": "lds",
+                "address": "Seoul",
+                "phonenumber": "abcd",
             }),
             content_type='application/json'
-        )        
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         user_count = User.objects.count()
@@ -182,17 +182,17 @@ class PostUserTestCase(TestCase):
                 "first_name": "ae",
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
-                "nickname" : "lds",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "lds",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
-        )        
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         user_count = User.objects.count()
         self.assertEqual(user_count, 1)
-    
+
     def test_post_conflict_nickname_user(self):
         response = self.client.post(
             '/v1/user/',
@@ -202,16 +202,17 @@ class PostUserTestCase(TestCase):
                 "first_name": "ae",
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7588",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7588",
             }),
             content_type='application/json'
-        )        
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         user_count = User.objects.count()
         self.assertEqual(user_count, 1)
+
 
 class PutTestCase(TestCase):
     client = Client()
@@ -225,14 +226,15 @@ class PutTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
 
-        self.user_token1 = 'Token ' + Token.objects.get(user__username='cs71107').key
+        self.user_token1 = 'Token ' + \
+            Token.objects.get(user__username='cs71107').key
 
         self.client.post(
             '/v1/user/',
@@ -242,15 +244,16 @@ class PutTestCase(TestCase):
                 "first_name": "Sj",
                 "last_name": "Pk",
                 "email": "pp@snu.ac.kr",
-                "nickname" : "cse",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7500",
+                "nickname": "cse",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7500",
             }),
             content_type='application/json'
         )
 
-        self.user_token2 = 'Token ' + Token.objects.get(user__username='cscse').key
-    
+        self.user_token2 = 'Token ' + \
+            Token.objects.get(user__username='cscse').key
+
     def test_update_profile(self):
         response = self.client.put(
             '/v1/user/me/',
@@ -297,8 +300,8 @@ class PutTestCase(TestCase):
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "address" : "Busan",
-                "nickname" : "css",
+                "address": "Busan",
+                "nickname": "css",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
@@ -320,12 +323,12 @@ class PutTestCase(TestCase):
         self.assertEqual(profile["address"], "Busan")
         self.assertEqual(profile["nickname"], "css")
         self.assertEqual(profile["phonenumber"], "010-8470-7599")
-    
+
     def test_update_profile_conflict_nickname(self):
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "nickname" : "cse",
+                "nickname": "cse",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
@@ -336,25 +339,24 @@ class PutTestCase(TestCase):
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "phonenumber" : "010-8470-7500",
+                "phonenumber": "010-8470-7500",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
 
     def test_update_profile_wrong_phonenumber(self):
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "phonenumber" : "abcd",
+                "phonenumber": "abcd",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
+
 
 class PutLogin_out_TestCase(TestCase):
     client = Client()
@@ -368,15 +370,16 @@ class PutLogin_out_TestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
 
-        self.user_token = 'Token ' + Token.objects.get(user__username='cs71107').key
-    
+        self.user_token = 'Token ' + \
+            Token.objects.get(user__username='cs71107').key
+
     def test_loginout(self):
         response = self.client.put(
             '/v1/user/logout/',
@@ -398,8 +401,8 @@ class PutLogin_out_TestCase(TestCase):
         response = self.client.put(
             '/v1/user/login/',
             json.dumps({
-                "username" : "cs71107",
-                "password" : "password",
+                "username": "cs71107",
+                "password": "password",
             }),
             content_type='application/json'
         )
@@ -415,7 +418,6 @@ class PutLogin_out_TestCase(TestCase):
         self.assertIn("date_joined", data)
         self.assertIn("token", data)
 
-
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
@@ -424,11 +426,11 @@ class PutLogin_out_TestCase(TestCase):
         self.assertEqual(profile["phonenumber"], "010-8470-7599")
 
     def test_password_changed(self):
-        
+
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "password" : "cspass",
+                "password": "cspass",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token
@@ -447,8 +449,8 @@ class PutLogin_out_TestCase(TestCase):
         response = self.client.put(
             '/v1/user/login/',
             json.dumps({
-                "username" : "cs71107",
-                "password" : "password",
+                "username": "cs71107",
+                "password": "password",
             }),
             content_type='application/json'
         )
@@ -457,8 +459,8 @@ class PutLogin_out_TestCase(TestCase):
         response = self.client.put(
             '/v1/user/login/',
             json.dumps({
-                "username" : "cs71107",
-                "password" : "cspass",
+                "username": "cs71107",
+                "password": "cspass",
             }),
             content_type='application/json'
         )
@@ -474,13 +476,13 @@ class PutLogin_out_TestCase(TestCase):
         self.assertIn("date_joined", data)
         self.assertIn("token", data)
 
-
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
         self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phonenumber"], "010-8470-7599")
+
 
 class GetTestCase(TestCase):
     client = Client()
@@ -494,14 +496,15 @@ class GetTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
 
-        self.user_token1 = 'Token ' + Token.objects.get(user__username='cs71107').key
+        self.user_token1 = 'Token ' + \
+            Token.objects.get(user__username='cs71107').key
 
         self.client.post(
             '/v1/user/',
@@ -511,17 +514,18 @@ class GetTestCase(TestCase):
                 "first_name": "Sj",
                 "last_name": "Pk",
                 "email": "pp@snu.ac.kr",
-                "nickname" : "cse",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7500",
+                "nickname": "cse",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7500",
             }),
             content_type='application/json'
         )
 
-        self.user_token2 = 'Token ' + Token.objects.get(user__username='cscse').key
-    
+        self.user_token2 = 'Token ' + \
+            Token.objects.get(user__username='cscse').key
+
     def test_get_individual(self):
-        
+
         me_url = '/v1/user/me/'
         first_url = '/v1/user/'+str(1)+'/'
         second_url = '/v1/user/'+str(2)+'/'
@@ -631,9 +635,9 @@ class GetTestCase(TestCase):
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "nickname" : "cscs",
-                "address" : "Busan",
-                "phonenumber" : "010-8460-7500",
+                "nickname": "cscs",
+                "address": "Busan",
+                "phonenumber": "010-8460-7500",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
@@ -676,7 +680,7 @@ class GetTestCase(TestCase):
 
         datalist = response.json()
 
-        self.assertEqual(len(datalist),2)
+        self.assertEqual(len(datalist), 2)
 
         data = datalist[0]
         self.assertIn("id", data)
@@ -710,6 +714,7 @@ class GetTestCase(TestCase):
         self.assertEqual(profile["nickname"], "cse")
         self.assertEqual(profile["phonenumber"], "010-8470-7500")
 
+
 class WithdrawTestCase(TestCase):
     client = Client()
 
@@ -722,14 +727,15 @@ class WithdrawTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
-                "nickname" : "cs",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7599",
+                "nickname": "cs",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7599",
             }),
             content_type='application/json'
         )
 
-        self.user_token1 = 'Token ' + Token.objects.get(user__username='cs71107').key
+        self.user_token1 = 'Token ' + \
+            Token.objects.get(user__username='cs71107').key
 
         self.client.post(
             '/v1/user/',
@@ -739,14 +745,15 @@ class WithdrawTestCase(TestCase):
                 "first_name": "Sj",
                 "last_name": "Pk",
                 "email": "pp@snu.ac.kr",
-                "nickname" : "cse",
-                "address" : "Seoul",
-                "phonenumber" : "010-8470-7500",
+                "nickname": "cse",
+                "address": "Seoul",
+                "phonenumber": "010-8470-7500",
             }),
             content_type='application/json'
         )
 
-        self.user_token2 = 'Token ' + Token.objects.get(user__username='cscse').key
+        self.user_token2 = 'Token ' + \
+            Token.objects.get(user__username='cscse').key
 
     def test_withdraw(self):
 
@@ -761,7 +768,7 @@ class WithdrawTestCase(TestCase):
 
         datalist = response.json()
 
-        self.assertEqual(len(datalist),2)
+        self.assertEqual(len(datalist), 2)
 
         withdraw_url = '/v1/user/withdrawal/'
 
@@ -790,7 +797,7 @@ class WithdrawTestCase(TestCase):
 
         datalist = response.json()
 
-        self.assertEqual(len(datalist),1)
+        self.assertEqual(len(datalist), 1)
 
         yes_url = user_url+"?tot=yes"
 
@@ -803,7 +810,7 @@ class WithdrawTestCase(TestCase):
 
         datalist = response.json()
 
-        self.assertEqual(len(datalist),2)
+        self.assertEqual(len(datalist), 2)
 
         no_url = user_url+"?tot=no"
 
@@ -816,7 +823,7 @@ class WithdrawTestCase(TestCase):
 
         datalist = response.json()
 
-        self.assertEqual(len(datalist),1)
+        self.assertEqual(len(datalist), 1)
 
         invalid_url = user_url+"?tot=abdc"
 
