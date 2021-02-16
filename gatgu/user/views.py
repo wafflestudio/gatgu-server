@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -10,7 +11,6 @@ from rest_framework.response import Response
 from user.serializers import UserSerializer
 from .models import User, UserProfile
 import requests
-import datetime
 
 
 class UserViewSet(viewsets.GenericViewSet):
@@ -118,8 +118,19 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
     def list(self, request):
+        
+        tot = request.GET.get('tot', None)
 
-        users = User.objects.filter(is_active=True)
+        if tot:
+            if tot == "yes":
+                users = User.objects.all()
+            elif tot =='no':
+                users = User.objects.filter(is_active=True)
+            else :
+                response_data = {"message": "Invalid parameter."}
+                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        else :
+            users = User.objects.filter(is_active=True)
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
 
@@ -131,7 +142,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if user.is_active:
             profile = user.userprofile
-            profile.withdrew_at = datetime.datetime.now()
+            profile.withdrew_at = timezone.now()
             profile.save()
             user.is_active = False
             user.save()
