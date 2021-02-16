@@ -153,26 +153,6 @@ class PostUserTestCase(TestCase):
         user_count = User.objects.count()
         self.assertEqual(user_count, 2)
 
-    def test_post_wront_phonenumber_user(self):
-        response = self.client.post(
-            '/v1/user/',
-            json.dumps({
-                "username": "psjlds",
-                "password": "password",
-                "first_name": "ae",
-                "last_name": "Prk",
-                "email": "cs@snu.ac.kr",
-                "nickname": "lds",
-                "address": "Seoul",
-                "phonenumber": "abcd",
-            }),
-            content_type='application/json'
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        user_count = User.objects.count()
-        self.assertEqual(user_count, 1)
-
     def test_post_conflict_phonenumber_user(self):
         response = self.client.post(
             '/v1/user/',
@@ -340,17 +320,6 @@ class PutTestCase(TestCase):
             '/v1/user/me/',
             json.dumps({
                 "phonenumber": "010-8470-7500",
-            }),
-            content_type='application/json',
-            HTTP_AUTHORIZATION=self.user_token1
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_update_profile_wrong_phonenumber(self):
-        response = self.client.put(
-            '/v1/user/me/',
-            json.dumps({
-                "phonenumber": "abcd",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
