@@ -22,15 +22,11 @@ class UserSerializer(serializers.ModelSerializer):
         write_only=True, allow_blank=False, required=False)
     nickname = serializers.CharField(
         write_only=True, allow_blank=False, required=False)
-    phonenumber = serializers.CharField(
+    phone = serializers.CharField(
         write_only=True,
         allow_blank=False,
         max_length=13,
         required=False,
-        validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
-                                   message="Phone number must be entered in the format '000-0000-0000'",
-                                   )
-                    ]
     )
     picture = serializers.ImageField(
         write_only=True, required=False, allow_null=True, use_url=True)
@@ -50,7 +46,7 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'address',
             'nickname',
-            'phonenumber',
+            'phone',
             'picture',
         )
 
@@ -81,7 +77,7 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('address', '')
         validated_data.pop('nickname', '')
-        validated_data.pop('phonenumber', '')
+        validated_data.pop('phone', '')
         validated_data.pop('picture', None)
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -92,7 +88,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         address = validated_data.get('address')
         nickname = validated_data.get('nickname')
-        phonenumber = validated_data.get('phonenumber')
+        phone = validated_data.get('phone')
         picture = validated_data.get('picture')
 
         profile = user.userprofile
@@ -100,8 +96,8 @@ class UserSerializer(serializers.ModelSerializer):
             profile.address = address
         if nickname is not None:
             profile.nickname = nickname
-        if phonenumber is not None:
-            profile.phonenumber = phonenumber
+        if phone is not None:
+            profile.phone = phone
         if picture is not None:
             profile.picture = picture
 
@@ -113,14 +109,10 @@ class UserSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     address = serializers.CharField(allow_blank=False, required=False)
     nickname = serializers.CharField(allow_blank=False, required=False)
-    phonenumber = serializers.CharField(
+    phone = serializers.CharField(
         allow_blank=False,
         max_length=13,
         required=False,
-        validators=[RegexValidator(regex=r'^[0-9]{3}-([0-9]{3}|[0-9]{4})-[0-9]{4}$',
-                                   message="Phone number must be entered in the format '000-0000-0000'",
-                                   )
-                    ]
     )
     is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
@@ -134,7 +126,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'id',
             'address',
             'nickname',
-            'phonenumber',
+            'phone',
             'is_snu',
             'updated_at',
             'withdrew_at',

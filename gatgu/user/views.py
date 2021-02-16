@@ -39,7 +39,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         address = data.get('address')
         nickname = data.get('nickname')
-        phonenumber = data.get('phonenumber')
+        phone = data.get('phone')
 
         if request.data.get('picture') is not None:
             picture = request.data.get('picture')
@@ -51,7 +51,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "A user with that Nickname already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if UserProfile.objects.filter(phonenumber=phonenumber):
+        if UserProfile.objects.filter(phone=phone):
             response_data = {
                 "error": "A user with that Phone Number already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -65,7 +65,7 @@ class UserViewSet(viewsets.GenericViewSet):
             user_profile = UserProfile.objects.create(user_id=user.id,
                                                       address=address,
                                                       nickname=nickname,
-                                                      phonenumber=phonenumber,
+                                                      phone=phone,
                                                       picture=picture)
         except IntegrityError:
             response_data = {
