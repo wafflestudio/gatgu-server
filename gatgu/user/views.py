@@ -42,6 +42,11 @@ class UserViewSet(viewsets.GenericViewSet):
         nickname = data.get('nickname')
         phone = data.get('phone')
 
+        if not nickname or not phone:
+            response_data = {
+                "error": "nickname, phone are required."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
         if request.data.get('picture') is not None:
             picture = request.data.get('picture')
         else:
