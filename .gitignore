@@ -73,7 +73,7 @@ pytestdebug.log
 *.mo
 
 # Django stuff:
-
+secrets.json
 # Flask stuff:
 instance/
 .webassets-cache
