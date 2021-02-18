@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -17,3 +18,9 @@ class Article(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+||||||| 78d8143
+=======
+from django.db import models
+
+# Create your models here.
+>>>>>>> 9a699bd6ac283118129a8de9d6ba65fc1b3cc756
