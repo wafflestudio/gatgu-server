@@ -34,6 +34,7 @@ def get_secret(setting, secrets=secrets):
         error_msg = "Set the {} environment variable".format(setting)
         raise ImproperlyConfigured(error_msg)
 
+
 SECRET_KEY = get_secret("SECRET_KEY")
 # SECRET_KEY = 'h#^&^v*zwvbqk8^8e*ne23q7e$7+ppz*dl1mp==o&do_plg9+d'
 
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'user.apps.UserConfig',
 
+    'storages',
     'article',
     'chat',
 ]
@@ -146,28 +148,23 @@ USE_L10N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-
-# media file (as a upload file)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-AWS_ACCESS_KEY_ID =  get_secret("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY =  get_secret("AWS_SECRET_ACCESS_KEY")
+AWS_ACCESS_KEY_ID = get_secret("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = get_secret("AWS_SECRET_ACCESS_KEY")
 
 AWS_REGION = 'ap-northeast-2'
 AWS_STORAGE_BUCKET_NAME = 'gatgubucket'
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % \
-                       (AWS_STORAGE_BUCKET_NAME, AWS_REGION)
+AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % (AWS_STORAGE_BUCKET_NAME, AWS_REGION)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 102400000  # value in bytes 1MB here
 FILE_UPLOAD_MAX_MEMORY_SIZE = 102400000
 
-DEFAULT_FILE_STORAGE = 'gatgu.storages.S3DefaultStorage'
-STATICFILES_STORAGE = 'gatgu.storages.S3StaticStorage'
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = 'https://%s/' % AWS_S3_CUSTOM_DOMAIN
+# STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# media file (as a upload file)
+# MEDIA_URL = STATIC_URL
+# # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
