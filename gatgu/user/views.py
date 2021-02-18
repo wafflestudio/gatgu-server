@@ -137,6 +137,23 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['GET'], url_path='activity', url_name='activity')
+    def activity(self, request, pk=None):
+
+        if pk == 'me':
+            user = request.user
+        else:
+            try:
+                user = User.objects.get(pk=pk)
+            except User.DoesNotExist:
+                response_data = {"message": "There is no such user."}
+                return Response(response_data, status=status.HTTP_404_NOT_FOUND)
+
+        activity_type = request.GET.get('type', None)
+
+        #should be update
+        return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
+
     # 로그아웃
     @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
     def withdrawal(self, request):
