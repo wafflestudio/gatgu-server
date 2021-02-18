@@ -181,13 +181,3 @@ class UserViewSet(viewsets.GenericViewSet):
         user = request.user
 
         serializer = self.get_serializer(user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            serializer.save()
-        except IntegrityError:
-
-            return Response({"error": "That Nickname or Phone number is already occupied"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(serializer.data)
