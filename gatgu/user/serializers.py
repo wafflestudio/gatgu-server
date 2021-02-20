@@ -1,6 +1,5 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-from django.core.validators import RegexValidator
 from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
@@ -10,14 +9,14 @@ import datetime
 
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(required=True, write_only=True)
     email = serializers.EmailField(allow_blank=False)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
     last_login = serializers.DateTimeField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
-    is_active = serializers.BooleanField(default=True)
+    is_active = serializers.BooleanField(read_only=True, default=True)
     address = serializers.CharField(
         write_only=True, allow_blank=False, required=False)
     nickname = serializers.CharField(

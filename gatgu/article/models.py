@@ -7,14 +7,16 @@ class Article(models.Model):
     title = models.CharField(max_length=50, db_index=True)
     description = models.TextField(db_index=True)
     location = models.CharField(max_length=50)
-    product_url = models.CharField(max_length=100)
-    thumbnail_url = models.CharField(max_length=100)
-    people_count_min = models.PositiveSmallIntegerField()
-    price_min = models.PositiveSmallIntegerField()
-    time_max = models.TimeField()
+    product_url = models.URLField()
+    thumbnail_url = models.URLField()
+    people_min = models.PositiveSmallIntegerField()
+    price_min = models.PositiveIntegerField()
+    time_max = models.DateTimeField(null=True)
+    time_remaining = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(auto_now_add=True)
+
+    deleted_at = models.DateTimeField(null=True)
 
     NEED_TYPE = (
         (1, 'people'),
