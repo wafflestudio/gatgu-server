@@ -15,7 +15,8 @@ class Article(models.Model):
     time_remaining = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    '''글이 삭제된 상태인지 저장'''
+    is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True)
 
     NEED_TYPE = (
