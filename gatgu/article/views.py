@@ -20,13 +20,10 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     @transaction.atomic
     def create(self, request):
-        # need_type = self.request.query_params.get('need')
 
         user = request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        '''추후 추가 need_type=need_type [nest structure] query_params로
-        need_type = 1 or 0 시 '''
         serializer.save(writer=user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
