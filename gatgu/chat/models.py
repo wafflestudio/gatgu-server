@@ -7,40 +7,45 @@ class OrderChat(models.Model):
     participants = models.ManyToManyField(
         User,
         through='ParticipantProfile',
-        through_fields=('order_id', 'participant_id'),
+        through_fields=('chat', 'participant'),
     )
     article = models.ForeignKey(
         Article,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name = 'chat'
     )
     order_status = models.CharField(max_length=30)
     tracking_number = models.CharField(max_length=30)
+
+    # following two attributes can be changed to price
     required_people = models.IntegerField()
     cur_people = models.IntegerField()
 
-class ChatMessages(models.Model):
-    text = models.CharField(max_length=30)
+class ChatMessage(models.Model):
+    text = models.TextField()
     sent_by = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name = 'messages'
     )
-    sent_at = models.DateField()
-    chatroom_id = models.ForeignKey(
+    sent_at = models.DateTimeField()
+    chat = models.ForeignKey(
         OrderChat,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name = 'messages'
     )
-    media = models.CharField(max_length=1000)
+    media = models.URLField()
     type = models.CharField(max_length=30)
 
 class ParticipantProfile(models.Model):
-    order_id = models.ForeignKey(
+    chat = models.ForeignKey(
         OrderChat, 
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
-    participant_id = models.ForeignKey(
+    participant = models.ForeignKey(
         User, 
         on_delete=models.CASCADE
     )
-    joined_at = models.DateField()
-    out_at = models.DateField()
+    joined_at = models.DateTimeField()
+    out_at = models.DateTimeField(null=True)
     pay_status = models.CharField(max_length=30)
