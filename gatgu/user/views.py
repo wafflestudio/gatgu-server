@@ -52,12 +52,12 @@ class UserViewSet(viewsets.GenericViewSet):
         else:
             picture = 'default.jpg'
 
-        if UserProfile.objects.filter(nickname__iexact=nickname):
+        if UserProfile.objects.filter(nickname__iexact=nickname,withdrew_at__isnull=True).exists(): #only active user couldn't conflict.
             response_data = {
                 "error": "A user with that Nickname already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if UserProfile.objects.filter(phone=phone):
+        if UserProfile.objects.filter(phone=phone).exists():
             response_data = {
                 "error": "A user with that Phone Number already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -109,6 +109,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
+        
         if pk == 'me':
             user = request.user
         else:
@@ -117,6 +118,10 @@ class UserViewSet(viewsets.GenericViewSet):
             except User.DoesNotExist:
                 response_data = {"message": "There is no such user."}
                 return Response(response_data, status=status.HTTP_404_NOT_FOUND)
+
+        if not request.user.is_superuser and not user.is_active: 
+            response_data = {"message": "Coudn't get this user's information."}
+            return Response(response_data, status=status.HTTP_403_FORBIDDEN)
 
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
@@ -127,8 +132,11 @@ class UserViewSet(viewsets.GenericViewSet):
         if tot:
             if tot == "yes":
                 users = User.objects.all()
-            elif tot == 'no':
+            elif tot == 'no' and request.user.is_superuser:
                 users = User.objects.filter(is_active=True)
+            elif tot == 'no':
+                response_data = {"message": "Coudn't get all user's information."}
+                return Response(response_data, status=status.HTTP_403_FORBIDDEN)
             else:
                 response_data = {"message": "Invalid parameter."}
                 return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -154,7 +162,7 @@ class UserViewSet(viewsets.GenericViewSet):
         #should be update
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
-    # 로그아웃
+    # 회원탈퇴
     @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
     def withdrawal(self, request):
 
@@ -171,6 +179,8 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response({"message": "Successfully deactivated."}, status=status.HTTP_200_OK)
 
+
+    @transaction.atomic
     # PUT /user/me/  # 유저 정보 수정 (나)
     def update(self, request, pk=None):
 
@@ -180,4 +190,29 @@ class UserViewSet(viewsets.GenericViewSet):
 
         user = request.user
 
+        data = request.data
+
+        nickname = data.get('nickname')
+        phone = data.get('phone')
+
+        if UserProfile.objects.filter(nickname__iexact=nickname,
+                                            withdrew_at__isnull=True).exclude(user_id=user.id).exists():
+            response_data = {
+                "error": "A user with that Nickname already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        if UserProfile.objects.filter(phone=phone).exclude(user_id=user.id).exists():
+            response_data = {
+                "error": "A user with that Phone Number already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            serializer.save()
+        except IntegrityError:
+            return Response({"error": "That Nickname or Phone number is already occupied"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.data,status=status.HTTP_200_OK)

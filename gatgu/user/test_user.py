@@ -830,7 +830,7 @@ class WithdrawTestCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token2
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         datalist = response.json()
 
