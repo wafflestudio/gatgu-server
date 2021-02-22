@@ -37,16 +37,16 @@ class ArticleViewSet(viewsets.GenericViewSet):
             articles = self.get_queryset() if not title else self.get_queryset().filter(
                 title__icontains=title)
         else:
-            articles = self.get_queryset().filter(is_deleted=False) if not title else self.get_queryset().filter(
+            articles = self.get_queryset().filter(deleted_at=None) if not title else self.get_queryset().filter(
                 title__icontains=title,
-                is_deleted=False)
+                deleted_at=None)
 
         data = ArticleSerializer(articles, many=True).data
         return Response(data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk):
         article = get_object_or_404(Article, pk=pk)
-        if article.is_deleted:
+        if article.deleted_at:
             return Response("message:this article is deleted",status=status.HTTP_404_NOT_FOUND)
         return Response(self.get_serializer(article).data)
 
@@ -69,7 +69,6 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if user != article.writer:
             return Response({"error": "Can't delete other User's article"}, status=status.HTTP_403_FORBIDDEN)
 
-        article.is_deleted = True
         article.deleted_at = timezone.now()
         article.save()
         return Response({"successfully deleted this article."}, status=status.HTTP_200_OK)

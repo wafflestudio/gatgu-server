@@ -14,7 +14,6 @@ class ArticleSerializer(serializers.ModelSerializer):
     # need_type = serializers.SerializerMethodField()
     # people_min = serializers.IntegerField(write_only=True)
     # price_min = serializers.IntegerField(write_only=True)
-    is_deleted = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Article
@@ -34,7 +33,6 @@ class ArticleSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'deleted_at',
-            'is_deleted',
 
         )
 
