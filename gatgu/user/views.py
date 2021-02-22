@@ -107,6 +107,13 @@ class UserViewSet(viewsets.GenericViewSet):
         logout(request)
         return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methos=['PUT'], url_path='confirm', url_name='email_confirm')
+    def confirm(self, request):
+
+        
+
+        return Response({"message": "Successfully confirm."}, status=status.HTTP_200_OK)
+
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
         if pk == 'me':
