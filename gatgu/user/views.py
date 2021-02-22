@@ -58,7 +58,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "A user with that Nickname already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if UserProfile.objects.filter(phone=phone, withdrew_at__isnull=True).exists():
+        if UserProfile.objects.filter(phone=phone,withdrew_at__isnull=True).exists():
             response_data = {
                 "error": "A user with that Phone Number already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
