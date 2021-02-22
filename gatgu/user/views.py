@@ -3,6 +3,12 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_text
+from django.core.mail import EmailMessage
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -22,6 +28,29 @@ class UserViewSet(viewsets.GenericViewSet):
         if self.action in ('create', 'login'):
             return (AllowAny(),)
         return self.permission_classes
+    
+    def get_message(self,user):
+
+        # current_site = get_current_site(request)
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = user.auth_token.key
+
+        url = f"http://127.0.0.1:8000/v1/user/activate/?"+"uid="+str(uidb64)+"&token="+str(token)
+
+        message = url # now testing.
+
+        return message
+
+    def send_mail(self, user):
+
+        message = self.get_message(user)
+
+        mail_subject = "[gatgu] 회원가입 인증 메일입니다."
+        user_email = user.email
+        email = EmailMessage(mail_subject, message, to=[user_email])
+        email.send()
+
+        return
 
     # POST /user/ 회원가입
     @transaction.atomic
@@ -81,6 +110,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         data = serializer.data
         data['token'] = user.auth_token.key
+
         return Response(data, status=status.HTTP_201_CREATED)
 
     # PUT /user/login/  로그인
@@ -106,13 +136,41 @@ class UserViewSet(viewsets.GenericViewSet):
     def logout(self, request):
         logout(request)
         return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
-
-    @action(detail=True, methos=['PUT'], url_path='confirm', url_name='email_confirm')
+    
+    @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
-
         
+        user = request.user
+        self.send_mail(user)
 
-        return Response({"message": "Successfully confirm."}, status=status.HTTP_200_OK)
+        return Response({"message": "Successfully send confirming email"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['GET'], url_path='activate', url_name='activate')
+    def activate(self, request):
+
+        uidb64 = request.GET.get('uid',None)
+        token = request.GET.get('token',None)
+
+        if not uidb64 or not token:
+            response_data = {"message": "No pk value or token"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        uid = force_text(urlsafe_base64_decode(uidb64))
+
+        user = get_object_or_404(User,pk=uid)
+
+        user_token = user.auth_token.key
+        
+        if token != user_token:
+            response_data = {"message": "user and token mis matching. retry confirm."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = user.userprofile
+        profile.is_snu = True
+        profile.save()
+
+        response_data = {"message": "Successfully confirmed"}
+        return Response(response_data, status=status.HTTP_200_OK)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
@@ -181,3 +239,7 @@ class UserViewSet(viewsets.GenericViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data)
+
+        
+
+
