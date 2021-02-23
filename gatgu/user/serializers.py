@@ -20,12 +20,14 @@ class UserSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField(
         write_only=True,
         allow_blank=False,
-        max_length=20
+        max_length=20,
+        required=False,
     )
     phone = serializers.CharField(
         write_only=True,
         allow_blank=False,
-        max_length=13
+        max_length=13,
+        required=False,
     )
     picture = serializers.ImageField(
         write_only=True,
@@ -109,11 +111,11 @@ class UserSerializer(serializers.ModelSerializer):
 
         profile = user.userprofile
 
-        if nickname is not None:
+        if nickname:
             profile.nickname = nickname
-        if phone is not None:
+        if phone:
             profile.phone = phone
-        if picture is not None:
+        if picture:
             profile.picture = picture
 
         profile.save()

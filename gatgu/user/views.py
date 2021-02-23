@@ -178,8 +178,17 @@ class UserViewSet(viewsets.GenericViewSet):
 
         data = request.data
 
+        cnt = 0
+
+        for key in ['nickname', 'picture', 'password']:
+            if key in data:
+                cnt = cnt+1
+
+        if cnt != len(data):
+            response_data = {"error": "Request has invalid key"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
         nickname = data.get('nickname')
-        phone = data.get('phone')
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
@@ -187,12 +196,8 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "A user with that Nickname already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if UserProfile.objects.filter(phone=phone).exclude(user_id=user.id).exists():
-            response_data = {
-                "error": "A user with that Phone Number already exists."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
         serializer = self.get_serializer(user, data=request.data, partial=True)
+
         serializer.is_valid(raise_exception=True)
 
         serializer.update(user, serializer.validated_data)

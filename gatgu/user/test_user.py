@@ -203,6 +203,23 @@ class PostUserTestCase(TestCase):
         user_count = User.objects.count()
         self.assertEqual(user_count, 1)
 
+        response = self.client.post(
+            '/v1/user/',
+            json.dumps({
+                "username": "psjlds",
+                "password": "password",
+                "first_name": "ae",
+                "last_name": "Prk",
+                "email": "cs@snu.ac.kr",
+                "phone": "010-8470-7588",
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 1)
+
     def test_post_empty_phone(self):
 
         response = self.client.post(
@@ -218,6 +235,60 @@ class PostUserTestCase(TestCase):
             }),
             content_type='application/json'
         )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 1)
+
+        response = self.client.post(
+            '/v1/user/',
+            json.dumps({
+                "username": "psjlds",
+                "password": "password",
+                "first_name": "ae",
+                "last_name": "Prk",
+                "email": "cs@snu.ac.kr",
+                "nickname": "ee",
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 1)
+
+    def test_post_empty_nickname_phone(self):
+
+        response = self.client.post(
+            '/v1/user/',
+            json.dumps({
+                "username": "psjlds",
+                "password": "password",
+                "first_name": "ae",
+                "last_name": "Prk",
+                "email": "cs@snu.ac.kr",
+                "nickname": "",
+                "phone": "",
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 1)
+
+        response = self.client.post(
+            '/v1/user/',
+            json.dumps({
+                "username": "psjlds",
+                "password": "password",
+                "first_name": "ae",
+                "last_name": "Prk",
+                "email": "cs@snu.ac.kr",
+            }),
+            content_type='application/json'
+        )
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         user_count = User.objects.count()
@@ -340,11 +411,11 @@ class PutTestCase(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_update_profile_conflict_phone(self):
+    def test_update_phone(self):
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "phone": "010-8470-7500",
+                "phone": "010-8444-5555",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
@@ -621,7 +692,6 @@ class GetTestCase(TestCase):
             '/v1/user/me/',
             json.dumps({
                 "nickname": "cscs",
-                "phone": "010-8460-7500",
             }),
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token1
@@ -648,7 +718,7 @@ class GetTestCase(TestCase):
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cscs")
-        self.assertEqual(profile["phone"], "010-8460-7500")
+        self.assertEqual(profile["phone"], "010-8470-7599")
 
     def test_get_users(self):
 
@@ -808,3 +878,46 @@ class WithdrawTestCase(TestCase):
             HTTP_AUTHORIZATION=self.user_token2
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_withdraw_post(self):
+
+        withdraw_url = '/v1/user/withdrawal/'
+
+        response = self.client.put(
+            withdraw_url,
+            json.dumps({
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.user_token1
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.post(
+            '/v1/user/',
+            json.dumps({
+                "username": "psjlds",
+                "password": "password",
+                "first_name": "Sunjae",
+                "last_name": "Park",
+                "email": "psjlds@snu.ac.kr",
+                "nickname": "cs",
+                "phone": "010-8470-7511",
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        data = response.json()
+        self.assertIn("id", data)
+        self.assertEqual(data["username"], "psjlds")
+        self.assertEqual(data["email"], "psjlds@snu.ac.kr")
+        self.assertEqual(data["first_name"], "Sunjae")
+        self.assertEqual(data["last_name"], "Park")
+        self.assertIn("last_login", data)
+        self.assertIn("date_joined", data)
+
+        profile = data["userprofile"]
+        self.assertIsNotNone(profile)
+        self.assertIn("id", profile)
+        self.assertEqual(profile["nickname"], "cs")
+        self.assertEqual(profile["phone"], "010-8470-7511")
