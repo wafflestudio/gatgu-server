@@ -8,7 +8,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from user.serializers import UserSerializer
+from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile
 import requests
 
@@ -59,6 +59,9 @@ class UserViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+
+        userprofileserializer = UserProfileSerializer(data=data)
+        userprofileserializer.is_valid(raise_exception=True)
 
         try:
             user = serializer.save()
@@ -121,17 +124,23 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if tot:
             if tot == "yes":
-                users = User.objects.filter(is_active=True)
-            elif tot == "no":
 
                 if request.user.is_superuser:
+
                     users = User.objects.all()
+
                 else:
+
                     response_data = {
                         "message": "Coudn't get this user's information."}
                     return Response(response_data, status=status.HTTP_403_FORBIDDEN)
 
+            elif tot == "no":
+
+                users = User.objects.filter(is_active=True)
+
             else:
+
                 response_data = {"message": "Invalid parameter."}
                 return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -185,6 +194,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+        serializer.update(user, serializer.validated_data)
 
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -22,7 +22,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -38,7 +37,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -57,7 +55,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -72,7 +69,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -87,7 +83,6 @@ class PostUserTestCase(TestCase):
                 "first_name": "Sunjae",
                 "last_name": "Park",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -107,7 +102,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -126,7 +120,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
                 "nickname": "lds",
-                "address": "Seoul",
                 "phone": "010-8470-7588",
             }),
             content_type='application/json'
@@ -146,7 +139,6 @@ class PostUserTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "lds")
         self.assertEqual(profile["phone"], "010-8470-7588")
 
@@ -163,7 +155,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
                 "nickname": "lds",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -183,7 +174,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7588",
             }),
             content_type='application/json'
@@ -204,7 +194,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
                 "nickname": "",
-                "address": "Seoul",
                 "phone": "010-8470-7588",
             }),
             content_type='application/json'
@@ -225,7 +214,6 @@ class PostUserTestCase(TestCase):
                 "last_name": "Prk",
                 "email": "cs@snu.ac.kr",
                 "nickname": "ee",
-                "address": "Seoul",
                 "phone": "",
             }),
             content_type='application/json'
@@ -249,7 +237,6 @@ class PutTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -267,7 +254,6 @@ class PutTestCase(TestCase):
                 "last_name": "Pk",
                 "email": "pp@snu.ac.kr",
                 "nickname": "cse",
-                "address": "Seoul",
                 "phone": "010-8470-7500",
             }),
             content_type='application/json'
@@ -315,14 +301,12 @@ class PutTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
         response = self.client.put(
             '/v1/user/me/',
             json.dumps({
-                "address": "Busan",
                 "nickname": "css",
             }),
             content_type='application/json',
@@ -342,7 +326,6 @@ class PutTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Busan")
         self.assertEqual(profile["nickname"], "css")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
@@ -382,7 +365,6 @@ class PutLogin_out_TestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -432,7 +414,6 @@ class PutLogin_out_TestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
@@ -490,7 +471,6 @@ class PutLogin_out_TestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
@@ -508,7 +488,6 @@ class GetTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -526,7 +505,6 @@ class GetTestCase(TestCase):
                 "last_name": "Pk",
                 "email": "pp@snu.ac.kr",
                 "nickname": "cse",
-                "address": "Seoul",
                 "phone": "010-8470-7500",
             }),
             content_type='application/json'
@@ -566,7 +544,6 @@ class GetTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
@@ -589,7 +566,6 @@ class GetTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
@@ -612,7 +588,6 @@ class GetTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cse")
         self.assertEqual(profile["phone"], "010-8470-7500")
 
@@ -639,7 +614,6 @@ class GetTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
@@ -647,7 +621,6 @@ class GetTestCase(TestCase):
             '/v1/user/me/',
             json.dumps({
                 "nickname": "cscs",
-                "address": "Busan",
                 "phone": "010-8460-7500",
             }),
             content_type='application/json',
@@ -674,7 +647,6 @@ class GetTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Busan")
         self.assertEqual(profile["nickname"], "cscs")
         self.assertEqual(profile["phone"], "010-8460-7500")
 
@@ -705,7 +677,6 @@ class GetTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
 
@@ -721,7 +692,6 @@ class GetTestCase(TestCase):
         profile = data["userprofile"]
         self.assertIsNotNone(profile)
         self.assertIn("id", profile)
-        self.assertEqual(profile["address"], "Seoul")
         self.assertEqual(profile["nickname"], "cse")
         self.assertEqual(profile["phone"], "010-8470-7500")
 
@@ -739,7 +709,6 @@ class WithdrawTestCase(TestCase):
                 "last_name": "Park",
                 "email": "psjlds@snu.ac.kr",
                 "nickname": "cs",
-                "address": "Seoul",
                 "phone": "010-8470-7599",
             }),
             content_type='application/json'
@@ -757,7 +726,6 @@ class WithdrawTestCase(TestCase):
                 "last_name": "Pk",
                 "email": "pp@snu.ac.kr",
                 "nickname": "cse",
-                "address": "Seoul",
                 "phone": "010-8470-7500",
             }),
             content_type='application/json'
@@ -810,19 +778,6 @@ class WithdrawTestCase(TestCase):
 
         self.assertEqual(len(datalist), 1)
 
-        yes_url = user_url+"?tot=yes"
-
-        response = self.client.get(
-            yes_url,
-            content_type='application/json',
-            HTTP_AUTHORIZATION=self.user_token2
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        datalist = response.json()
-
-        self.assertEqual(len(datalist), 2)
-
         no_url = user_url+"?tot=no"
 
         response = self.client.get(
@@ -830,11 +785,20 @@ class WithdrawTestCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.user_token2
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         datalist = response.json()
 
         self.assertEqual(len(datalist), 1)
+
+        yes_url = user_url+"?tot=yes"
+
+        response = self.client.get(
+            yes_url,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.user_token2
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         invalid_url = user_url+"?tot=abdc"
 

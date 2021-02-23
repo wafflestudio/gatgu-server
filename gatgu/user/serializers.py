@@ -83,10 +83,6 @@ class UserSerializer(serializers.ModelSerializer):
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
 
-        userprofileserializer = UserProfileSerializer(
-            data=data, context=self.context)
-        userprofileserializer.is_valid(raise_exception=True)
-
         return data
 
     @transaction.atomic
