@@ -38,7 +38,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "username, password, email are required."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        address = data.get('address')
         nickname = data.get('nickname')
         phone = data.get('phone')
 

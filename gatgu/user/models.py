@@ -8,7 +8,6 @@ class UserProfile(models.Model):
     picture = models.ImageField(default='default.jpg')
     nickname = models.CharField(
         max_length=20, db_index=True)
-    address = models.CharField(max_length=20, blank=True)
     phone = models.CharField(
         max_length=13, db_index=True, unique=True)
     is_snu = models.BooleanField(default=False)

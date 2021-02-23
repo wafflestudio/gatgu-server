@@ -17,10 +17,6 @@ class UserSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(default=True)
-    address = serializers.CharField(
-        write_only=True,
-        allow_blank=True
-    )
     nickname = serializers.CharField(
         write_only=True,
         allow_blank=False,
@@ -51,7 +47,6 @@ class UserSerializer(serializers.ModelSerializer):
             'last_login',
             'userprofile',
             'is_active',
-            'address',
             'nickname',
             'phone',
             'picture',
@@ -96,7 +91,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        address = validated_data.pop('address', '')
         nickname = validated_data.pop('nickname', '')
         phone = validated_data.pop('phone', '')
         picture = validated_data.pop('picture', 'default.jpg')
@@ -105,7 +99,6 @@ class UserSerializer(serializers.ModelSerializer):
         Token.objects.create(user=user)
 
         UserProfile.objects.create(user_id=user.id,
-                                   address=address,
                                    nickname=nickname,
                                    phone=phone,
                                    picture=picture)
@@ -114,15 +107,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, user, validated_data):
 
-        address = validated_data.get('address')
         nickname = validated_data.get('nickname')
         phone = validated_data.get('phone')
         picture = validated_data.get('picture')
 
         profile = user.userprofile
 
-        if address is not None:
-            profile.address = address
         if nickname is not None:
             profile.nickname = nickname
         if phone is not None:
@@ -136,9 +126,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    address = serializers.CharField(
-        allow_blank=True
-    )
     nickname = serializers.CharField(
         allow_blank=False,
         max_length=20
@@ -160,7 +147,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             'id',
-            'address',
             'nickname',
             'phone',
             'picture',
