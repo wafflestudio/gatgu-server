@@ -47,18 +47,13 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "nickname, phone are required."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if request.data.get('picture') is not None:
-            picture = request.data.get('picture')
-        else:
-            picture = 'default.jpg'
-
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
             response_data = {
                 "error": "A user with that Nickname already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if UserProfile.objects.filter(phone=phone,withdrew_at__isnull=True).exists():
+        if UserProfile.objects.filter(phone=phone, withdrew_at__isnull=True).exists():
             response_data = {
                 "error": "A user with that Phone Number already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -68,11 +63,6 @@ class UserViewSet(viewsets.GenericViewSet):
 
         try:
             user = serializer.save()
-            user_profile = UserProfile.objects.create(user_id=user.id,
-                                                      address=address,
-                                                      nickname=nickname,
-                                                      phone=phone,
-                                                      picture=picture)
         except IntegrityError:
             response_data = {
                 "error": "A user with that username already exists."}
@@ -132,13 +122,16 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if tot:
             if tot == "yes":
-                users = User.objects.all()
-            elif tot == 'no' and request.user.is_superuser:
                 users = User.objects.filter(is_active=True)
-            elif tot == 'no':
-                response_data = {
-                    "message": "Coudn't get all user's information."}
-                return Response(response_data, status=status.HTTP_403_FORBIDDEN)
+            elif tot == "no":
+
+                if request.user.is_superuser:
+                    users = User.objects.all()
+                else:
+                    response_data = {
+                        "message": "Coudn't get this user's information."}
+                    return Response(response_data, status=status.HTTP_403_FORBIDDEN)
+
             else:
                 response_data = {"message": "Invalid parameter."}
                 return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -146,23 +139,6 @@ class UserViewSet(viewsets.GenericViewSet):
             users = User.objects.filter(is_active=True)
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['GET'], url_path='activity', url_name='activity')
-    def activity(self, request, pk=None):
-
-        if pk == 'me':
-            user = request.user
-        else:
-            try:
-                user = User.objects.get(pk=pk)
-            except User.DoesNotExist:
-                response_data = {"message": "There is no such user."}
-                return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        activity_type = request.GET.get('type', None)
-
-        #should be update
-        return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
     # 회원탈퇴
     @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
@@ -177,7 +153,8 @@ class UserViewSet(viewsets.GenericViewSet):
             user.is_active = False
             user.save()
         else:
-            pass
+            response_data = {"message": "This user Already withdrew"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Successfully deactivated."}, status=status.HTTP_200_OK)
 
@@ -209,11 +186,6 @@ class UserViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-
-        try:
-            serializer.save()
-        except IntegrityError:
-            return Response({"error": "That Nickname or Phone number is already occupied"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)

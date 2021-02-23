@@ -24,20 +24,18 @@ class UserSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField(
         write_only=True,
         allow_blank=False,
-        max_length=20,
-        required=True
+        max_length=20
     )
     phone = serializers.CharField(
         write_only=True,
         allow_blank=False,
-        max_length=13,
-        required=True
+        max_length=13
     )
     picture = serializers.ImageField(
         write_only=True,
         allow_null=True,
         use_url=True,
-        required=False
+        required=False,
     )
 
     class Meta:
@@ -90,6 +88,10 @@ class UserSerializer(serializers.ModelSerializer):
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
 
+        userprofileserializer = UserProfileSerializer(
+            data=data, context=self.context)
+        userprofileserializer.is_valid(raise_exception=True)
+
         return data
 
     @transaction.atomic
@@ -97,7 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
         address = validated_data.pop('address', '')
         nickname = validated_data.pop('nickname', '')
         phone = validated_data.pop('phone', '')
-        picture = validated_data.pop('picture', None)
+        picture = validated_data.pop('picture', 'default.jpg')
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -147,7 +149,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     )
     picture = serializers.ImageField(
         allow_null=True,
-        use_url=True
+        use_url=True,
+        required=False,
     )
     is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
