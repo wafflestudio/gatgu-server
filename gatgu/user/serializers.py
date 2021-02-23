@@ -97,7 +97,7 @@ class UserSerializer(serializers.ModelSerializer):
         address = validated_data.pop('address', '')
         nickname = validated_data.pop('nickname', '')
         phone = validated_data.pop('phone', '')
-        picutre = validated_data.pop('picture', None)
+        picture = validated_data.pop('picture', None)
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -106,7 +106,7 @@ class UserSerializer(serializers.ModelSerializer):
                                    address=address,
                                    nickname=nickname,
                                    phone=phone,
-                                   picutre=picutre)
+                                   picture=picture)
 
         return user
 
