@@ -8,6 +8,9 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from article.models import Article
+from article.serializers import ArticleSerializer
 from user.serializers import UserSerializer
 from .models import User, UserProfile
 import requests
@@ -38,7 +41,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "username, password, email are required."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        address = data.get('address')
         nickname = data.get('nickname')
         phone = data.get('phone')
 
@@ -68,7 +70,6 @@ class UserViewSet(viewsets.GenericViewSet):
         try:
             user = serializer.save()
             user_profile = UserProfile.objects.create(user_id=user.id,
-                                                      address=address,
                                                       nickname=nickname,
                                                       phone=phone,
                                                       picture=picture)
@@ -168,9 +169,27 @@ class UserViewSet(viewsets.GenericViewSet):
 
         try:
             serializer.save()
+
         except IntegrityError:
 
             return Response({"error": "That Nickname or Phone number is already occupied"},
                             status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data)
+
+    '''내 활동 뿐 아니라 다른사람의 활동 조회도 가능해아 한다.'''
+
+    @action(detail=True, methods=['GET'], url_path='activity')
+    def hosted_list(self, request, pk):
+        user_tar = self.get_object().id
+        hosted = Article.objects.all().filter(deleted_at=None, writer_id=user_tar)
+        data = ArticleSerializer(hosted, many=True).data
+        return Response(data, status=status.HTTP_200_OK)
+
+    '''
+    def participated_list(self, request):
+
+
+        orderchat 생성 후 진행
+        participated = OrderChat.objects.all().filter()
+    '''

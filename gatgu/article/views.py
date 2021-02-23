@@ -28,6 +28,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     '''superuser인 경우 삭제된 글 열람 가능'''
+
     def list(self, request):
         title = self.request.query_params.get('title')
         if request.user.is_superuser:
@@ -44,7 +45,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk):
         article = get_object_or_404(Article, pk=pk)
         if article.deleted_at:
-            return Response("message:this article is deleted",status=status.HTTP_404_NOT_FOUND)
+            return Response("message:this article is deleted", status=status.HTTP_404_NOT_FOUND)
         return Response(self.get_serializer(article).data)
 
     def update(self, request, pk):
