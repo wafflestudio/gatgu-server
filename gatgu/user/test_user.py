@@ -141,6 +141,7 @@ class PostUserTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "lds")
         self.assertEqual(profile["phone"], "010-8470-7588")
+        self.assertIn("picture",profile)
 
         user_count = User.objects.count()
         self.assertEqual(user_count, 2)
@@ -374,6 +375,7 @@ class PutTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
         response = self.client.put(
             '/v1/user/me/',
@@ -399,6 +401,7 @@ class PutTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "css")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
     def test_update_profile_conflict_nickname(self):
         response = self.client.put(
@@ -487,6 +490,7 @@ class PutLogin_out_TestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
     def test_password_changed(self):
 
@@ -544,6 +548,7 @@ class PutLogin_out_TestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
 
 class GetTestCase(TestCase):
@@ -617,6 +622,7 @@ class GetTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
         response = self.client.get(
             first_url,
@@ -639,6 +645,7 @@ class GetTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
         response = self.client.get(
             second_url,
@@ -661,6 +668,7 @@ class GetTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cse")
         self.assertEqual(profile["phone"], "010-8470-7500")
+        self.assertIn("picture",profile)
 
     def test_get_put_individual(self):
 
@@ -687,6 +695,7 @@ class GetTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
         response = self.client.put(
             '/v1/user/me/',
@@ -719,6 +728,7 @@ class GetTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cscs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
     def test_get_users(self):
 
@@ -749,6 +759,7 @@ class GetTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7599")
+        self.assertIn("picture",profile)
 
         data = datalist[1]
         self.assertIn("id", data)
@@ -764,6 +775,75 @@ class GetTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cse")
         self.assertEqual(profile["phone"], "010-8470-7500")
+        self.assertIn("picture",profile)
+
+    def test_super_user(self):
+
+        my_admin = User.objects.create_superuser('myuser', 'myemail@test.com', 'mypassword')
+        my_admin_profile = UserProfile.objects.create(
+                                                        user_id=my_admin.id,
+                                                        nickname='mynickname',
+                                                        phone='010-8888-8888',
+                                                        picture='default.jpg'
+                                                        )
+
+        c = Client()
+
+        c.login(username=my_admin.username, password=my_admin.password)
+
+        token, created = Token.objects.get_or_create(user=my_admin)
+
+        myuser_token = 'Token ' + \
+            token.key
+
+        me_url = '/v1/user/me/' 
+
+        response = self.client.get(
+            me_url,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=myuser_token
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertIn("id", data)
+        self.assertEqual(data["username"], "myuser")
+        self.assertEqual(data["email"], "myemail@test.com")
+        self.assertEqual(data["first_name"], "")
+        self.assertEqual(data["last_name"], "")
+        self.assertIn("last_login", data)
+        self.assertIn("date_joined", data)
+
+        profile = data["userprofile"]
+        self.assertIsNotNone(profile)
+        self.assertIn("id", profile)
+        self.assertEqual(profile["nickname"], "mynickname")
+        self.assertEqual(profile["phone"], "010-8888-8888")
+        self.assertIn("picture",profile)
+
+        user_url = '/v1/user/'
+
+        response = self.client.get(
+            user_url,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=myuser_token
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        datalist = response.json()
+
+        self.assertEqual(len(datalist), 3)
+
+        response = self.client.get(
+            user_url,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.user_token1
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        datalist = response.json()
+
+        self.assertEqual(len(datalist), 2)
 
 
 class WithdrawTestCase(TestCase):
@@ -921,3 +1001,58 @@ class WithdrawTestCase(TestCase):
         self.assertIn("id", profile)
         self.assertEqual(profile["nickname"], "cs")
         self.assertEqual(profile["phone"], "010-8470-7511")
+        self.assertIn("picture",profile)
+
+    def test_super_user_query_params(self):
+
+        my_admin = User.objects.create_superuser('myuser', 'myemail@test.com', 'mypassword')
+        my_admin_profile = UserProfile.objects.create(
+                                                        user_id=my_admin.id,
+                                                        nickname='mynickname',
+                                                        phone='010-8888-8888',
+                                                        picture='default.jpg'
+                                                        )
+
+        c = Client()
+
+        c.login(username=my_admin.username, password=my_admin.password)
+
+        token, created = Token.objects.get_or_create(user=my_admin)
+
+        myuser_token = 'Token ' + \
+            token.key
+
+        user_url = '/v1/user/'
+        yes_url = '/v1/user/?tot=yes'
+        no_url = '/v1/user/?tot=no'
+
+        withdraw_url = '/v1/user/withdrawal/'
+
+        response = self.client.put(
+            withdraw_url,
+            json.dumps({
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.user_token1
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(
+            yes_url,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=myuser_token
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        datalist = response.json()
+        self.assertEqual(len(datalist), 3)
+
+        response = self.client.get(
+            no_url,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=myuser_token
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        datalist = response.json()
+        self.assertEqual(len(datalist), 2)
