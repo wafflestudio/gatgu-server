@@ -112,14 +112,15 @@ class UserViewSet(viewsets.GenericViewSet):
                 response_data = {"message": "There is no such user."}
                 return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
-        if not request.user.is_superuser :
+        if not request.user.is_superuser:
 
             if not user.is_active or user.is_superuser:
-                response_data = {"message": "Coudn't get this user's information."}
+                response_data = {
+                    "message": "Coudn't get this user's information."}
                 return Response(response_data, status=status.HTTP_403_FORBIDDEN)
-            else :
+            else:
                 pass
-        else :
+        else:
             pass
 
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
@@ -132,19 +133,19 @@ class UserViewSet(viewsets.GenericViewSet):
             if tot == "yes":
 
                 if request.user.is_superuser:
-
                     users = User.objects.all()
-
                 else:
-
                     response_data = {
                         "message": "Coudn't get this user's information."}
                     return Response(response_data, status=status.HTTP_403_FORBIDDEN)
 
             elif tot == "no":
 
-                users = User.objects.filter(is_active=True)
-
+                if request.user.is_superuser:
+                    users = User.objects.filter(is_active=True)
+                else:
+                    users = User.objects.filter(
+                        is_active=True, is_superuser=False)
             else:
 
                 response_data = {"message": "Invalid parameter."}
@@ -152,8 +153,8 @@ class UserViewSet(viewsets.GenericViewSet):
         else:
             if request.user.is_superuser:
                 users = User.objects.filter(is_active=True)
-            else :
-                users = User.objects.filter(is_active=True,is_superuser=False)
+            else:
+                users = User.objects.filter(is_active=True, is_superuser=False)
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
 
