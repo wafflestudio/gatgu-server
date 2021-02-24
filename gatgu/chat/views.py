@@ -10,22 +10,27 @@ import json
 def chats(request):
     if request.method == 'GET': # needs : list of chatting overview(recent message, sender, send_at, article_title)
         user = request.user
-
+        print(user)
         # find which chats this user participated
         chat_in = [chat for chat in ParticipantProfile.objects.filter(participant=user, out_at=None).values('chat')]
         chats = []
         for chat_id in chat_in:
-            chat = OrderChat.objects.get(id=chat_id)
+            chat = OrderChat.objects.filter(id=chat_id)
             message = chat.messages[-1] #recent message
             chats.append({'chat_id': chat.id, 'recent_message': message.text, 'sent_by': message.sent_by, 'sent_at': message.sent_at})
 
         return JsonResponse({'chats': chats}, safe=False, status=200)
+
+    else:
+        return HttpResponseNotAllowed(['GET'])
         
 # /chat/<int:chat_id>/
 def chat(request, chat_id):
     if request.method == 'GET': # needs: messages, participants
         chat = OrderChat.objects.get(id=chat_id).values()
         return JsonResponse(json.dumps(chat), safe=False, status=200)
+    else:
+        return HttpResponseNotAllowed(['GET'])
 
 # /chat/join/<int:chat_id>/
 @csrf_exempt
@@ -46,6 +51,8 @@ def join(request, chat_id):
         else:
              # full room => failure
              return HttpResponse(status=401)
+    else:
+        return HttpResponseNotAllowed(['PUT'])
 
 # /chat/out/<int:chat_id>/
 @csrf_exempt
@@ -58,6 +65,8 @@ def out(request, chat_id):
             return HttpResponse(status=401)
         else: # room member is going out
             return HttpResponse(status=200)
+    else:
+        return HttpResponseNotAllowed(['PUT'])
         
 # /chat/<int:chat_id>/messages/
 @csrf_exempt
@@ -83,6 +92,8 @@ def messages(request, chat_id):
 
         response = {"message_id": new_message.id}
         return JsonResponse(response, safe=False, status=200)
+    
+    return HttpResponseNotAllowed(['GET', 'POST'])
 
 # /chat/message/<int:message_id>/
 def message(request, message_id):
@@ -90,6 +101,8 @@ def message(request, message_id):
         message = ChatMessage.objects.get(id=message_id).values()
         
         return JsonResponse(json.dumps(message), safe=False, status=200)
+    else:
+        return HttpResponseNotAllowed(['GET'])
 
 # /chat/<int:chat_id>/participants/
 def participants(request, chat_id):
@@ -97,6 +110,8 @@ def participants(request, chat_id):
         participants = ParticipantProfile.objects.get(order_id=chat_id).values()
         
         return JsonResponse(json.dumps(participants), safe=False, status=200)
+    else:
+        return HttpResponseNotAllowed(['GET'])
 
 # /chat/<int:chat_id>/set_status/
 def set_status(request, chat_id):
@@ -109,3 +124,6 @@ def set_status(request, chat_id):
 
         response = body
         return JsonResponse(response, safe=False, status=200)
+    
+    else:
+        return HttpResponseNotAllowed(['GET', 'PUT'])
