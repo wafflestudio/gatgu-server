@@ -23,12 +23,6 @@ class UserSerializer(serializers.ModelSerializer):
         max_length=20,
         required=False,
     )
-    phone = serializers.CharField(
-        write_only=True,
-        allow_blank=False,
-        max_length=13,
-        required=False,
-    )
     picture = serializers.ImageField(
         write_only=True,
         allow_null=True,
@@ -50,7 +44,6 @@ class UserSerializer(serializers.ModelSerializer):
             'userprofile',
             'is_active',
             'nickname',
-            'phone',
             'picture',
         )
 
@@ -90,7 +83,6 @@ class UserSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         nickname = validated_data.pop('nickname', '')
-        phone = validated_data.pop('phone', '')
         picture = validated_data.pop('picture', 'default.jpg')
 
         user = super(UserSerializer, self).create(validated_data)
@@ -98,7 +90,6 @@ class UserSerializer(serializers.ModelSerializer):
 
         UserProfile.objects.create(user_id=user.id,
                                    nickname=nickname,
-                                   phone=phone,
                                    picture=picture)
 
         return user
@@ -106,15 +97,12 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, user, validated_data):
 
         nickname = validated_data.get('nickname')
-        phone = validated_data.get('phone')
         picture = validated_data.get('picture')
 
         profile = user.userprofile
 
         if nickname:
             profile.nickname = nickname
-        if phone:
-            profile.phone = phone
         if picture:
             profile.picture = picture
 
@@ -127,10 +115,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField(
         allow_blank=False,
         max_length=20
-    )
-    phone = serializers.CharField(
-        allow_blank=False,
-        max_length=13
     )
     picture = serializers.ImageField(
         allow_null=True,
@@ -146,7 +130,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'nickname',
-            'phone',
             'picture',
             'is_snu',
             'updated_at',
