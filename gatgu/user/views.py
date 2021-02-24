@@ -60,8 +60,8 @@ class UserViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
-        userprofileserializer = UserProfileSerializer(data=data)
-        userprofileserializer.is_valid(raise_exception=True)
+        userprofile_serializer = UserProfileSerializer(data=data)
+        userprofile_serializer.is_valid(raise_exception=True)
 
         try:
             user = serializer.save()
@@ -127,34 +127,10 @@ class UserViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
 
-        tot = request.GET.get('tot', None)
-
-        if tot:
-            if tot == "yes":
-
-                if request.user.is_superuser:
-                    users = User.objects.all()
-                else:
-                    response_data = {
-                        "message": "Coudn't get this user's information."}
-                    return Response(response_data, status=status.HTTP_403_FORBIDDEN)
-
-            elif tot == "no":
-
-                if request.user.is_superuser:
-                    users = User.objects.filter(is_active=True)
-                else:
-                    users = User.objects.filter(
-                        is_active=True, is_superuser=False)
-            else:
-
-                response_data = {"message": "Invalid parameter."}
-                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        if request.user.is_superuser:
+            users = User.objects.all()
         else:
-            if request.user.is_superuser:
-                users = User.objects.filter(is_active=True)
-            else:
-                users = User.objects.filter(is_active=True, is_superuser=False)
+            users = User.objects.filter(is_active=True, is_superuser=False)
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
 
