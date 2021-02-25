@@ -9,7 +9,7 @@ from user.models import UserProfile
 
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(required=True, write_only=True)
     email = serializers.EmailField(allow_blank=False)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
@@ -134,4 +134,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'is_snu',
             'updated_at',
             'withdrew_at',
-        ]
+            'picture',
