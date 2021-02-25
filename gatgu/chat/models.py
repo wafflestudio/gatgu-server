@@ -22,19 +22,19 @@ class OrderChat(models.Model):
     cur_people = models.IntegerField()
 
 class ChatMessage(models.Model):
-    text = models.TextField()
+    text = models.TextField(null=True)
     sent_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name = 'messages'
     )
-    sent_at = models.DateTimeField()
+    sent_at = models.DateTimeField(auto_now=True)
     chat = models.ForeignKey(
         OrderChat,
         on_delete=models.CASCADE,
         related_name = 'messages'
     )
-    media = models.URLField()
+    media = models.URLField(null=True)
     type = models.CharField(max_length=30)
 
 class ParticipantProfile(models.Model):
@@ -46,6 +46,6 @@ class ParticipantProfile(models.Model):
         User, 
         on_delete=models.CASCADE
     )
-    joined_at = models.DateTimeField()
-    out_at = models.DateTimeField(null=True)
+    joined_at = models.DateTimeField(auto_now=True)
+    out_at = models.DateTimeField(null=True, auto_now=True)
     pay_status = models.CharField(max_length=30)

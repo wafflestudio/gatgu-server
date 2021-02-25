@@ -10,15 +10,19 @@ import json
 def chats(request):
     if request.method == 'GET': # needs : list of chatting overview(recent message, sender, send_at, article_title)
         user = request.user
-        print(user)
         # find which chats this user participated
-        chat_in = [chat for chat in ParticipantProfile.objects.filter(participant=user, out_at=None).values('chat')]
+        chat_in = [chat for chat in ParticipantProfile.objects.filter(participant=user).values('chat')]
         chats = []
+        #print(chat_in)
         for chat_id in chat_in:
-            chat = OrderChat.objects.filter(id=chat_id)
-            message = chat.messages[-1] #recent message
-            chats.append({'chat_id': chat.id, 'recent_message': message.text, 'sent_by': message.sent_by, 'sent_at': message.sent_at})
-
+            chat = list(OrderChat.objects.filter(id=chat_id['chat']).values('id', 'messages'))
+            #recent message
+            msgs = []
+            for msg in chat:
+                message = ChatMessage.objects.get(id=msg['messages'])
+                msgs.append({'chat_id': msg['id'], 'recent_message': message.text, 'sent_by': message.sent_by.id, 'sent_at': message.sent_at})
+            chats.append(msgs)
+        print(chats)
         return JsonResponse({'chats': chats}, safe=False, status=200)
 
     else:
@@ -27,19 +31,25 @@ def chats(request):
 # /chat/<int:chat_id>/
 def chat(request, chat_id):
     if request.method == 'GET': # needs: messages, participants
-        chat = OrderChat.objects.get(id=chat_id).values()
-        return JsonResponse(json.dumps(chat), safe=False, status=200)
+        print(chat_id)
+        chat = list(OrderChat.objects.filter(id=chat_id).values('messages'))
+        msgs = []
+        for msg in chat:
+            message = ChatMessage.objects.get(id=msg['messages'])
+            msgs.append({'chat_id': message.id, 'recent_message': message.text, 'sent_by': message.sent_by.id, 'sent_at': message.sent_at})
+        print(msgs)
+        return JsonResponse({'messages': msgs}, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
 
-# /chat/join/<int:chat_id>/
+# /chat/<int:chat_id>/join/
 @csrf_exempt
 def join(request, chat_id):
     if request.method == 'PUT': # already in => success
-        chat = OrderChat.objects.get(id=chat_id).values()
-        user = request.user
+        participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
+        user_id = request.user.id
 
-        if user in chat.participants:
+        if user_id in participants:
             return HttpResponse(status=200)
         elif chat.cur_people < chat.required_people: # can go in => success
             # participant 추가
@@ -58,10 +68,11 @@ def join(request, chat_id):
 @csrf_exempt
 def out(request, chat_id):
     if request.method == 'PUT':
-        chat = OrderChat.objects.get(id=chat_id).values()
-        user = request.user
 
-        if user not in chat.participants: # not in room
+        participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
+        user_id = request.user.id
+
+        if user_id not in participants: # not in room
             return HttpResponse(status=401)
         else: # room member is going out
             return HttpResponse(status=200)
@@ -83,11 +94,11 @@ def messages(request, chat_id):
 
     elif request.method == 'POST':
         body = json.loads(request.body.decode())
-        msg_text = body["message"]
+        msg_text = body["text"]
         msg_img = body["image_url"]
-        sent_at = datetime.datetime.now()
-        chat = OrderChat.get(id=chat_id)
-        new_message = ChatMessage(text=msg_text, media=msg_img, sent_at=sent_at, sent_by=request.user, chat=chat)
+        #sent_at = datetime.datetime.now()
+        chat = OrderChat.objects.get(id=chat_id)
+        new_message = ChatMessage(text=msg_text, media=msg_img, sent_by=request.user, chat=chat)
         new_message.save()
 
         response = {"message_id": new_message.id}
@@ -98,18 +109,19 @@ def messages(request, chat_id):
 # /chat/message/<int:message_id>/
 def message(request, message_id):
     if request.method == 'GET':
-        message = ChatMessage.objects.get(id=message_id).values()
-        
-        return JsonResponse(json.dumps(message), safe=False, status=200)
+        message = ChatMessage.objects.filter(id=message_id).values()[0]
+        print(message)
+        return JsonResponse({'text': message['text'], 'media': message['media'], 'sent_by_id': message['sent_by_id'], 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
 
 # /chat/<int:chat_id>/participants/
 def participants(request, chat_id):
     if request.method == 'GET':
-        participants = ParticipantProfile.objects.get(order_id=chat_id).values()
-        
-        return JsonResponse(json.dumps(participants), safe=False, status=200)
+        print(13)
+        participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
+        print(participants)     
+        return JsonResponse(participants, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
 
