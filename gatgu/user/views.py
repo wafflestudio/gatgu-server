@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
-from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_text
 from django.core.mail import EmailMessage
 from django.shortcuts import get_object_or_404
@@ -15,7 +15,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from user.serializers import UserSerializer
-from .models import User, UserProfile
+from .models import User, UserProfile, EmailProfile
+from .makecode import generate_code
 import requests
 
 
@@ -25,28 +26,22 @@ class UserViewSet(viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated(),)
 
     def get_permissions(self):
-        if self.action in ('create', 'login'):
+        if self.action in ('create', 'login', 'confirm', 'activate'):
             return (AllowAny(),)
         return self.permission_classes
-    
-    def get_message(self,user):
 
-        # current_site = get_current_site(request)
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = user.auth_token.key
+    def get_message(self, code):
 
-        url = f"http://127.0.0.1:8000/v1/user/activate/?"+"uid="+str(uidb64)+"&token="+str(token)
-
-        message = url # now testing.
+        message = "인증번호입니다.\n\n인증번호 : " + code
 
         return message
 
-    def send_mail(self, user):
+    def send_mail(self, email_address, code):
 
-        message = self.get_message(user)
+        message = self.get_message(code)
 
         mail_subject = "[gatgu] 회원가입 인증 메일입니다."
-        user_email = user.email
+        user_email = email_address
         email = EmailMessage(mail_subject, message, to=[user_email])
         email.send()
 
@@ -65,6 +60,16 @@ class UserViewSet(viewsets.GenericViewSet):
         if not username or not password or not email:
             response_data = {
                 "error": "username, password, email are required."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        email_profile = EmailProfile.objects.filter(
+            email=email,
+            is_certificated=True,
+            is_pending=False)
+
+        if not email_profile.exists():
+            response_data = {
+                "error": "uncertificated email. please certificate email"}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         address = data.get('address')
@@ -106,6 +111,9 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "A user with that username already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
+        email_profile.is_pending = True
+        email_profile.save()
+
         login(request, user)
 
         data = serializer.data
@@ -136,40 +144,48 @@ class UserViewSet(viewsets.GenericViewSet):
     def logout(self, request):
         logout(request)
         return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
-    
+
     @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
-        
-        user = request.user
-        self.send_mail(user)
+
+        email = request.data.get("email")
+
+        code = generate_code()
+
+        try:
+            EmailProfile.objects.create(
+                email=email,
+                code=code
+            )
+        except:
+            response_data = {"error": "Invalid Email"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        self.send_mail(email, code)
 
         return Response({"message": "Successfully send confirming email"}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['GET'], url_path='activate', url_name='activate')
     def activate(self, request):
 
-        uidb64 = request.GET.get('uid',None)
-        token = request.GET.get('token',None)
+        email = request.data.get("email")
+        code = request.data.get("code")
 
-        if not uidb64 or not token:
-            response_data = {"message": "No pk value or token"}
+        email_profile = EmailProfile.objects.filter(
+            email=email, is_certificated=False)
+
+        if not email_profile.exists():
+            response_data = {"message": "Wrong Email address"}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        uid = force_text(urlsafe_base64_decode(uidb64))
-
-        user = get_object_or_404(User,pk=uid)
-
-        user_token = user.auth_token.key
-        
-        if token != user_token:
-            response_data = {"message": "user and token mis matching. retry confirm."}
+        if email_profile.code == code:
+            email_profile.is_certificated = True
+            email_profile.save()
+        else:
+            response_data = {"message": "Wrong Email address"}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        profile = user.userprofile
-        profile.is_snu = True
-        profile.save()
-
-        response_data = {"message": "Successfully confirmed"}
+        response_data = {"message": "Successfully certificated"}
         return Response(response_data, status=status.HTTP_200_OK)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
@@ -239,7 +255,3 @@ class UserViewSet(viewsets.GenericViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data)
-
-        
-
-
