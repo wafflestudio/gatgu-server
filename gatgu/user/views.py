@@ -8,10 +8,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
-from article.models import Article
-from article.serializers import ArticleSerializer
-from user.serializers import UserSerializer
+from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile
 import requests
 
@@ -42,37 +39,26 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         nickname = data.get('nickname')
-        phone = data.get('phone')
 
-        if not nickname or not phone:
+        if not nickname:
             response_data = {
-                "error": "nickname, phone are required."}
+                "error": "nickname are required."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if request.data.get('picture') is not None:
-            picture = request.data.get('picture')
-        else:
-            picture = 'default.jpg'
-
-        if UserProfile.objects.filter(nickname__iexact=nickname):
+        if UserProfile.objects.filter(nickname__iexact=nickname,
+                                      withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
             response_data = {
                 "error": "A user with that Nickname already exists."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        if UserProfile.objects.filter(phone=phone):
-            response_data = {
-                "error": "A user with that Phone Number already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
+        userprofile_serializer = UserProfileSerializer(data=data)
+        userprofile_serializer.is_valid(raise_exception=True)
+
         try:
             user = serializer.save()
-            user_profile = UserProfile.objects.create(user_id=user.id,
-                                                      nickname=nickname,
-                                                      phone=phone,
-                                                      picture=picture)
         except IntegrityError:
             response_data = {
                 "error": "A user with that username already exists."}
@@ -110,6 +96,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
+
         if pk == 'me':
             user = request.user
         else:
@@ -119,26 +106,29 @@ class UserViewSet(viewsets.GenericViewSet):
                 response_data = {"message": "There is no such user."}
                 return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
+        if not request.user.is_superuser:
+
+            if not user.is_active or user.is_superuser:
+                response_data = {
+                    "message": "Coudn't get this user's information."}
+                return Response(response_data, status=status.HTTP_403_FORBIDDEN)
+            else:
+                pass
+        else:
+            pass
+
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
     def list(self, request):
 
-        tot = request.GET.get('tot', None)
-
-        if tot:
-            if tot == "yes":
-                users = User.objects.all()
-            elif tot == 'no':
-                users = User.objects.filter(is_active=True)
-            else:
-                response_data = {"message": "Invalid parameter."}
-                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        if request.user.is_superuser:
+            users = User.objects.all()
         else:
-            users = User.objects.filter(is_active=True)
+            users = User.objects.filter(is_active=True, is_superuser=False)
 
         return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
 
-    # 로그아웃
+    # 회원탈퇴
     @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
     def withdrawal(self, request):
 
@@ -151,10 +141,12 @@ class UserViewSet(viewsets.GenericViewSet):
             user.is_active = False
             user.save()
         else:
-            pass
+            response_data = {"message": "This user Already withdrew"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Successfully deactivated."}, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     # PUT /user/me/  # 유저 정보 수정 (나)
     def update(self, request, pk=None):
 
@@ -164,20 +156,34 @@ class UserViewSet(viewsets.GenericViewSet):
 
         user = request.user
 
+        data = request.data
+
+        cnt = 0
+
+        for key in ['nickname', 'picture', 'password']:
+            if key in data:
+                cnt = cnt+1
+
+        if cnt != len(data):
+            response_data = {"error": "Request has invalid key"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        nickname = data.get('nickname')
+
+        if UserProfile.objects.filter(nickname__iexact=nickname,
+                                      withdrew_at__isnull=True).exclude(user_id=user.id).exists():
+            response_data = {
+                "error": "A user with that Nickname already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(user, data=request.data, partial=True)
+
         serializer.is_valid(raise_exception=True)
 
-        try:
-            serializer.save()
-
-        except IntegrityError:
-
-            return Response({"error": "That Nickname or Phone number is already occupied"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.update(user, serializer.validated_data)
 
         return Response(serializer.data)
 
-    '''내 활동 뿐 아니라 다른사람의 활동 조회도 가능해아 한다.'''
 
     @action(detail=True, methods=['GET'], url_path='activity')
     def hosted_list(self, request, pk):
@@ -186,10 +192,3 @@ class UserViewSet(viewsets.GenericViewSet):
         data = ArticleSerializer(hosted, many=True).data
         return Response(data, status=status.HTTP_200_OK)
 
-    '''
-    def participated_list(self, request):
-
-
-        orderchat 생성 후 진행
-        participated = OrderChat.objects.all().filter()
-    '''
