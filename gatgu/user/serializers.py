@@ -135,3 +135,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'updated_at',
             'withdrew_at',
             'picture',
+        ]
