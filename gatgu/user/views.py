@@ -182,4 +182,13 @@ class UserViewSet(viewsets.GenericViewSet):
 
         serializer.update(user, serializer.validated_data)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
+
+
+    @action(detail=True, methods=['GET'], url_path='activity')
+    def hosted_list(self, request, pk):
+        user_tar = self.get_object().id
+        hosted = Article.objects.all().filter(deleted_at=None, writer_id=user_tar)
+        data = ArticleSerializer(hosted, many=True).data
+        return Response(data, status=status.HTTP_200_OK)
+
