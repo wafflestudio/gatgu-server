@@ -120,7 +120,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
-    is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
 
@@ -130,8 +129,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'id',
             'nickname',
             'picture',
-            'is_snu',
             'updated_at',
             'withdrew_at',
-            'picture',
         ]
