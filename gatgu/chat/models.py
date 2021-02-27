@@ -47,5 +47,5 @@ class ParticipantProfile(models.Model):
         on_delete=models.CASCADE
     )
     joined_at = models.DateTimeField(auto_now=True)
-    out_at = models.DateTimeField(null=True, auto_now=True)
+    out_at = models.DateTimeField(null=True)
     pay_status = models.CharField(max_length=30)

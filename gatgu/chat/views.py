@@ -4,24 +4,29 @@ from django.views.decorators.csrf import csrf_exempt
 from chat.models import OrderChat, ChatMessage, ParticipantProfile
 from django.contrib.auth.models import User
 import json
+import datetime
 # Create your views here.
 
 # /chat/
 def chats(request):
     if request.method == 'GET': # needs : list of chatting overview(recent message, sender, send_at, article_title)
         user = request.user
+        if not user.is_authenticated: 
+            return HttpResponse(status=401)
         # find which chats this user participated
         chat_in = [chat for chat in ParticipantProfile.objects.filter(participant=user).values('chat')]
         chats = []
         #print(chat_in)
         for chat_id in chat_in:
             chat = list(OrderChat.objects.filter(id=chat_id['chat']).values('id', 'messages'))
+            if len(chat)>0:
+                message_id = chat[-1]['messages']
+            else:
+                continue
+            message = ChatMessage.objects.get(id=message_id)
             #recent message
-            msgs = []
-            for msg in chat:
-                message = ChatMessage.objects.get(id=msg['messages'])
-                msgs.append({'chat_id': msg['id'], 'recent_message': message.text, 'sent_by': message.sent_by.id, 'sent_at': message.sent_at})
-            chats.append(msgs)
+            msg = {'chat_id': chat_id, 'recent_message':{'text': message.text, 'media': message.media}, 'sent_by_id': message.sent_by.id, 'sent_at': message.sent_at}
+            chats.append(msg)
         print(chats)
         return JsonResponse({'chats': chats}, safe=False, status=200)
 
@@ -31,13 +36,25 @@ def chats(request):
 # /chat/<int:chat_id>/
 def chat(request, chat_id):
     if request.method == 'GET': # needs: messages, participants
-        print(chat_id)
-        chat = list(OrderChat.objects.filter(id=chat_id).values('messages'))
+        try:
+            chat = OrderChat.objects.get(id=chat_id)
+        except Exception as e:
+            return HttpResponse(status=404)
         msgs = []
-        for msg in chat:
-            message = ChatMessage.objects.get(id=msg['messages'])
-            msgs.append({'chat_id': message.id, 'recent_message': message.text, 'sent_by': message.sent_by.id, 'sent_at': message.sent_at})
-        print(msgs)
+        messages = list(chat.messages.all().values())
+        for message in messages:
+            #message = ChatMessage.objects.get(id=msg['messages'])
+            msgs.append({'id': message['id'], 'text': message['text'], 'media': message['media'], 'sent_by_id': message['sent_by_id'], 'sent_at': message['sent_at']})
+        chat_info = {
+            'order_status': chat.order_status,
+            'tracking_number': chat.tracking_number,
+            'required_people': chat.required_people,
+            'cur_people': chat.cur_people,
+            'participants_id': [id['id'] for id in chat.participants.all().values('id')],
+            'article_id': chat.article,
+            'messages': msgs
+        }
+        print(chat_info)
         return JsonResponse({'messages': msgs}, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
@@ -47,8 +64,9 @@ def chat(request, chat_id):
 def join(request, chat_id):
     if request.method == 'PUT': # already in => success
         participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
+        if not request.user.is_authenticated:
+            return HttpResponse(status=401)
         user_id = request.user.id
-
         if user_id in participants:
             return HttpResponse(status=200)
         elif chat.cur_people < chat.required_people: # can go in => success
@@ -60,7 +78,7 @@ def join(request, chat_id):
             return HttpResponse(status=200)
         else:
              # full room => failure
-             return HttpResponse(status=401)
+             return HttpResponse(status=403)
     else:
         return HttpResponseNotAllowed(['PUT'])
 
@@ -68,13 +86,23 @@ def join(request, chat_id):
 @csrf_exempt
 def out(request, chat_id):
     if request.method == 'PUT':
-
-        participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
-        user_id = request.user.id
-
-        if user_id not in participants: # not in room
+        
+        try:
+            participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(chat_id=chat_id, out_at=None).values('participant_id')]
+        except Exception as e:
+            return HttpResponse(status=404)
+        if not request.user.is_authenticated:
             return HttpResponse(status=401)
+        user_id = request.user.id
+        if user_id not in participants: # not in room
+            return HttpResponse(status=403)
         else: # room member is going out
+            profile = ParticipantProfile.objects.get(chat_id=chat_id, participant_id=user_id, out_at=None)
+            profile.out_at=datetime.datetime.now()
+            profile.save()
+            chat = OrderChat.objects.get(id=chat_id)
+            chat.cur_people=chat.cur_people-1
+            chat.save()
             return HttpResponse(status=200)
     else:
         return HttpResponseNotAllowed(['PUT'])
@@ -83,8 +111,9 @@ def out(request, chat_id):
 @csrf_exempt
 def messages(request, chat_id):
     if request.method == 'GET':
-        
         user = request.user
+        if not user.is_authenticated:
+            return HttpResponse(status=401)
         messages = [message for message in ChatMessage.objects.filter(chatroom_id==chat_id).values('messages')]
 
         # joined_at = ParticipantProfile.objects.get(order_id==chat_id, participant_id==user.id)
@@ -97,7 +126,11 @@ def messages(request, chat_id):
         msg_text = body["text"]
         msg_img = body["image_url"]
         #sent_at = datetime.datetime.now()
-        chat = OrderChat.objects.get(id=chat_id)
+        try:
+            chat = OrderChat.objects.get(id=chat_id)
+        except Exception as e:
+            return HttpResponse(status_code=404)
+
         new_message = ChatMessage(text=msg_text, media=msg_img, sent_by=request.user, chat=chat)
         new_message.save()
 
@@ -118,7 +151,6 @@ def message(request, message_id):
 # /chat/<int:chat_id>/participants/
 def participants(request, chat_id):
     if request.method == 'GET':
-        print(13)
         participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
         print(participants)     
         return JsonResponse(participants, safe=False, status=200)
