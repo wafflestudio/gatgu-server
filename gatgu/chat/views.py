@@ -142,9 +142,11 @@ def messages(request, chat_id):
 # /chat/message/<int:message_id>/
 def message(request, message_id):
     if request.method == 'GET':
+        if not request.user.is_authenticated:
+            return HttpResponse(status_code=401)
         message = ChatMessage.objects.filter(id=message_id).values()[0]
         print(message)
-        return JsonResponse({'text': message['text'], 'media': message['media'], 'sent_by_id': message['sent_by_id'], 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
+        return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'], 'sent_by_id': message['sent_by_id'], 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
 
