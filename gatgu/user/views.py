@@ -26,7 +26,7 @@ class UserViewSet(viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated(),)
 
     def get_permissions(self):
-        if self.action in ('create', 'login', 'confirm', 'reconfirm','activate'):
+        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate'):
             return (AllowAny(),)
         return self.permission_classes
 
@@ -63,9 +63,9 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         if not EmailProfile.objects.filter(
-            email=email,
-            is_certificated=True,
-            is_pending=False).exists():
+                email=email,
+                is_certificated=True,
+                is_pending=False).exists():
             response_data = {
                 "error": "uncertificated email. please certificate email"}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -141,7 +141,7 @@ class UserViewSet(viewsets.GenericViewSet):
         email = request.data.get("email")
 
         if EmailProfile.objects.filter(
-            email=email, is_certificated=False).exists():
+                email=email, is_certificated=False).exists():
             response_data = {"error": "This email is already waiting now."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -166,7 +166,7 @@ class UserViewSet(viewsets.GenericViewSet):
         email = request.data.get("email")
 
         if not EmailProfile.objects.filter(
-            email=email, is_certificated=False).exists():
+                email=email, is_certificated=False).exists():
             response_data = {"error": "This is not wating email"}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -181,7 +181,6 @@ class UserViewSet(viewsets.GenericViewSet):
         self.send_mail(email, code)
 
         return Response({"message": "Successfully send reconfirming email"}, status=status.HTTP_200_OK)
-    
 
     @action(detail=False, methods=['PUT'], url_path='activate', url_name='activate')
     def activate(self, request):
@@ -196,7 +195,8 @@ class UserViewSet(viewsets.GenericViewSet):
             response_data = {"message": "Wrong Email address"}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        activating_email_profile = EmailProfile.objects.filter(email=email,is_certificated=False).first()
+        activating_email_profile = EmailProfile.objects.filter(
+            email=email, is_certificated=False).first()
 
         if activating_email_profile.code == code:
             activating_email_profile.is_certificated = True
@@ -298,11 +298,9 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response(serializer.data)
 
-
     @action(detail=True, methods=['GET'], url_path='activity')
     def hosted_list(self, request, pk):
         user_tar = self.get_object().id
         hosted = Article.objects.all().filter(deleted_at=None, writer_id=user_tar)
         data = ArticleSerializer(hosted, many=True).data
         return Response(data, status=status.HTTP_200_OK)
-
