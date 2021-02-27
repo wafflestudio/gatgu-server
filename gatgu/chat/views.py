@@ -11,7 +11,7 @@ import datetime
 def chats(request):
     if request.method == 'GET': # needs : list of chatting overview(recent message, sender, send_at, article_title)
         user = request.user
-        if not user.is_authenticated: 
+        if user.is_anonymous: 
             return HttpResponse(status=401)
         # find which chats this user participated
         chat_in = [chat for chat in ParticipantProfile.objects.filter(participant=user).values('chat')]
@@ -36,6 +36,8 @@ def chats(request):
 # /chat/<int:chat_id>/
 def chat(request, chat_id):
     if request.method == 'GET': # needs: messages, participants
+        if request.user.is_anonymous:
+            return HttpResponse(status=401)
         try:
             chat = OrderChat.objects.get(id=chat_id)
         except Exception as e:
@@ -64,7 +66,7 @@ def chat(request, chat_id):
 def join(request, chat_id):
     if request.method == 'PUT': # already in => success
         participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
-        if not request.user.is_authenticated:
+        if request.user.is_anonymous:
             return HttpResponse(status=401)
         user_id = request.user.id
         if user_id in participants:
@@ -86,12 +88,11 @@ def join(request, chat_id):
 @csrf_exempt
 def out(request, chat_id):
     if request.method == 'PUT':
-        
         try:
             participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(chat_id=chat_id, out_at=None).values('participant_id')]
         except Exception as e:
             return HttpResponse(status=404)
-        if not request.user.is_authenticated:
+        if request.user.is_anonymous:
             return HttpResponse(status=401)
         user_id = request.user.id
         if user_id not in participants: # not in room
@@ -112,7 +113,7 @@ def out(request, chat_id):
 def messages(request, chat_id):
     if request.method == 'GET':
         user = request.user
-        if not user.is_authenticated:
+        if user.is_anonymous:
             return HttpResponse(status=401)
         messages = [message for message in ChatMessage.objects.filter(chatroom_id==chat_id).values('messages')]
 
@@ -125,11 +126,13 @@ def messages(request, chat_id):
         body = json.loads(request.body.decode())
         msg_text = body["text"]
         msg_img = body["image_url"]
+        if request.user.is_anonymous:
+            return HttpResponse(status=401)
         #sent_at = datetime.datetime.now()
         try:
             chat = OrderChat.objects.get(id=chat_id)
         except Exception as e:
-            return HttpResponse(status_code=404)
+            return HttpResponse(status=404)
 
         new_message = ChatMessage(text=msg_text, media=msg_img, sent_by=request.user, chat=chat)
         new_message.save()
@@ -142,8 +145,8 @@ def messages(request, chat_id):
 # /chat/message/<int:message_id>/
 def message(request, message_id):
     if request.method == 'GET':
-        if not request.user.is_authenticated:
-            return HttpResponse(status_code=401)
+        if request.user.is_anonymous:
+            return HttpResponse(status=401)
         message = ChatMessage.objects.filter(id=message_id).values()[0]
         print(message)
         return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'], 'sent_by_id': message['sent_by_id'], 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
@@ -153,6 +156,8 @@ def message(request, message_id):
 # /chat/<int:chat_id>/participants/
 def participants(request, chat_id):
     if request.method == 'GET':
+        if request.user.is_anonymous:
+            return HttpResponse(status=401)
         participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
         print(participants)     
         return JsonResponse(participants, safe=False, status=200)
@@ -162,6 +167,8 @@ def participants(request, chat_id):
 # /chat/<int:chat_id>/set_status/
 def set_status(request, chat_id):
     if request.method == 'PUT':
+        if request.user.is_anonymous:
+            return HttpResponse(status=401)
         body = json.loads(request.body.decode())
         new_status = body["status"]
         chat = OrderChat.objects.get(id=chat_id)

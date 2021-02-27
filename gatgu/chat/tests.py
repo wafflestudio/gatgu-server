@@ -34,21 +34,28 @@ class ChatTestCase(TestCase):
     def test_get_chats(self):
         #self.client = Client(enforce_csrf_checks=True)
         #self.client.login(username='user1', password='pass1')
-        self.client.login(username='user1', password='pass1')
+        response = self.client.get('/v1/chat/')
+        self.assertEqual(response.status_code, 401)
 
+        self.client.login(username='user1', password='pass1')
         response = self.client.get('/v1/chat/')
         self.assertEqual(response.status_code, 200)
     
     def test_get_chat(self):
         #self.client = Client(enforce_csrf_checks=True)
         #self.client.login(username='user1', password='pass1')
-        self.client.login(username='user1', password='pass1')
+        response = self.client.get('/v1/chat/1/')
+        self.assertEqual(response.status_code, 401)
 
+        self.client.login(username='user1', password='pass1')
         response = self.client.get('/v1/chat/1/')
         self.assertEqual(response.status_code, 200)
 
     def test_join_chat(self):
         #self.client = Client(enforce_csrf_checks=True)
+        response = self.client.put('/v1/chat/1/join/')
+        self.assertEqual(response.status_code, 401)
+        
         self.client.login(username='user1', password='pass1')
         response = self.client.put('/v1/chat/1/join/')
         self.assertEqual(response.status_code, 200)
@@ -60,23 +67,40 @@ class ChatTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
     
     def test_post_message(self):
-        self.client.login(username='user1', password='pass1')
         message = {'text': 'text_sent', 'image_url':'url_sent'}
+        
+        response = self.client.post('/v1/chat/1/messages/', json.dumps(message), content_type = 'application/json')
+        self.assertEqual(response.status_code, 401)
+
+        self.client.login(username='user1', password='pass1')
         response = self.client.post('/v1/chat/1/messages/', json.dumps(message), content_type = 'application/json')
         self.assertEqual(response.status_code, 200)
     
     def test_get_message(self):
+        response = self.client.get('/v1/chat/message/1/')
+        self.assertEqual(response.status_code, 401)
+
         self.client.login(username='user1', password='pass1')
         response = self.client.get('/v1/chat/message/1/')
         self.assertEqual(response.status_code, 200)
 
     def test_get_participants(self):
+        response = self.client.get('/v1/chat/1/participants/')
+        self.assertEqual(response.status_code, 401)
+
         self.client.login(username='user1', password='pass1')
         response = self.client.get('/v1/chat/1/participants/')
         self.assertEqual(response.status_code, 200)
 
     def test_set_status(self):
-        self.client.login(username='user1', password='pass1')
         new_status = {'status': 'complete'}
+        
+        response = self.client.put('/v1/chat/1/set_status/', json.dumps(new_status))
+        self.assertEqual(response.status_code, 401)
+
+        self.client.login(username='user1', password='pass1')
         response = self.client.put('/v1/chat/1/set_status/', json.dumps(new_status))
         self.assertEqual(response.status_code, 200)
+
+    
+
