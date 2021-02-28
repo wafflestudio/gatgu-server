@@ -1,12 +1,14 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from user.serializers import UserSerializer
+from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile
 import requests
 
@@ -14,86 +16,53 @@ import requests
 class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated(),)
 
     def get_permissions(self):
         if self.action in ('create', 'login'):
             return (AllowAny(),)
-        return super(UserViewSet, self).get_permissions()
+        return self.permission_classes
 
     # POST /user/ 회원가입
+    @transaction.atomic
     def create(self, request):
+
         data = request.data
-        usertype = request.data.get('user_type')
-        if usertype == 2:
-            access_token = request.POST.get('access_token', '')
 
-            if access_token == '' or None:
-                return Response({"error": "Received no access token in request"}, status=status.HTTP_400_BAD_REQUEST)
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email')
 
-            profile_request = requests.post(
-                "https://kapi.kakao.com/v2/user/me",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            profile_json = profile_request.json()
+        if not username or not password or not email:
+            response_data = {
+                "error": "username, password, email are required."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-            if profile_json == None:
-                return Response({"error": "Received no response from Kakao database"}, status=status.HTTP_404_NOT_FOUND)
+        nickname = data.get('nickname')
 
-            try:  # parsing json
-                kakao_account = profile_json.get("kakao_account")
-                email = kakao_account.get("email", None)
-                profile = kakao_account.get("profile")
-                username = profile.get("nickname")
-            #               profile_image = profile.get("thumbnail_image_url")
-            except KeyError:
-                return Response({"error": "Need to agree to terms"}, status=status.HTTP_400_BAD_REQUEST)
+        if not nickname:
+            response_data = {
+                "error": "nickname are required."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-            if (User.objects.filter(username=username).exists()):  # 기존에 가입된 유저가 카카오 로그인
-                user = User.objects.get(username=username)
-                login(request, user)
-
-                if usertype == 'django':
-                    User.objects.filter(username=username).update(email=email)  ###
-                    UserProfile.objects.filter(user=user).update(nickname=username, user_type='kakao')  ###
-
-                # 위치 옮김
-                data = self.get_serializer(user).data
-                token, created = Token.objects.get_or_create(user=user)
-                data['token'] = token.key
-
-                return Response(data, status=status.HTTP_200_OK)
-            else:  # 신규 유저의 카카오 로그인
-                data = {"username": username, "email": email, "user_type": 'kakao'}  ###
-        #               data['profile_image'] = profile_image
-
-        area = request.data.get('area')
-        nickname = request.data.get('nickname')
-        phone = request.data.get('phone')
-
-        if request.data.get('profile_pics') is not None:
-            profile_pics = request.data.get('profile_pics')
-
-        if UserProfile.objects.filter(nickname__iexact=nickname):
-            return Response({"error": "A user with that Nickname already exists."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if UserProfile.objects.filter(phone=phone):
-            return Response({"error": "A user with that Phone Number already exists."},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if UserProfile.objects.filter(nickname__iexact=nickname,
+                                      withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
+            response_data = {
+                "error": "A user with that Nickname already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+
+        userprofile_serializer = UserProfileSerializer(data=data)
+        userprofile_serializer.is_valid(raise_exception=True)
+
         try:
             user = serializer.save()
         except IntegrityError:
-            return Response({"error": "A user with that username already exists."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user_profile = UserProfile.objects.create(user_id=user.id, area=area, nickname=nickname, phone=phone,
-                                                      profile_pics=profile_pics)
-        except IntegrityError:
-            return Response({"error": "A user with that nickname or phone number already exists."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            response_data = {
+                "error": "A user with that username already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         login(request, user)
 
@@ -108,6 +77,7 @@ class UserViewSet(viewsets.GenericViewSet):
         password = request.data.get('password')
 
         user = authenticate(request, username=username, password=password)
+
         if user:
             login(request, user)
 
@@ -116,39 +86,109 @@ class UserViewSet(viewsets.GenericViewSet):
             data['token'] = token.key
             return Response(data)
 
-        return Response({"error": "Wrong username or wrong password"}, status=status.HTTP_403_FORBIDDEN)
+        response_data = {"error": "Wrong username or wrong password"}
+        return Response(response_data, status=status.HTTP_403_FORBIDDEN)
 
-    @action(detail=False, methods=['POST'])  # 로그아웃
+    @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
         logout(request)
         return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
+
         if pk == 'me':
             user = request.user
         else:
             try:
                 user = User.objects.get(pk=pk)
             except User.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+                response_data = {"message": "There is no such user."}
+                return Response(response_data, status=status.HTTP_404_NOT_FOUND)
+
+        if not request.user.is_superuser:
+
+            if not user.is_active or user.is_superuser:
+                response_data = {
+                    "message": "Coudn't get this user's information."}
+                return Response(response_data, status=status.HTTP_403_FORBIDDEN)
+            else:
+                pass
+        else:
+            pass
 
         return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
 
-    # PUT /user/me/  # 유저 정보 수정 (나)
-    def update(self, request, pk=None):
-        if pk != 'me':
-            return Response({"error": "Can't update other Users information"}, status=status.HTTP_404_NOT_FOUND)
+    def list(self, request):
+
+        if request.user.is_superuser:
+            users = User.objects.all()
+        else:
+            users = User.objects.filter(is_active=True, is_superuser=False)
+
+        return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
+
+    # 회원탈퇴
+    @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
+    def withdrawal(self, request):
 
         user = request.user
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        try:
-            serializer.save()
-        except IntegrityError:
 
-            return Response({"error": "That Nickname or Phone number is already occupied"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if user.is_active:
+            profile = user.userprofile
+            profile.withdrew_at = timezone.now()
+            profile.save()
+            user.is_active = False
+            user.save()
+        else:
+            response_data = {"message": "This user Already withdrew"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": "Successfully deactivated."}, status=status.HTTP_200_OK)
+
+    @transaction.atomic
+    # PUT /user/me/  # 유저 정보 수정 (나)
+    def update(self, request, pk=None):
+
+        if pk != 'me':
+            response_data = {"error": "Can't update other Users information"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+
+        data = request.data
+
+        cnt = 0
+
+        for key in ['nickname', 'picture', 'password']:
+            if key in data:
+                cnt = cnt+1
+
+        if cnt != len(data):
+            response_data = {"error": "Request has invalid key"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        nickname = data.get('nickname')
+
+        if UserProfile.objects.filter(nickname__iexact=nickname,
+                                      withdrew_at__isnull=True).exclude(user_id=user.id).exists():
+            response_data = {
+                "error": "A user with that Nickname already exists."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+
+        serializer.is_valid(raise_exception=True)
+
+        serializer.update(user, serializer.validated_data)
 
         return Response(serializer.data)
+
+
+    @action(detail=True, methods=['GET'], url_path='activity')
+    def hosted_list(self, request, pk):
+        user_tar = self.get_object().id
+        hosted = Article.objects.all().filter(deleted_at=None, writer_id=user_tar)
+        data = ArticleSerializer(hosted, many=True).data
+        return Response(data, status=status.HTTP_200_OK)
 
