@@ -4,7 +4,6 @@ from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 from user.models import UserProfile
-import datetime
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,19 +15,19 @@ class UserSerializer(serializers.ModelSerializer):
     last_login = serializers.DateTimeField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
     userprofile = serializers.SerializerMethodField()
-    is_active = serializers.BooleanField(read_only=True, default=True)
-    address = serializers.CharField(
-        write_only=True, allow_blank=False, required=False)
+    is_active = serializers.BooleanField(default=True)
     nickname = serializers.CharField(
-        write_only=True, allow_blank=False, required=False)
-    phone = serializers.CharField(
         write_only=True,
         allow_blank=False,
-        max_length=13,
+        max_length=20,
         required=False,
     )
     picture = serializers.ImageField(
-        write_only=True, required=False, allow_null=True, use_url=True)
+        write_only=True,
+        allow_null=True,
+        use_url=True,
+        required=False,
+    )
 
     class Meta:
         model = User
@@ -43,15 +42,22 @@ class UserSerializer(serializers.ModelSerializer):
             'last_login',
             'userprofile',
             'is_active',
-            'address',
             'nickname',
-            'phone',
             'picture',
         )
 
     def get_userprofile(self, user):
-        return UserProfileSerializer(user.userprofile,
-                                     context=self.context).data
+        try:
+            return UserProfileSerializer(user.userprofile,
+                                         context=self.context).data
+        except ObjectDoesNotExist:
+
+            message = "Cannot find your profile."
+            api_exception = serializers.ValidationError(message)
+            api_exception.status_code = status.HTTP_400_BAD_REQUEST
+            raise api_exception
+
+            return None
 
     def validate_password(self, value):
         return make_password(value)
@@ -70,34 +76,33 @@ class UserSerializer(serializers.ModelSerializer):
             api_exception = serializers.ValidationError(message)
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
+
         return data
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data.pop('address', '')
-        validated_data.pop('nickname', '')
-        validated_data.pop('phone', '')
-        validated_data.pop('picture', None)
+        nickname = validated_data.pop('nickname', '')
+        picture = validated_data.pop('picture', 'default.jpg')
+
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
+
+        UserProfile.objects.create(user_id=user.id,
+                                   nickname=nickname,
+                                   picture=picture)
 
         return user
 
     def update(self, user, validated_data):
 
-        address = validated_data.get('address')
         nickname = validated_data.get('nickname')
-        phone = validated_data.get('phone')
         picture = validated_data.get('picture')
 
         profile = user.userprofile
-        if address is not None:
-            profile.address = address
-        if nickname is not None:
+
+        if nickname:
             profile.nickname = nickname
-        if phone is not None:
-            profile.phone = phone
-        if picture is not None:
+        if picture:
             profile.picture = picture
 
         profile.save()
@@ -106,26 +111,25 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    address = serializers.CharField(allow_blank=False, required=False)
-    nickname = serializers.CharField(allow_blank=False, required=False)
-    phone = serializers.CharField(
+    nickname = serializers.CharField(
         allow_blank=False,
-        max_length=13,
+        max_length=20
+    )
+    picture = serializers.ImageField(
+        allow_null=True,
+        use_url=True,
         required=False,
     )
     is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
-    picture = serializers.ImageField(
-        required=False, allow_null=True, use_url=True)
 
     class Meta:
         model = UserProfile
         fields = [
             'id',
-            'address',
             'nickname',
-            'phone',
+            'picture',
             'is_snu',
             'updated_at',
             'withdrew_at',
