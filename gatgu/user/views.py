@@ -8,6 +8,9 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from article.models import Article
+from article.serializers import ArticleSerializer
 from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile
 import requests
