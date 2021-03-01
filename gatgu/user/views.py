@@ -1,12 +1,10 @@
+from django.core.cache import cache
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_text
 from django.core.mail import EmailMessage
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -64,16 +62,14 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if not EmailProfile.objects.filter(
                 email=email,
-                is_certificated=True,
-                is_pending=False).exists():
+                is_pending=True).exists():
             response_data = {
                 "error": "uncertificated email. please certificate email"}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         email_profile = EmailProfile.objects.filter(
             email=email,
-            is_certificated=True,
-            is_pending=False).first()
+            is_pending=True).first()
 
         nickname = data.get('nickname')
 
@@ -101,7 +97,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "A user with that username already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        email_profile.is_pending = True
+        email_profile.is_pending = False
         email_profile.save()
 
         login(request, user)
@@ -140,47 +136,17 @@ class UserViewSet(viewsets.GenericViewSet):
 
         email = request.data.get("email")
 
-        if EmailProfile.objects.filter(
-                email=email, is_certificated=False).exists():
-            response_data = {"error": "This email is already waiting now."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        if EmailProfile.objects.filter(email=email,is_pending=True).exists():
+            response_data = {"This email is already pending now."}
+            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
 
         code = generate_code()
 
-        try:
-            EmailProfile.objects.create(
-                email=email,
-                code=code
-            )
-        except:
-            response_data = {"error": "Invalid Email"}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        cache.set(email,code,timeout=300)
 
         self.send_mail(email, code)
 
         return Response({"message": "Successfully send confirming email"}, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['PUT'], url_path='reconfirm', url_name='reconfirm')
-    def reconfirm(self, request):
-
-        email = request.data.get("email")
-
-        if not EmailProfile.objects.filter(
-                email=email, is_certificated=False).exists():
-            response_data = {"error": "This is not wating email"}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        email_profile = EmailProfile.objects.filter(
-            email=email, is_certificated=False).first()
-
-        code = generate_code()
-
-        email_profile.code = code
-        email_profile.save()
-
-        self.send_mail(email, code)
-
-        return Response({"message": "Successfully send reconfirming email"}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['PUT'], url_path='activate', url_name='activate')
     def activate(self, request):
@@ -188,24 +154,20 @@ class UserViewSet(viewsets.GenericViewSet):
         email = request.data.get("email")
         code = request.data.get("code")
 
-        email_profile = EmailProfile.objects.filter(
-            email=email, is_certificated=False)
+        email_code = cache.get(email)
 
-        if not email_profile.exists():
-            response_data = {"message": "Wrong Email address"}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        if email_code is None:
+            response_data = {"Time is over or no such email."}
+            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
 
-        activating_email_profile = EmailProfile.objects.filter(
-            email=email, is_certificated=False).first()
+        if email_code != code:
+            response_data = {"Code is doesn't matching."}
+            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
 
-        if activating_email_profile.code == code:
-            activating_email_profile.is_certificated = True
-            activating_email_profile.save()
-        else:
-            response_data = {"message": "Wrong code"}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        EmailProfile.objects.create(email=email)
+        cache.set(email,code,timeout=0) # erase from cache
 
-        response_data = {"message": "Successfully certificated"}
+        response_data = {"Successfully activated."}
         return Response(response_data, status=status.HTTP_200_OK)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)

@@ -15,6 +15,4 @@ class UserProfile(models.Model):
 class EmailProfile(models.Model):
 
     email = models.EmailField()
-    is_certificated = models.BooleanField(default=False)
-    is_pending = models.BooleanField(default=False)
-    code = models.CharField(max_length=10)
+    is_pending = models.BooleanField(default=True)
