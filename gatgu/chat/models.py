@@ -19,9 +19,8 @@ class OrderChat(models.Model):
     order_status = models.CharField(max_length=30)
     tracking_number = models.CharField(max_length=30)
 
-    # following two attributes can be changed to price
-    required_people = models.IntegerField()
-    cur_people = models.IntegerField()
+    '''participants.count로 대체'''
+    # cur_people = models.IntegerField()
 
 
 class ChatMessage(models.Model):
