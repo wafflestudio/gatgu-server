@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from rest_framework import serializers
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -13,6 +14,8 @@ class ArticleSerializer(serializers.ModelSerializer):
     need_type = serializers.ChoiceField(Article.NEED_TYPE)
     people_min = serializers.IntegerField(required=False)
     price_min = serializers.IntegerField(required=False)
+    # participant_count = serializers.SerializerMethodField
+    # current_price = serializers.SerializerMethodField
 
     class Meta:
         model = Article
@@ -45,6 +48,13 @@ class ArticleSerializer(serializers.ModelSerializer):
         data = NeedSerializer(article.need_type, context=self.context).data
 
         return data
+
+    # def get_participant_count(self, article):
+    #     article.
+
+    # def get_current_price(self, article):
+    #     data = article.order_chat.participant_profile.aggregate(Sum('price'))['price__sum']
+    #     return data
 
     def create(self, validated_data):
         return Article.objects.create(**validated_data)

@@ -5,7 +5,7 @@ from django.db import models
 class Article(models.Model):
     writer = models.ForeignKey(User, related_name='article', on_delete=models.CASCADE)
     title = models.CharField(max_length=50, db_index=True)
-    description = models.TextField(db_index=True)
+    description = models.TextField()
     location = models.CharField(max_length=50)
     image = models.ImageField(null=True)
     product_url = models.URLField()
@@ -23,7 +23,7 @@ class Article(models.Model):
     '''
     tag_used_count = models.PositiveIntegerField(default=0)
 
-    written_at = models.DateTimeField(auto_now_add=True)
+    written_at = models.DateTimeField(auto_now_add=True,null=False,db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)
 
