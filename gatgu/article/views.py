@@ -1,8 +1,10 @@
 from django.db import transaction
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, pagination
 from rest_framework.decorators import action
+from rest_framework.pagination import CursorPagination, PageNumberPagination
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -10,10 +12,24 @@ from article.models import Article
 from article.serializers import ArticleSerializer
 
 
+class CursorSetPagination(CursorPagination):
+    page_size = 1
+    page_size_query_param = 'page_size'
+    ordering = "written_at"
+
+
+class ArticlePagination(pagination.PageNumberPagination):
+    page_size = 1
+
+    # def get_paginated_response(self, data):
+
+
 class ArticleViewSet(viewsets.GenericViewSet):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     permission_classes = (IsAuthenticated(),)
+    # pagination_class = ArticlePagination
+    pagination_class = CursorSetPagination
 
     def get_permissions(self):
         return self.permission_classes
@@ -39,7 +55,21 @@ class ArticleViewSet(viewsets.GenericViewSet):
                 title__icontains=title,
                 deleted_at=None)
 
-        data = ArticleSerializer(articles, many=True).data
+        page = self.paginate_queryset(articles)
+        if page is not None:
+            # page_size = request.GET.get('page_size','')
+            # self.paginator.page_size = int(page_size)
+            default_page_size = 3
+            page_size = int (request.query_params.get('page_size')) if request.query_params.get(
+            'page_size') else default_page_size
+
+            pagination.CursorPagination.page_size = page_size
+
+            serializer = self.get_serializer(articles, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        data = self.get_serializer(articles, many=True).data
+
         return Response(data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk):

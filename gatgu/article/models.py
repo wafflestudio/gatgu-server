@@ -7,13 +7,23 @@ class Article(models.Model):
     title = models.CharField(max_length=50, db_index=True)
     description = models.TextField(db_index=True)
     location = models.CharField(max_length=50)
+    image = models.ImageField(null=True)
     product_url = models.URLField()
     thumbnail_url = models.URLField()
     people_min = models.PositiveSmallIntegerField()
     price_min = models.PositiveIntegerField()
-    time_max = models.DateTimeField(null=True)
-    time_remaining = models.DateTimeField(null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    time_in = models.DurationField(null=True)
+    tag = models.PositiveSmallIntegerField(null=True)
+    '''tag list to be added
+    TAG = (
+        (1, '...'),
+        (2, '...'),
+        
+    )
+    '''
+    tag_used_count = models.PositiveIntegerField(default=0)
+
+    written_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)
 
@@ -24,5 +34,4 @@ class Article(models.Model):
 
     need_type = models.PositiveSmallIntegerField(choices=NEED_TYPE, default=1, null=True)
 
-    class Meta:
-        ordering = ["-created_at"]
+    ordering = ['-written_at']

@@ -165,7 +165,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         for key in ['nickname', 'picture', 'password']:
             if key in data:
-                cnt = cnt+1
+                cnt = cnt + 1
 
         if cnt != len(data):
             response_data = {"error": "Request has invalid key"}
@@ -187,11 +187,9 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response(serializer.data)
 
-
     @action(detail=True, methods=['GET'], url_path='activity')
     def hosted_list(self, request, pk):
         user_tar = self.get_object().id
         hosted = Article.objects.all().filter(deleted_at=None, writer_id=user_tar)
         data = ArticleSerializer(hosted, many=True).data
         return Response(data, status=status.HTTP_200_OK)
-
