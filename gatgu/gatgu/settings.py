@@ -104,8 +104,16 @@ DATABASES = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/3", 
-    }
+        "LOCATION": "redis://127.0.0.1:6379/3",
+    },
+    "email": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+    },
+    "number_of_confirm": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/2",
+    },
 }
 
 # Password validation

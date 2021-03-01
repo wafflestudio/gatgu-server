@@ -1,4 +1,4 @@
-from django.core.cache import cache
+from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
@@ -136,13 +136,28 @@ class UserViewSet(viewsets.GenericViewSet):
 
         email = request.data.get("email")
 
-        if EmailProfile.objects.filter(email=email,is_pending=True).exists():
+        if EmailProfile.objects.filter(email=email, is_pending=True).exists():
             response_data = {"This email is already pending now."}
-            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        ncache = caches["number_of_confirm"]
+
+        confirm_number = ncache.get(email)
+
+        if confirm_number is None:
+            confirm_number = 0
+
+        if confirm_number >= 10:
+            response_data = {"Too many confirming access!"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         code = generate_code()
 
-        cache.set(email,code,timeout=300)
+        cache = caches["email"]
+
+        cache.set(email, code, timeout=300)
+
+        ncache.set(email, confirm_number+1, timeout=1200)
 
         self.send_mail(email, code)
 
@@ -154,18 +169,22 @@ class UserViewSet(viewsets.GenericViewSet):
         email = request.data.get("email")
         code = request.data.get("code")
 
+        cache = caches["email"]
+        ncache = caches["number_of_confirm"]
+
         email_code = cache.get(email)
 
         if email_code is None:
             response_data = {"Time is over or no such email."}
-            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         if email_code != code:
             response_data = {"Code is doesn't matching."}
-            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         EmailProfile.objects.create(email=email)
-        cache.set(email,code,timeout=0) # erase from cache
+        cache.set(email, code, timeout=0)  # erase from cache
+        ncache.set(email, 0, timeout=0)
 
         response_data = {"Successfully activated."}
         return Response(response_data, status=status.HTTP_200_OK)
