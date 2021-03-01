@@ -11,11 +11,11 @@ from article.models import Article
 class ArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
     deleted_at = serializers.DateTimeField(read_only=True)
-    time_remaining = serializers.DateTimeField(read_only=True)
     need_type = serializers.ChoiceField(Article.NEED_TYPE)
     people_min = serializers.IntegerField(required=False)
     price_min = serializers.IntegerField(required=False)
-    current_price = serializers.SerializerMethodField()
+    # participant_count = serializers.SerializerMethodField
+    # current_price = serializers.SerializerMethodField
 
     class Meta:
         model = Article
@@ -30,9 +30,8 @@ class ArticleSerializer(serializers.ModelSerializer):
             'need_type',
             'people_min',
             'price_min',
-            'time_max',
-            'time_remaining',
-            'created_at',
+            'time_in',
+            'written_at',
             'updated_at',
             'deleted_at',
         )
@@ -49,6 +48,13 @@ class ArticleSerializer(serializers.ModelSerializer):
         data = NeedSerializer(article.need_type, context=self.context).data
 
         return data
+
+    # def get_participant_count(self, article):
+    #     article.
+
+    # def get_current_price(self, article):
+    #     data = article.order_chat.participant_profile.aggregate(Sum('price'))['price__sum']
+    #     return data
 
     def create(self, validated_data):
         return Article.objects.create(**validated_data)
