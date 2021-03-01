@@ -51,11 +51,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         return data
 
     # def get_participant_count(self, article):
-    #     article.
+    #     article
 
     def get_current_price(self, article):
-        data = article.order_chat.participant_profile.aggregate(Sum('price'))['price__sum']
-        return data
+        price_sum = article.order_chat.participant_profile.aggregate(Sum('price'))['price__sum']
+        return price_sum
 
     def create(self, validated_data):
         return Article.objects.create(**validated_data)
