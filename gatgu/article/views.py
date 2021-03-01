@@ -15,6 +15,7 @@ from article.serializers import ArticleSerializer
 class CursorSetPagination(CursorPagination):
     page_size = 5
     ordering = "-written_at"
+    page_size_query_param = "page_size"
 
 
 class ArticleViewSet(viewsets.GenericViewSet):
@@ -51,12 +52,11 @@ class ArticleViewSet(viewsets.GenericViewSet):
         assert page is not None
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
-        # return Response(self.get_serializer(articles).data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk):
         article = get_object_or_404(Article, pk=pk)
         if article.deleted_at:
-            return Response("message:this article is deleted", status=status.HTTP_404_NOT_FOUND)
+            return Response(" message : This article is deleted", status=status.HTTP_404_NOT_FOUND)
         return Response(self.get_serializer(article).data)
 
     def update(self, request, pk):
