@@ -9,7 +9,7 @@ class OrderChat(models.Model):
         through='ParticipantProfile',
         through_fields=('chat', 'participant'),
     )
-    article = models.ForeignKey(
+    article = models.OneToOneField(
         Article,
         on_delete=models.CASCADE,
         related_name = 'chat'
@@ -18,8 +18,6 @@ class OrderChat(models.Model):
     tracking_number = models.CharField(max_length=30)
 
     # following two attributes can be changed to price
-    required_people = models.IntegerField()
-    cur_people = models.IntegerField()
 
 class ChatMessage(models.Model):
     text = models.TextField(null=True)
