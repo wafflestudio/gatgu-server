@@ -19,7 +19,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     '''participant info'''
 
-    participants = serializers.SerializerMethodField()
+    # participants = serializers.SerializerMethodField()
 
     # participant_id = serializers.SerializerMethodField
     # participant_count = serializers.SerializerMethodField
@@ -44,7 +44,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'updated_at',
             'deleted_at',
 
-            'participants',
+            # 'participants',
             # 'participant_count',
 
             # 'current_price_sum',
@@ -71,6 +71,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     #     return data
 
     def create(self, validated_data):
+
         article = super(ArticleSerializer, self).create(validated_data)
         '''orderchat생성시 필요한 정보가 이게 끝인가'''
         OrderChat.objects.create(article=article)
@@ -86,18 +87,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
         participant_profile = article.order_chat
         data = ParticipantProfileSerializer(participant_profile, context=self.context).data
-
-
-    def get_participants(self, article):
-        # data = OrderChatSerializer(article.chat, context=self.context).data
-        # participant_profile = article.id.participant_profile.objects.all()
-
-        '''OrderChat 객체가 생성되기 전이라 article.order_chat을 찾을 수 없나?
-        article create 시 chat 생성하도록 위에 추가 시킨 후 OrderChat에 pay_status가 없다는 오류 발생'''
-
-        participant_profile = article.order_chat
-        data = ParticipantProfileSerializer(participant_profile, context=self.context).data
-
         return data
 
 
@@ -113,9 +102,9 @@ class OrderChatSerializer(serializers.ModelSerializer):
             'tracking_number',
         )
 
-    def get_participant_profile(self, orderchat):
-        participants_profile = orderchat.participant_profile.objects.all()
-        return ParticipantProfileSerializer(participants_profile, many=True).data
+    # def get_participant_profile(self, orderchat):
+    #     # participants_profile = orderchat.participant_profile.objects.all()
+    #     return ParticipantProfileSerializer(participants_profile, many=True).data
 
     # def get_current_price_sum(self, article):
     #     price_sum = article.chat.participant_profile.aggregate(Sum('price'))['price__sum']
