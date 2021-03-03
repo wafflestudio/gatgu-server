@@ -18,13 +18,14 @@ class ArticleSerializer(serializers.ModelSerializer):
     price_min = serializers.IntegerField(required=True)
 
     '''Chat info'''
-    order_chat = serializers.SerializerMethodField()
+    # current_participants = serializers.SerializerMethodField()
+    # current_fund = serializers.SerializerMethodField()
     order_status = serializers.IntegerField(write_only=True, required=False)
     tracking_number = serializers.IntegerField(write_only=True, required=False)
 
     '''participant info'''
 
-    # participants = serializers.SerializerMethodField()
+    participants_summary = serializers.SerializerMethodField()
     # joined_at = serializers.DateTimeField(read_only=True)
     # out_at = serializers.DateTimeField(read_only=True)
     # pay_status = serializers.BooleanField(read_only=True)
@@ -52,10 +53,12 @@ class ArticleSerializer(serializers.ModelSerializer):
             'written_at',
             'updated_at',
             'deleted_at',
-
-            'order_chat',
+            # 'current_fund',
+            #
+            # 'current_participants',
             'order_status',
             'tracking_number',
+            'participants_summary',
 
             # 'participant_count',
 
@@ -88,10 +91,11 @@ class ArticleSerializer(serializers.ModelSerializer):
 
         return article
 
-    def get_order_chat(self, article):
-        order_chat = article.order_chat
-        data = OrderChatSerializer(order_chat, context=self.context).data
-        return data
+    # def get_current_participants(self, article):
+    #     return article.order_chat.participant_profile.count()
+    #
+    # def get_current_fund(self,article):
+    #     return article.order_chat.participant_profile.aggregate(Sum('wish_price'))['wish_price__sum']
 
     def get_participants(self, article):
         # data = OrderChatSerializer(article.chat, context=self.context).data
@@ -100,14 +104,34 @@ class ArticleSerializer(serializers.ModelSerializer):
         data = ParticipantProfileSerializer(participant_profile, many=True, context=self.context).data
         return data
 
+    def get_participants_summary(self,article):
+        return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+
+
+class ParticipantsSummarySerializer(serializers.Serializer):
+    count=serializers.SerializerMethodField()
+    price=serializers.SerializerMethodField()
+    class Meta:
+        fields = (
+            'count',
+            'price'
+
+        )
+
+    def get_count(self,participants):
+        return participants.count()
+
+    def get_price(self,participants):
+        return participants.aggregate(Sum('wish_price'))['wish_price__sum']
+
 
 class OrderChatSerializer(serializers.ModelSerializer):
     participant_profile = serializers.SerializerMethodField
-    # participants_count = serializers.SerializerMethodField
-    joined_at = serializers.DateTimeField(read_only=True)
-    out_at = serializers.DateTimeField(read_only=True)
-    pay_status = serializers.BooleanField(read_only=True)
-    wish_price = serializers.IntegerField(read_only=True)
+
+    # joined_at = serializers.DateTimeField(read_only=True)
+    # out_at = serializers.DateTimeField(read_only=True)
+    # pay_status = serializers.BooleanField(read_only=True)
+    # wish_price = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = OrderChat
@@ -117,11 +141,10 @@ class OrderChatSerializer(serializers.ModelSerializer):
             'tracking_number',
 
             'participant_profile',
-            # 'participant_count',
-            'joined_at',
-            'out_at',
-            'pay_status',
-            'wish_price',
+            # 'joined_at',
+            # 'out_at',
+            # 'pay_status',
+            # 'wish_price',
 
         )
 
@@ -130,27 +153,28 @@ class OrderChatSerializer(serializers.ModelSerializer):
         data = ParticipantProfileSerializer(participants_profile, many=True, context=self.context).data
         return data
 
-    # def get_participant_count(self, orderchat):
-    #     participant_count = orderchat.participant_profile.objects.all().count()
-    #     return participant_count
-
-
-
-
-
-
-
     # def get_current_price_sum(self, article):
     #     price_sum = article.chat.participant_profile.aggregate(Sum('price'))['price__sum']
     #     return price_sum
 
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):
+    participant_count = serializers.SerializerMethodField()
+
     class Meta:
         model = ParticipantProfile
         fields = (
-            '__all__'
+            'id',
+            'joined_at',
+            'out_at',
+            'pay_status',
+            'wish_price',
+            'participant_count',
         )
+
+    def get_participant_count(self, orderchat):
+        participant_count = orderchat.participant_profile.objects.all().count()
+        return participant_count
 
 
 class NeedSerializer(serializers.ModelSerializer):
