@@ -3,18 +3,16 @@ from django.contrib.auth.models import User
 from article.models import Article
 
 
-# Create your models here.
-
 class OrderChat(models.Model):
     participants = models.ManyToManyField(
         User,
         through='ParticipantProfile',
-        through_fields=('chat', 'participant'),
+        through_fields=('order', 'participant'),
     )
     article = models.OneToOneField(
         Article,
         on_delete=models.CASCADE,
-        related_name='chat'
+        related_name='order_chat'
     )
     order_status = models.CharField(max_length=30)
     tracking_number = models.CharField(max_length=30)
@@ -41,15 +39,22 @@ class ChatMessage(models.Model):
 
 
 class ParticipantProfile(models.Model):
-    chat = models.ForeignKey(
+    order = models.ForeignKey(
         OrderChat,
         on_delete=models.CASCADE,
+        related_name='participant_profile',
     )
     participant = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='participant_profile',
     )
     joined_at = models.DateTimeField(auto_now=True)
     out_at = models.DateTimeField(null=True)
     pay_status = models.CharField(max_length=30)
     wish_price = models.IntegerField(null=True)
+
+    class Meta:
+        unique_together = (
+            ('order', 'participant')
+        )

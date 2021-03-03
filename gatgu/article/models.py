@@ -3,6 +3,7 @@ from django.db import models
 
 
 class Article(models.Model):
+
     writer = models.ForeignKey(User, related_name='article', on_delete=models.CASCADE)
     title = models.CharField(max_length=50, db_index=True)
     description = models.TextField()
