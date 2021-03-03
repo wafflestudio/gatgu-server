@@ -23,7 +23,7 @@ class Article(models.Model):
     '''
     tag_used_count = models.PositiveIntegerField(default=0)
 
-    written_at = models.DateTimeField(auto_now_add=True,null=False,db_index=True)
+    written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)
 

@@ -12,11 +12,11 @@ class ArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
     deleted_at = serializers.DateTimeField(read_only=True)
     need_type = serializers.ChoiceField(Article.NEED_TYPE)
-    people_min = serializers.IntegerField(required=False)
-    price_min = serializers.IntegerField(required=False)
 
-    participant_count = serializers.SerializerMethodField
-    current_price = serializers.SerializerMethodField
+    people_min = serializers.IntegerField(required=True)
+    price_min = serializers.IntegerField(required=True)
+    # participant_count = serializers.SerializerMethodField
+    # current_price = serializers.SerializerMethodField
 
     class Meta:
         model = Article
