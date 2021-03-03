@@ -31,7 +31,11 @@ class ArticleViewSet(viewsets.GenericViewSet):
     def create(self, request):
 
         user = request.user
-        serializer = self.get_serializer(data=request.data)
+        data = request.data
+
+        # if data.get('price)min')
+
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(writer=user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
