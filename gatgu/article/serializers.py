@@ -20,6 +20,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     '''participant info'''
 
     participants = serializers.SerializerMethodField()
+
     # participant_id = serializers.SerializerMethodField
     # participant_count = serializers.SerializerMethodField
 
@@ -86,10 +87,6 @@ class ArticleSerializer(serializers.ModelSerializer):
         participant_profile = article.order_chat
         data = ParticipantProfileSerializer(participant_profile, context=self.context).data
 
-    # def get_need_type(self, article):
-    #     data = NeedSerializer(article.need_type, context=self.context).data
-    #
-    #     return data
 
     def get_participants(self, article):
         # data = OrderChatSerializer(article.chat, context=self.context).data
@@ -131,13 +128,6 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
         fields = (
             '__all__'
         )
-
-
-# def create(self, validated_data):
-#     validated_data.pop('participant_count', '')
-#     validated_data.pop('current_price_sum', '')
-#
-#     return Article.objects.create(**validated_data)
 
 
 class NeedSerializer(serializers.ModelSerializer):
