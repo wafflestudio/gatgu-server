@@ -4,11 +4,6 @@ from article.models import Article
 
 
 class OrderChat(models.Model):
-    participants = models.ManyToManyField(
-        User,
-        through='ParticipantProfile',
-        through_fields=('order', 'participant'),
-    )
     article = models.OneToOneField(
         Article,
         on_delete=models.CASCADE,
