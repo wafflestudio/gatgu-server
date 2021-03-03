@@ -69,6 +69,28 @@ class ArticleSerializer(serializers.ModelSerializer):
     #
     #     return data
 
+    def create(self, validated_data):
+        article = super(ArticleSerializer, self).create(validated_data)
+        '''orderchat생성시 필요한 정보가 이게 끝인가'''
+        OrderChat.objects.create(article=article)
+
+        return article
+
+    def get_participants(self, article):
+        # data = OrderChatSerializer(article.chat, context=self.context).data
+        # participant_profile = article.id.participant_profile.objects.all()
+
+        '''OrderChat 객체가 생성되기 전이라 article.order_chat을 찾을 수 없나?
+        article create 시 chat 생성하도록 위에 추가 시킨 후 OrderChat에 pay_status가 없다는 오류 발생'''
+
+        participant_profile = article.order_chat
+        data = ParticipantProfileSerializer(participant_profile, context=self.context).data
+
+    # def get_need_type(self, article):
+    #     data = NeedSerializer(article.need_type, context=self.context).data
+    #
+    #     return data
+
     def get_participants(self, article):
         # data = OrderChatSerializer(article.chat, context=self.context).data
         # participant_profile = article.id.participant_profile.objects.all()
