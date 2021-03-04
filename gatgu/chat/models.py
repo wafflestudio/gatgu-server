@@ -7,12 +7,12 @@ class OrderChat(models.Model):
     participants = models.ManyToManyField(
         User,
         through='ParticipantProfile',
-        through_fields=('chat', 'participant'),
+        through_fields=('order_chat', 'participant'),
     )
     article = models.OneToOneField(
         Article,
         on_delete=models.CASCADE,
-        related_name = 'chat'
+        related_name = 'order_chat'
     )
     order_status = models.CharField(max_length=30)
     tracking_number = models.CharField(max_length=30)
@@ -36,13 +36,15 @@ class ChatMessage(models.Model):
     type = models.CharField(max_length=30)
 
 class ParticipantProfile(models.Model):
-    chat = models.ForeignKey(
+    order_chat = models.ForeignKey(
         OrderChat, 
         on_delete=models.CASCADE,
+        related_name = 'participant_profile'
     )
     participant = models.ForeignKey(
         User, 
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name = 'participant_profile'
     )
     joined_at = models.DateTimeField(auto_now=True)
     out_at = models.DateTimeField(null=True)
