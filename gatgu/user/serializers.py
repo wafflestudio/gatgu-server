@@ -29,6 +29,8 @@ class UserSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
+    participated_count = serializers.SerializerMethodField()
+    hosted_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -45,7 +47,19 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'nickname',
             'picture',
+
+            'participated_count',
+            'hosted_count',
+
         )
+
+    def get_participated_count(self, user):
+        part_cnt = user.participant_profile.count()
+        return part_cnt
+
+    def get_hosted_count(self, user):
+        hst_cnt = user.article.count()
+        return hst_cnt
 
     def get_userprofile(self, user):
         try:
@@ -121,7 +135,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
-    is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
 

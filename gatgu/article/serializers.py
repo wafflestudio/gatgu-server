@@ -20,12 +20,13 @@ class ArticleSerializer(serializers.ModelSerializer):
     '''Chat info'''
     # current_participants = serializers.SerializerMethodField()
     # current_fund = serializers.SerializerMethodField()
-    order_status = serializers.IntegerField(write_only=True, required=False)
-    tracking_number = serializers.IntegerField(write_only=True, required=False)
+    # order_status = serializers.IntegerField(write_only=True, required=False)
+    # tracking_number = serializers.IntegerField(write_only=True, required=False)
 
     '''participant info'''
 
-    participants_summary = serializers.SerializerMethodField()
+    # participants_summary = serializers.SerializerMethodField()
+
     # joined_at = serializers.DateTimeField(read_only=True)
     # out_at = serializers.DateTimeField(read_only=True)
     # pay_status = serializers.BooleanField(read_only=True)
@@ -53,12 +54,14 @@ class ArticleSerializer(serializers.ModelSerializer):
             'written_at',
             'updated_at',
             'deleted_at',
+
             # 'current_fund',
             #
             # 'current_participants',
-            'order_status',
-            'tracking_number',
-            'participants_summary',
+            # 'order_status',
+            # 'tracking_number',
+
+            # 'participants_summary',
 
             # 'participant_count',
 
@@ -67,7 +70,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         article = super(ArticleSerializer, self).create(validated_data)
-        '''orderchat생성시 필요한 정보가 이게 끝인가'''
         OrderChat.objects.create(article=article)
 
         return article
@@ -97,20 +99,21 @@ class ArticleSerializer(serializers.ModelSerializer):
     # def get_current_fund(self,article):
     #     return article.order_chat.participant_profile.aggregate(Sum('wish_price'))['wish_price__sum']
 
-    def get_participants(self, article):
-        # data = OrderChatSerializer(article.chat, context=self.context).data
-        # participant_profile = article.order_chat.participant_profile
-        participant_profile = article.order_chat.participant_profile
-        data = ParticipantProfileSerializer(participant_profile, many=True, context=self.context).data
-        return data
+    # def get_participants(self, article):
+    #     # data = OrderChatSerializer(article.chat, context=self.context).data
+    #     # participant_profile = article.order_chat.participant_profile
+    #     participant_profile = article.order_chat.participant_profile
+    #     data = ParticipantProfileSerializer(participant_profile, many=True, context=self.context).data
+    #     return data
 
-    def get_participants_summary(self,article):
+    def get_participants_summary(self, article):
         return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
 
 
 class ParticipantsSummarySerializer(serializers.Serializer):
-    count=serializers.SerializerMethodField()
-    price=serializers.SerializerMethodField()
+    count = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+
     class Meta:
         fields = (
             'count',
@@ -118,10 +121,10 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 
         )
 
-    def get_count(self,participants):
+    def get_count(self, participants):
         return participants.count()
 
-    def get_price(self,participants):
+    def get_price(self, participants):
         return participants.aggregate(Sum('wish_price'))['wish_price__sum']
 
 
