@@ -52,6 +52,12 @@ class UserSerializer(serializers.ModelSerializer):
             'hosted_count',
 
         )
+    # def get_participated_count(self, user):
+    #     part_cnt = user.participant_profile.count()
+    #     hst_cnt = user.article.count()
+    #
+    #     return {"participanted_count":part_cnt,"hosted_count": hst_cnt}
+
 
     def get_participated_count(self, user):
         part_cnt = user.participant_profile.count()

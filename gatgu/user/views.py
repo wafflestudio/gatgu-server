@@ -191,7 +191,7 @@ class UserViewSet(viewsets.GenericViewSet):
     def hosted_list(self, request, pk):
         user_tar = self.get_object()
         if user_tar.is_active:
-            hosted = Article.objects.all().filter(deleted_at=None, writer=user_tar)
+            hosted = Article.objects.filter(deleted_at=None, writer=user_tar).all()
             if hosted:
                 data = ArticleSerializer(hosted, many=True).data
                 return Response(data, status=status.HTTP_200_OK)

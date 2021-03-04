@@ -25,7 +25,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     '''participant info'''
 
-    # participants_summary = serializers.SerializerMethodField()
+    participants_summary = serializers.SerializerMethodField()
 
     # joined_at = serializers.DateTimeField(read_only=True)
     # out_at = serializers.DateTimeField(read_only=True)
@@ -61,7 +61,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             # 'order_status',
             # 'tracking_number',
 
-            # 'participants_summary',
+            'participants_summary',
 
             # 'participant_count',
 
@@ -108,7 +108,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     def get_participants_summary(self, article):
         return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
-
 
 class ParticipantsSummarySerializer(serializers.Serializer):
     count = serializers.SerializerMethodField()
