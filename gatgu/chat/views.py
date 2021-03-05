@@ -53,11 +53,11 @@ def chat(request, chat_id):
             'required_people': chat.article.people_min,
             #'cur_people': chat.article.cur_people,
             'participants_id': [id['id'] for id in chat.participants.all().values('id')],
-            'article_id': chat.article,
+            'article_id': chat.article_id,
             #'messages': msgs
         }
         print(chat_info)
-        return JsonResponse({'messages': msgs}, safe=False, status=200)
+        return JsonResponse({'messages': chat_info}, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -126,7 +126,7 @@ def messages(request, chat_id):
         for message in messages:
             #message = ChatMessage.objects.get(id=msg['messages'])
             user_profile = User.objects.get(id=message['sent_by_id']).userprofile
-            msgs.append({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture}, 'sent_at': message['sent_at']})
+            msgs.append({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture.url}, 'sent_at': message['sent_at']})
         # joined_at = ParticipantProfile.objects.get(order_id==chat_id, participant_id==user.id)
         # messages = messages.filter(joined_at<sent_at) if you need after joined messages
         
@@ -163,7 +163,7 @@ def message(request, message_id):
         message = ChatMessage.objects.filter(id=message_id).values()[0]
         print(message)
         user_profile = User.objects.get(id=message['sent_by_id']).userprofile
-        return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture}, 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
+        return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture.url}, 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -172,13 +172,18 @@ def participants(request, chat_id):
     if request.method == 'GET':
         if request.user.is_anonymous:
             return HttpResponse(status=401)
-        participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
+        participants = [participant for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id', 'joined_at', 'pay_status', 'wish_price')]
+        '''res = []
+        for participant_id in participants:
+            person = ParticipantProfile.objects.get(order_chat_id=)'''
+        #participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
         print(participants)     
         return JsonResponse(participants, safe=False, status=200)
     else:
         return HttpResponseNotAllowed(['GET'])
 
 # /chat/<int:chat_id>/set_status/
+@csrf_exempt
 def set_status(request, chat_id):
     if request.method == 'PUT':
         if request.user.is_anonymous:
@@ -195,7 +200,7 @@ def set_status(request, chat_id):
     else:
         return HttpResponseNotAllowed(['GET', 'PUT'])
 
-    
+@csrf_exempt 
 def set_buy_amount(request, chat_id):
     if request.method == 'PUT':
         if request.user.is_anonymous:
@@ -217,9 +222,10 @@ def set_buy_amount(request, chat_id):
     else:
         return HttpResponseNotAllowed(['PUT'])
 
-
+@csrf_exempt
 def paid(request, chat_id):
     if request.method == 'PUT':
+        print(request.user.id)
         if request.user.is_anonymous:
             return HttpResponse(status=401)
         
@@ -229,6 +235,8 @@ def paid(request, chat_id):
             return HttpResponse(status=404)
 
         if not request.user.id == chat.article.writer_id:
+            print(request.user.id)
+            print(chat.article.writer_id)
             return HttpResponse(status=403)
 
         body = json.loads(request.body.decode())
