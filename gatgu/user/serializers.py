@@ -146,11 +146,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = [
+        fields = (
             'id',
             'nickname',
             'picture',
-            'is_snu',
             'updated_at',
             'withdrew_at',
             'picture',

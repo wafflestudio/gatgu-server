@@ -1,8 +1,12 @@
+from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -12,7 +16,8 @@ from rest_framework.response import Response
 from article.models import Article
 from article.serializers import ArticleSerializer
 from user.serializers import UserSerializer, UserProfileSerializer
-from .models import User, UserProfile
+from .models import User, UserProfile, EmailProfile
+from .makecode import generate_code
 import requests
 
 
@@ -22,9 +27,26 @@ class UserViewSet(viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated(),)
 
     def get_permissions(self):
-        if self.action in ('create', 'login'):
+        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate'):
             return (AllowAny(),)
         return self.permission_classes
+
+    def get_message(self, code):
+
+        message = "인증번호입니다.\n\n인증번호 : " + code
+
+        return message
+
+    def send_mail(self, email_address, code):
+
+        message = self.get_message(code)
+
+        mail_subject = "[gatgu] 회원가입 인증 메일입니다."
+        user_email = email_address
+        email = EmailMessage(mail_subject, message, to=[user_email])
+        email.send()
+
+        return
 
     # POST /user/ 회원가입
     @transaction.atomic
@@ -40,6 +62,17 @@ class UserViewSet(viewsets.GenericViewSet):
             response_data = {
                 "error": "username, password, email are required."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        if not EmailProfile.objects.filter(
+                email=email,
+                is_pending=True).exists():
+            response_data = {
+                "error": "uncertificated email. please certificate email"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        email_profile = EmailProfile.objects.filter(
+            email=email,
+            is_pending=True).first()
 
         nickname = data.get('nickname')
 
@@ -67,10 +100,14 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "A user with that username already exists."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
+        email_profile.is_pending = False
+        email_profile.save()
+
         login(request, user)
 
         data = serializer.data
         data['token'] = user.auth_token.key
+
         return Response(data, status=status.HTTP_201_CREATED)
 
     # PUT /user/login/  로그인
@@ -96,6 +133,64 @@ class UserViewSet(viewsets.GenericViewSet):
     def logout(self, request):
         logout(request)
         return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
+    def confirm(self, request):
+
+        email = request.data.get("email")
+
+        if EmailProfile.objects.filter(email=email, is_pending=True).exists():
+            response_data = {"This email is already pending now."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        ncache = caches["number_of_confirm"]
+
+        confirm_number = ncache.get(email)
+
+        if confirm_number is None:
+            confirm_number = 0
+
+        if confirm_number >= 10:
+            response_data = {"Too many confirming access!"}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        code = generate_code()
+
+        cache = caches["email"]
+
+        cache.set(email, code, timeout=300)
+
+        ncache.set(email, confirm_number+1, timeout=1200)
+
+        self.send_mail(email, code)
+
+        return Response({"message": "Successfully send confirming email"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['PUT'], url_path='activate', url_name='activate')
+    def activate(self, request):
+
+        email = request.data.get("email")
+        code = request.data.get("code")
+
+        cache = caches["email"]
+        ncache = caches["number_of_confirm"]
+
+        email_code = cache.get(email)
+
+        if email_code is None:
+            response_data = {"Time is over or no such email."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        if email_code != code:
+            response_data = {"Code is doesn't matching."}
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        EmailProfile.objects.create(email=email)
+        cache.set(email, code, timeout=0)  # erase from cache
+        ncache.set(email, 0, timeout=0)
+
+        response_data = {"Successfully activated."}
+        return Response(response_data, status=status.HTTP_200_OK)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
