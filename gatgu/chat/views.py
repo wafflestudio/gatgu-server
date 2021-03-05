@@ -262,4 +262,3 @@ def paid(request, chat_id):
 
     else:
         return HttpResponseNotAllowed(['PUT'])
-

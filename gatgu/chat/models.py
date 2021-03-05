@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-from article.models import Articled_name = 'order_chat'
+from article.models import Article
+
 
 
 class OrderChat(models.Model):
@@ -40,12 +41,12 @@ class ChatMessage(models.Model):
     chat = models.ForeignKey(
         OrderChat,
         on_delete=models.CASCADE,
+
         related_name = 'messages'
 
     )
     media = models.URLField(null=True)
     type = models.CharField(max_length=30)
-
 
 
 class ParticipantProfile(models.Model):

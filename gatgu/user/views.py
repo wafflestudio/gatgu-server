@@ -284,7 +284,14 @@ class UserViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=['GET'], url_path='activity')
     def hosted_list(self, request, pk):
-        user_tar = self.get_object().id
-        hosted = Article.objects.all().filter(deleted_at=None, writer_id=user_tar)
-        data = ArticleSerializer(hosted, many=True).data
-        return Response(data, status=status.HTTP_200_OK)
+        user_tar = self.get_object()
+        if user_tar.is_active:
+            hosted = Article.objects.filter(deleted_at=None, writer=user_tar).all()
+            if hosted:
+                data = ArticleSerializer(hosted, many=True).data
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                return Response(' message : article not found ', status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response('message : user deactivated ', status=status.HTTP_404_NOT_FOUND)
+
