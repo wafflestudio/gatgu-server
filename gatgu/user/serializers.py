@@ -103,7 +103,7 @@ class UserSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         nickname = validated_data.pop('nickname', '')
-        picture = validated_data.pop('picture', 'default.jpg')
+        picture = validated_data.pop('picture', None)
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -153,4 +153,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'updated_at',
             'withdrew_at',
             'picture',
-        ]
+
