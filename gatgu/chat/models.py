@@ -33,13 +33,13 @@ class ChatMessage(models.Model):
     sent_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='messages'
+        related_name = 'messages'
     )
     sent_at = models.DateTimeField(auto_now=True)
     chat = models.ForeignKey(
         OrderChat,
         on_delete=models.CASCADE,
-        related_name='messages'
+        related_name = 'messages'
     )
     media = models.URLField(null=True)
     type = models.CharField(max_length=30)
