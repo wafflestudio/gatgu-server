@@ -12,6 +12,9 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from article.models import Article
+from article.serializers import ArticleSerializer
 from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile, EmailProfile
 from .makecode import generate_code
@@ -257,7 +260,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         for key in ['nickname', 'picture', 'password']:
             if key in data:
-                cnt = cnt+1
+                cnt = cnt + 1
 
         if cnt != len(data):
             response_data = {"error": "Request has invalid key"}
