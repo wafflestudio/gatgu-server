@@ -12,4 +12,5 @@ urlpatterns = [
     path('<int:chat_id>/set_status/', views.set_status, name='set_status'),
     path('<int:chat_id>/set_buy_amount/', views.set_buy_amount, name='set_buy_amount'),
     path('<int:chat_id>/paid/', views.paid, name='paid')
+
 ]

@@ -1,5 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
@@ -120,17 +121,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
-    is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
 
     class Meta:
         model = UserProfile
-        fields = [
+        fields = (
             'id',
             'nickname',
             'picture',
-            'is_snu',
             'updated_at',
             'withdrew_at',
             'picture',

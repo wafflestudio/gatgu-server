@@ -19,6 +19,7 @@ def chats(request):
         #print(chat_in)
         for chat_id in chat_in:
             chat = list(OrderChat.objects.filter(id=chat_id['order_chat']).values('id', 'messages'))
+
             if len(chat)>0:
                 message_id = chat[-1]['messages']
             else:
@@ -58,6 +59,7 @@ def chat(request, chat_id):
         }
         print(chat_info)
         return JsonResponse({'messages': chat_info}, safe=False, status=200)
+
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -79,6 +81,7 @@ def join(request, chat_id):
             print(new_participant)
             new_participant.save()
             #chat.cur_people += 1
+
             chat.save()
             return HttpResponse(status=200)
         else:
@@ -94,6 +97,7 @@ def out(request, chat_id):
         try:
             print(ParticipantProfile.objects.all())
             participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+
         except Exception as e:
             return HttpResponse(status=404)
         if request.user.is_anonymous:
@@ -107,6 +111,7 @@ def out(request, chat_id):
             profile.save()
             #chat = OrderChat.objects.get(id=chat_id)
             #chat.save()
+
             return HttpResponse(status=200)
     else:
         return HttpResponseNotAllowed(['PUT'])
@@ -132,10 +137,12 @@ def messages(request, chat_id):
         
         return JsonResponse(msgs, safe=False, status=200)
 
+
     elif request.method == 'POST':
         body = json.loads(request.body.decode())
         msg_text = body["text"]
         msg_img = body["media"]
+
         if request.user.is_anonymous:
             return HttpResponse(status=401)
         #sent_at = datetime.datetime.now()
@@ -147,6 +154,7 @@ def messages(request, chat_id):
 
         if request.user.id not in participants:
             return HttpResponse(status=403)
+
         new_message = ChatMessage(text=msg_text, media=msg_img, sent_by=request.user, chat=chat)
         new_message.save()
 
@@ -164,6 +172,7 @@ def message(request, message_id):
         print(message)
         user_profile = User.objects.get(id=message['sent_by_id']).userprofile
         return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture.url}, 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
+
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -177,6 +186,7 @@ def participants(request, chat_id):
         for participant_id in participants:
             person = ParticipantProfile.objects.get(order_chat_id=)'''
         #participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
+
         print(participants)     
         return JsonResponse(participants, safe=False, status=200)
     else:
@@ -184,6 +194,7 @@ def participants(request, chat_id):
 
 # /chat/<int:chat_id>/set_status/
 @csrf_exempt
+
 def set_status(request, chat_id):
     if request.method == 'PUT':
         if request.user.is_anonymous:
@@ -251,3 +262,4 @@ def paid(request, chat_id):
 
     else:
         return HttpResponseNotAllowed(['PUT'])
+
