@@ -36,6 +36,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     # current_price_sum = serializers.SerializerMethodField
 
+
     class Meta:
         model = Article
         fields = (
@@ -83,6 +84,13 @@ class ArticleSerializer(serializers.ModelSerializer):
     # def get_need_type(self, article):
     #     data = NeedSerializer(article.need_type, context=self.context).data
     #
+    #     return data
+
+    # def get_participant_count(self, article):
+    #     article.
+
+    # def get_current_price(self, article):
+    #     data = article.order_chat.participant_profile.aggregate(Sum('price'))['price__sum']
     #     return data
 
     def create(self, validated_data):
