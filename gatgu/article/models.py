@@ -11,6 +11,7 @@ class Article(models.Model):
     image = models.ImageField(null=True)
     product_url = models.URLField()
     thumbnail_url = models.URLField()
+    image = models.URLField(null=True)
     people_min = models.PositiveSmallIntegerField()
     price_min = models.PositiveIntegerField()
     time_in = models.DurationField(null=True)
