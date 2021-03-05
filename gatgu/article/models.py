@@ -3,6 +3,7 @@ from django.db import models
 
 
 class Article(models.Model):
+
     writer = models.ForeignKey(User, related_name='article', on_delete=models.CASCADE)
     title = models.CharField(max_length=50, db_index=True)
     description = models.TextField()
@@ -10,6 +11,7 @@ class Article(models.Model):
     image = models.ImageField(null=True)
     product_url = models.URLField()
     thumbnail_url = models.URLField()
+    image = models.URLField(null=True)
     people_min = models.PositiveSmallIntegerField()
     price_min = models.PositiveIntegerField()
     time_in = models.DurationField(null=True)
