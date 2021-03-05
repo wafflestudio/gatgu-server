@@ -21,6 +21,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     participants_summary = serializers.SerializerMethodField()
 
+
     class Meta:
         model = Article
         fields = (
@@ -42,6 +43,14 @@ class ArticleSerializer(serializers.ModelSerializer):
             'tracking_number',
             'participants_summary',
         )
+
+    def create(self, validated_data):
+        article = super(ArticleSerializer, self).create(validated_data)
+        '''orderchat생성시 필요한 정보가 이게 끝인가'''
+        OrderChat.objects.create(article=article)
+
+        return article
+
 
     def create(self, validated_data):
         article = super(ArticleSerializer, self).create(validated_data)
@@ -74,11 +83,6 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 class OrderChatSerializer(serializers.ModelSerializer):
     participant_profile = serializers.SerializerMethodField
 
-    # joined_at = serializers.DateTimeField(read_only=True)
-    # out_at = serializers.DateTimeField(read_only=True)
-    # pay_status = serializers.BooleanField(read_only=True)
-    # wish_price = serializers.IntegerField(read_only=True)
-
     class Meta:
         model = OrderChat
         fields = (
@@ -87,10 +91,6 @@ class OrderChatSerializer(serializers.ModelSerializer):
             'tracking_number',
 
             'participant_profile',
-            # 'joined_at',
-            # 'out_at',
-            # 'pay_status',
-            # 'wish_price',
 
         )
 
