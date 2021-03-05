@@ -21,7 +21,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     participants_summary = serializers.SerializerMethodField()
 
-
     class Meta:
         model = Article
         fields = (
