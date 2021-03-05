@@ -8,6 +8,7 @@ class OrderChat(models.Model):
         Article,
         on_delete=models.CASCADE,
         related_name='order_chat'
+
     )
 
     ORDER_STATUS = (
@@ -28,18 +29,21 @@ class OrderChat(models.Model):
     # cur_people = models.IntegerField()
 
 
+
 class ChatMessage(models.Model):
     text = models.TextField(null=True)
     sent_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='messages'
+
+        related_name = 'messages'
     )
     sent_at = models.DateTimeField(auto_now=True)
     chat = models.ForeignKey(
         OrderChat,
         on_delete=models.CASCADE,
-        related_name='messages'
+
+        related_name = 'messages'
     )
     media = models.URLField(null=True)
     type = models.CharField(max_length=30)
@@ -59,9 +63,11 @@ class ParticipantProfile(models.Model):
     joined_at = models.DateTimeField(auto_now=True)
     out_at = models.DateTimeField(null=True)
     pay_status = models.BooleanField(default=False)
+
     wish_price = models.IntegerField(null=True)
 
     class Meta:
         unique_together = (
             ('order', 'participant')
+
         )
