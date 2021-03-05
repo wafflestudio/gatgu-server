@@ -14,6 +14,7 @@ def chats(request):
         if user.is_anonymous: 
             return HttpResponse(status=401)
         # find which chats this user participated
+
         chat_in = [chat for chat in ParticipantProfile.objects.filter(participant=user).values('order_chat')]
         chats = []
         #print(chat_in)
@@ -50,6 +51,7 @@ def chat(request, chat_id):
         chat_info = {
             'order_status': chat.order_status,
             'tracking_number': chat.tracking_number,
+
             'required_people': chat.article.people_min,
             #'cur_people': chat.article.cur_people,
             'participants_id': [id['id'] for id in chat.participants.all().values('id')],
@@ -65,6 +67,7 @@ def chat(request, chat_id):
 @csrf_exempt
 def join(request, chat_id):
     if request.method == 'PUT': # already in => success
+
         #participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
         participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
         if request.user.is_anonymous:
@@ -92,6 +95,7 @@ def join(request, chat_id):
 def out(request, chat_id):
     if request.method == 'PUT':
         try:
+
             print(ParticipantProfile.objects.all())
             participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
         except Exception as e:
@@ -102,6 +106,7 @@ def out(request, chat_id):
         if user_id not in participants: # not in room
             return HttpResponse(status=403)
         else: # room member is going out
+
             profile = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=user_id, out_at=None)
             profile.out_at=datetime.datetime.now()
             profile.save()
@@ -115,6 +120,7 @@ def out(request, chat_id):
 @csrf_exempt
 def messages(request, chat_id):
     if request.method == 'GET':
+
         if request.user.is_anonymous:
             return HttpResponse(status=401)
         try:
@@ -135,6 +141,7 @@ def messages(request, chat_id):
     elif request.method == 'POST':
         body = json.loads(request.body.decode())
         msg_text = body["text"]
+
         msg_img = body["media"]
         if request.user.is_anonymous:
             return HttpResponse(status=401)
@@ -143,6 +150,7 @@ def messages(request, chat_id):
             chat = OrderChat.objects.get(id=chat_id)
         except Exception as e:
             return HttpResponse(status=404)
+
         participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
 
         if request.user.id not in participants:
@@ -162,6 +170,7 @@ def message(request, message_id):
             return HttpResponse(status=401)
         message = ChatMessage.objects.filter(id=message_id).values()[0]
         print(message)
+
         user_profile = User.objects.get(id=message['sent_by_id']).userprofile
         return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture.url}, 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
     else:
@@ -172,6 +181,7 @@ def participants(request, chat_id):
     if request.method == 'GET':
         if request.user.is_anonymous:
             return HttpResponse(status=401)
+
         participants = [participant for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id', 'joined_at', 'pay_status', 'wish_price')]
         '''res = []
         for participant_id in participants:
@@ -183,6 +193,7 @@ def participants(request, chat_id):
         return HttpResponseNotAllowed(['GET'])
 
 # /chat/<int:chat_id>/set_status/
+
 @csrf_exempt
 def set_status(request, chat_id):
     if request.method == 'PUT':
@@ -198,6 +209,7 @@ def set_status(request, chat_id):
         return JsonResponse(response, safe=False, status=200)
     
     else:
+
         return HttpResponseNotAllowed(['GET', 'PUT'])
 
 @csrf_exempt 
