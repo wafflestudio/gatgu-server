@@ -50,7 +50,7 @@ class ChatMessage(models.Model):
 
 
 class ParticipantProfile(models.Model):
-    order = models.ForeignKey(
+    order_chat = models.ForeignKey(
         OrderChat,
         on_delete=models.CASCADE,
         related_name='participant_profile',
@@ -65,8 +65,7 @@ class ParticipantProfile(models.Model):
     pay_status = models.BooleanField(default=False)
     wish_price = models.IntegerField(null=True)
 
-    class Meta:
+    '''class Meta:
         unique_together = (
-
-            ('order', 'participant')
-        )
+            ('order_chat', 'participant')
+        )'''
