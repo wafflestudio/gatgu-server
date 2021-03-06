@@ -201,14 +201,14 @@ class UserViewSet(viewsets.GenericViewSet):
             try:
                 user = User.objects.get(pk=pk)
             except User.DoesNotExist:
-                response_data = {"message": "해당하는 사용자가 없습니다."}
+                response_data = {"message": "해당하는 회원이 없습니다."}
                 return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
         if not request.user.is_superuser:
 
             if not user.is_active or user.is_superuser:
                 response_data = {
-                    "message": "다른 유저의 정보를 볼 수 없습니다."}
+                    "message": "다른 회원의 정보를 볼 수 없습니다."}
                 return Response(response_data, status=status.HTTP_403_FORBIDDEN)
             else:
                 pass
@@ -239,7 +239,7 @@ class UserViewSet(viewsets.GenericViewSet):
             user.is_active = False
             user.save()
         else:
-            response_data = {"error": "이미 탈퇴한 유저입니다."}
+            response_data = {"error": "이미 탈퇴한 회원입니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "성공적으로 탈퇴 하였습니다."}, status=status.HTTP_200_OK)
@@ -249,7 +249,7 @@ class UserViewSet(viewsets.GenericViewSet):
     def update(self, request, pk=None):
 
         if pk != 'me':
-            response_data = {"error": "다른 사용자의 정보를 수정할 수 없습니다."}
+            response_data = {"error": "다른 회원의 정보를 수정할 수 없습니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         user = request.user
@@ -292,6 +292,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 data = ArticleSerializer(hosted, many=True).data
                 return Response(data, status=status.HTTP_200_OK)
             else:
-                return Response(' message : article not found ', status=status.HTTP_404_NOT_FOUND)
+                return Response(' message : 해당 글이 없습니다. ', status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response('message : user deactivated ', status=status.HTTP_404_NOT_FOUND)
+            return Response('message : 탈퇴한 회원입니다. ', status=status.HTTP_404_NOT_FOUND)
