@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils.safestring import mark_safe
 from . import models
 
+
 @admin.register(models.UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = (
@@ -16,6 +17,13 @@ class UserProfileAdmin(admin.ModelAdmin):
         'user_id',
         'picture',
     )
+
+    list_filter = (
+        'user_id',
+        'updated_at',
+        'withdrew_at',
+    )
+
 
     def username(self, userprofile):
         return mark_safe('{}'.format(userprofile.user.username))
