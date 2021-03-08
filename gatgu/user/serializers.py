@@ -1,5 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
@@ -28,6 +29,8 @@ class UserSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
+    participated_count = serializers.SerializerMethodField()
+    hosted_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -44,7 +47,25 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'nickname',
             'picture',
+
+            'participated_count',
+            'hosted_count',
+
         )
+    # def get_participated_count(self, user):
+    #     part_cnt = user.participant_profile.count()
+    #     hst_cnt = user.article.count()
+    #
+    #     return {"participanted_count":part_cnt,"hosted_count": hst_cnt}
+
+
+    def get_participated_count(self, user):
+        part_cnt = user.participant_profile.count()
+        return part_cnt
+
+    def get_hosted_count(self, user):
+        hst_cnt = user.article.count()
+        return hst_cnt
 
     def get_userprofile(self, user):
         try:
@@ -82,7 +103,7 @@ class UserSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         nickname = validated_data.pop('nickname', '')
-        picture = validated_data.pop('picture', 'default.jpg')
+        picture = validated_data.pop('picture', None)
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -120,18 +141,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
-    is_snu = serializers.BooleanField(read_only=True, default=False)
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
 
     class Meta:
         model = UserProfile
-        fields = [
+        fields = (
             'id',
             'nickname',
             'picture',
-            'is_snu',
             'updated_at',
             'withdrew_at',
             'picture',
-        ]
+        )
+
