@@ -110,7 +110,8 @@ WSGI_APPLICATION = 'gatgu.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'HOST': 'localhost',
+        'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
+        'PORT': 3306,
         'NAME': 'gatgu_db',
         'USER': 'team-gatgu',
         'PASSWORD': 'gatgu',
@@ -182,4 +183,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')

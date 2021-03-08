@@ -14,18 +14,27 @@ def chats(request):
         if user.is_anonymous: 
             return HttpResponse(status=401)
         # find which chats this user participated
-        chat_in = [chat for chat in ParticipantProfile.objects.filter(participant=user).values('order_chat')]
+        chat_in = [chat['order_chat'] for chat in ParticipantProfile.objects.filter(participant=user, out_at=None).values('order_chat')]
         chats = []
         #print(chat_in)
         for chat_id in chat_in:
-            chat = list(OrderChat.objects.filter(id=chat_id['order_chat']).values('id', 'messages'))
+            chat = list(OrderChat.objects.filter(id=chat_id).values('id', 'messages'))
 
-            if len(chat)>0:
-                message_id = chat[-1]['messages']
-            else:
+            #if len(chat)>0:
+            print(chat)
+            
+            message_id = chat[-1]['messages']
+            
+            print(message_id)
+            #else:
+            #    continue
+            try:
+                message = ChatMessage.objects.get(id=message_id)
+            except:
+                chats.append({'chat_id': chat_id, 'recent_message': None, 'sent_by_id': None, 'sent_at': None})
                 continue
-            message = ChatMessage.objects.get(id=message_id)
-            #recent message
+                #recent message
+            print(chat_id)
             msg = {'chat_id': chat_id, 'recent_message':{'text': message.text, 'media': message.media}, 'sent_by_id': message.sent_by.id, 'sent_at': message.sent_at}
             chats.append(msg)
         print(chats)
@@ -52,13 +61,14 @@ def chat(request, chat_id):
             'order_status': chat.order_status,
             'tracking_number': chat.tracking_number,
             'required_people': chat.article.people_min,
+            'required_price': chat.article.price_min,
             #'cur_people': chat.article.cur_people,
-            'participants_id': [id['id'] for id in chat.participants.all().values('id')],
+            #'participants_id': [id['id'] for id in chat..all().values('id')],
             'article_id': chat.article_id,
             #'messages': msgs
         }
         print(chat_info)
-        return JsonResponse({'messages': chat_info}, safe=False, status=200)
+        return JsonResponse(chat_info, safe=False, status=200)
 
     else:
         return HttpResponseNotAllowed(['GET'])
@@ -69,6 +79,7 @@ def join(request, chat_id):
     if request.method == 'PUT': # already in => success
         #participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
         participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+        print(request.user)
         if request.user.is_anonymous:
             return HttpResponse(status=401)
         user_id = request.user.id
@@ -77,7 +88,7 @@ def join(request, chat_id):
             return HttpResponse(status=200)
         elif chat.order_status==1: # can go in => success =========> order_status에 따른 것으로 변경
             # participant 추가
-            new_participant = ParticipantProfile(order_chat=chat, participant=request.user)
+            new_participant = ParticipantProfile(order_chat_id=chat.id, participant=request.user, out_at=None)
             print(new_participant)
             new_participant.save()
             #chat.cur_people += 1
@@ -177,6 +188,7 @@ def message(request, message_id):
         return HttpResponseNotAllowed(['GET'])
 
 # /chat/<int:chat_id>/participants/
+@csrf_exempt
 def participants(request, chat_id):
     if request.method == 'GET':
         if request.user.is_anonymous:
@@ -260,5 +272,28 @@ def paid(request, chat_id):
         participant.save()
         return HttpResponse(status=200)
 
+    else:
+        return HttpResponseNotAllowed(['PUT'])
+
+@csrf_exempt
+def set_tracking(request, chat_id):
+    if request.method == 'PUT':
+        if request.user.is_anonymous:
+            return HttpResponse(status=401)
+        
+        try:
+            chat = OrderChat.objects.get(id=chat_id)
+        except Exception as e:
+            return HttpResponse(status=404)
+        
+        if not request.user.id == chat.article.writer_id:
+            print(request.user.id)
+            print(chat.article.writer_id)
+            return HttpResponse(status=403)
+        body = json.loads(request.body.decode())
+        chat['tracking_number'] = body['tracking_number']
+        chat.save()
+        return HttpResponse(status=200)
+    
     else:
         return HttpResponseNotAllowed(['PUT'])
