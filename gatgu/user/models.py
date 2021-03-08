@@ -10,9 +10,3 @@ class UserProfile(models.Model):
         max_length=20, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     withdrew_at = models.DateTimeField(null=True)
-
-
-class EmailProfile(models.Model):
-
-    email = models.EmailField()
-    is_pending = models.BooleanField(default=True)
