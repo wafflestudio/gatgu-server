@@ -25,10 +25,6 @@ class OrderChat(models.Model):
 
     tracking_number = models.CharField(max_length=30, null=True)
 
-    '''participants.count로 대체'''
-    # cur_people = models.IntegerField()
-
-
 class ChatMessage(models.Model):
     text = models.TextField(null=True)
     sent_by = models.ForeignKey(
