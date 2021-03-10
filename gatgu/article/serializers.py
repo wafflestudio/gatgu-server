@@ -21,7 +21,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     participants_summary = serializers.SerializerMethodField()
 
-
     class Meta:
         model = Article
         fields = (
@@ -46,16 +45,8 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         article = super(ArticleSerializer, self).create(validated_data)
-        '''orderchat생성시 필요한 정보가 이게 끝인가'''
         OrderChat.objects.create(article=article)
-        ParticipantProfile.objects.create(participant=article.writer, order_chat=article.order_chat)
-        return article
-
-
-    def create(self, validated_data):
-        article = super(ArticleSerializer, self).create(validated_data)
-        OrderChat.objects.create(article=article)
-        ParticipantProfile.objects.create(participant=article.writer, order_chat=article.order_chat)
+        # ParticipantProfile.objects.create(order_chat=article.order_chat)
         return article
 
     def get_participants_summary(self, article):
@@ -117,15 +108,15 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
     def get_participant_count(self, orderchat):
         participant_count = orderchat.participant_profile.objects.all().count()
         return participant_count
-
-
-class NeedSerializer(serializers.ModelSerializer):
-    people_min = serializers.IntegerField()
-    price_min = serializers.IntegerField()
-
-    class Meta:
-        model = Article
-        fields = (
-            'people_min',
-            'price_min',
-        )
+#
+#
+# class NeedSerializer(serializers.ModelSerializer):
+#     people_min = serializers.IntegerField()
+#     price_min = serializers.IntegerField()
+#
+#     class Meta:
+#         model = Article
+#         fields = (
+#             'people_min',
+#             'price_min',
+#         )

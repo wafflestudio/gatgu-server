@@ -5,7 +5,7 @@ from rest_framework import viewsets, status, pagination
 from rest_framework.decorators import action
 from rest_framework.pagination import CursorPagination, PageNumberPagination
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from article.models import Article
@@ -25,6 +25,8 @@ class ArticleViewSet(viewsets.GenericViewSet):
     pagination_class = CursorSetPagination
 
     def get_permissions(self):
+        if self.action in ('list',):
+            return (AllowAny(),)
         return self.permission_classes
 
     @transaction.atomic
@@ -33,14 +35,10 @@ class ArticleViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
 
-        # if data.get('price)min')
-
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(writer=user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    '''superuser인 경우 삭제된 글 열람 가능'''
 
     def list(self, request):
         title = self.request.query_params.get('title')
