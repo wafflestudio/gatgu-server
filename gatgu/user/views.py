@@ -135,7 +135,10 @@ class UserViewSet(viewsets.GenericViewSet):
 
         email = request.data.get("email")
 
-        if EmailProfile.objects.filter(email=email, is_pending=True).exists():
+        ecache = caches["activated_email"]
+        chk_email = ecache.get(email)
+
+        if chk_email is not None:
             response_data = {"error": "이미 인증이 된 이메일입니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -185,7 +188,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         cache.set(email, code, timeout=0)  # erase from cache
         ncache.set(email, 0, timeout=0)
-        ecache.set(email, 1, timeout=600)
+        ecache.set(email, 1, timeout=10800)
 
         response_data = {"message": "성공적으로 인증하였습니다."}
         return Response(response_data, status=status.HTTP_200_OK)
