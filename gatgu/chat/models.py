@@ -11,6 +11,12 @@ class OrderChat(models.Model):
         related_name='order_chat'
     )
 
+    participant = models.ManyToManyField(
+        User,
+        related_name = 'order_chat',
+        through = 'ParticipantProfile'
+    )
+
     ORDER_STATUS = (
         (1, 'WAITING_MEMBERS'),
         (2, 'MEMBER_ASSEMBLED'),
@@ -35,7 +41,6 @@ class ChatMessage(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name = 'messages'
-
     )
     sent_at = models.DateTimeField(auto_now=True)
     chat = models.ForeignKey(
@@ -50,7 +55,7 @@ class ChatMessage(models.Model):
 
 
 class ParticipantProfile(models.Model):
-    order = models.ForeignKey(
+    order_chat = models.ForeignKey(
         OrderChat,
         on_delete=models.CASCADE,
         related_name='participant_profile',
@@ -68,5 +73,5 @@ class ParticipantProfile(models.Model):
     class Meta:
         unique_together = (
 
-            ('order', 'participant')
+            ('order_chat', 'participant')
         )

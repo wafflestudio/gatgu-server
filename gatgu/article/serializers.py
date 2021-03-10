@@ -89,9 +89,7 @@ class OrderChatSerializer(serializers.ModelSerializer):
             'id',
             'order_status',
             'tracking_number',
-
             'participant_profile',
-
         )
 
     def get_participant_profile(self, orderchat):
