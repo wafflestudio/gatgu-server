@@ -15,9 +15,9 @@ from rest_framework.response import Response
 
 from article.models import Article
 from article.serializers import ArticleSerializer
-from chat.models import ParticipantProfile
-from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer
-from .models import User, UserProfile, EmailProfile
+
+from user.serializers import UserSerializer, UserProfileSerializer
+from .models import User, UserProfile
 from .makecode import generate_code
 import requests
 
@@ -72,16 +72,13 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "아이디, 비밀번호, 이메일은 필수 항목입니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if not EmailProfile.objects.filter(
-                email=email,
-                is_pending=True).exists():
+        ecache = caches["activated_email"]
+        chk_email = ecache.get(email)
+
+        if chk_email is None:
             response_data = {
                 "error": "인증되지 않은 이메일입니다. 인증을 해주세요."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        email_profile = EmailProfile.objects.filter(
-            email=email,
-            is_pending=True).first()
 
         nickname = data.get('nickname')
 
@@ -109,10 +106,9 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "해당 아이디는 사용할 수 없습니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        email_profile.is_pending = False
-        email_profile.save()
-
         login(request, user)
+
+        ecache.set(email, 0, timeout=0)
 
         data = serializer.data
         data['token'] = user.auth_token.key
@@ -148,7 +144,10 @@ class UserViewSet(viewsets.GenericViewSet):
 
         email = request.data.get("email")
 
-        if EmailProfile.objects.filter(email=email, is_pending=True).exists():
+        ecache = caches["activated_email"]
+        chk_email = ecache.get(email)
+
+        if chk_email is not None:
             response_data = {"error": "이미 인증이 된 이메일입니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -194,9 +193,11 @@ class UserViewSet(viewsets.GenericViewSet):
             response_data = {"error": "코드가 맞지 않습니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        EmailProfile.objects.create(email=email)
+        ecache = caches["activated_email"]
+
         cache.set(email, code, timeout=0)  # erase from cache
         ncache.set(email, 0, timeout=0)
+        ecache.set(email, 1, timeout=10800)
 
         response_data = {"message": "성공적으로 인증하였습니다."}
         return Response(response_data, status=status.HTTP_200_OK)
@@ -217,7 +218,8 @@ class UserViewSet(viewsets.GenericViewSet):
 
             # show participated articles list undeleted
             elif qp == 'participated':
-                articles = Article.objects.filter(order_chat__participant_profile__participant_id=request.user.id, deleted_at=None) \
+                articles = Article.objects.filter(order_chat__participant_profile__participant_id=request.user.id,
+                                                  deleted_at=None) \
                     if pk == 'me' else \
                     Article.objects.filter(order_chat__participant_profile__participant_id=pk, deleted_at=None)
 
