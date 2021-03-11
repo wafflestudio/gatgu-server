@@ -52,12 +52,12 @@ class UserSerializer(serializers.ModelSerializer):
             'hosted_count',
 
         )
+
     # def get_participated_count(self, user):
     #     part_cnt = user.participant_profile.count()
     #     hst_cnt = user.article.count()
     #
     #     return {"participanted_count":part_cnt,"hosted_count": hst_cnt}
-
 
     def get_participated_count(self, user):
         part_cnt = user.participant_profile.count()
@@ -155,3 +155,26 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'picture',
         )
 
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    nickname = serializers.CharField(allow_blank=False, max_length=20)
+    picture = serializers.ImageField(allow_null=True, use_url=True, required=False)
+    participated_count = serializers.SerializerMethodField()
+    hosted_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'nickname',
+            'picture',
+            'participated_count',
+            'hosted_count',
+        )
+
+    def get_participated_count(self, user):
+        part_cnt = user.participant_profile.count()
+        return part_cnt
+
+    def get_hosted_count(self, user):
+        hst_cnt = user.article.count()
+        return hst_cnt
