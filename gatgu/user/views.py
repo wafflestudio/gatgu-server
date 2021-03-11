@@ -208,14 +208,19 @@ class UserViewSet(viewsets.GenericViewSet):
         if qp:
             # show hosted articles list undeleted
             if qp == 'hosted':
-                articles = Article.objects.filter(writer_id=pk, deleted_at=None)
+                articles = Article.objects.filter(writer_id=request.user.id, deleted_at=None) \
+                    if pk == 'me' else \
+                    Article.objects.filter(writer_id=pk, deleted_at=None)
+
                 # pagination to be added
                 return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
 
             # show participated articles list undeleted
             elif qp == 'participated':
-                # articles = ParticipantProfile.order_chat.objects.filter(participant_profile__participant_id=pk)
-                articles = Article.objects.filter(writer__participant_profile__order_chat_id=pk, deleted_at=None)
+                articles = Article.objects.filter(order_chat__participant_profile__participant_id=request.user.id, deleted_at=None) \
+                    if pk == 'me' else \
+                    Article.objects.filter(order_chat__participant_profile__participant_id=pk, deleted_at=None)
+
                 # pagination to be added
                 return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
         else:
