@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from article.models import Article
 from chat.models import OrderChat, ChatMessage, ParticipantProfile
-from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer
+from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer, SimpleOrderChatSerializer
 
 class OrderChatViewSet(viewsets.GenericViewSet):
     queryset = OrderChat.objects.all()
@@ -41,13 +41,13 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         if user is None:
             return Response(status=status.HTTP_403_FORBIDDEN)
         queryset = User.objects.get(id=user.id).order_chat
-        serializer = OrderChatSerializer(queryset, many=True)
+        serializer = SimpleOrderChatSerializer(queryset, many=True)
         return Response(serializer.data)
 
     # get one chat
     def retrieve(self, request, pk=None): # get: /chat/{chat_id}/
         order_chat = get_object_or_404(OrderChat, pk=pk)
-        return Response(self.get_serializer(order_chat).data)
+        return Response(OrderChatSerializer(order_chat).data)
     
     # join a chat
     @action(detail=True, methods=['PUT'])
@@ -89,7 +89,9 @@ class OrderChatViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=['GET'])
     def participants(self, request, pk=None):
-        return Response(status=status.HTTP_200_OK)
+        chat = get_object_or_404(OrderChat, pk=pk)
+        participants = chat.participant_profile
+        return Response(ParticipantProfileSerializer(participants, many=True).data, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['PUT'])
     def set_status(self, request, pk=None):
@@ -132,6 +134,21 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             participant.pay_status = True
             participant.save()
             return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    
+    @action(detail=True, methods=['PUT'])
+    def set_tracking_number(self, request, pk=None):
+        user = request.user
+        data = request.data
+        new_tracking_number = data['tracking_number']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        if chat.article.writer_id == user.id:
+            chat.tracking_number = new_tracking_number
+            chat.save()
+            return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
 class ChatMessageViewSet(viewsets.GenericViewSet):
     queryset = ChatMessage.objects.all()
