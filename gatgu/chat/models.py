@@ -66,12 +66,11 @@ class ParticipantProfile(models.Model):
         related_name='participant_profile',
     )
     joined_at = models.DateTimeField(auto_now=True)
-    out_at = models.DateTimeField(null=True)
+    #out_at = models.DateTimeField(null=True)
     pay_status = models.BooleanField(default=False)
     wish_price = models.IntegerField(null=True)
 
     class Meta:
         unique_together = (
-
             ('order_chat', 'participant')
         )

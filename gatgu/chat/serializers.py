@@ -56,3 +56,4 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             'sent_by_id',
             'sent_at'
         )
+    

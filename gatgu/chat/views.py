@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django.contrib.auth.models import User
+from article.models import Article
 from chat.models import OrderChat, ChatMessage, ParticipantProfile
 from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer
 
@@ -30,6 +31,11 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         serializer.save()'''
     
     # list of chat user is in
+
+    def chat_list(self, user_id):
+        participants = [str(participant['order_chat_id']) for participant in ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
+        return participants
+
     def list(self, request): # get: /chat/
         user = request.user
         if user is None:
@@ -46,32 +52,86 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     # join a chat
     @action(detail=True, methods=['PUT'])
     def join(self, request, pk=None):
-        print(request.user.participant_profile)
-        return Response(status=status.HTTP_200_OK)
+        user_id = request.user.id
+        article = get_object_or_404(Article, pk=pk)
+        if article.writer_id == user_id:
+            return Response(status=status.HTTP_200_OK)
+        elif pk in self.chat_list(user_id):
+            return Response(status=status.HTTP_200_OK)
+        else:
+            participant = ParticipantProfile(order_chat_id=pk, participant_id=user_id)
+            participant.save()
+            return Response(status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['PUT'])
     def out(self, request, pk=None):
-        return Response(status=status.HTTP_200_OK)
+        user_id = request.user.id
+        if pk in self.chat_list(user_id):
+            participant = ParticipantProfile.objects.get(order_chat_id=pk, participant_id=user_id)
+            participant.delete()
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
     
-    @action(detail=True, methods=['GET', 'POST'])
+    @action(detail=True, methods=['GET', 'POST'], serializer_class=ChatMessageSerializer)
     def messages(self, request, pk=None):
-        return Response(status=status.HTTP_200_OK)
-    
+        if request.method == 'GET':
+            chat = get_object_or_404(OrderChat, pk=pk)
+            messages = chat.messages
+            return Response(ChatMessageSerializer(messages, many=True).data, status=status.HTTP_200_OK)
+        elif request.method == 'POST':
+            data = request.data
+            user = request.user
+            serializer = ChatMessageSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(sent_by=user, chat_id=pk)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     @action(detail=True, methods=['GET'])
     def participants(self, request, pk=None):
         return Response(status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['PUT'])
     def set_status(self, request, pk=None):
+        user = request.user
+        data = request.data
+        new_status = data['order_status']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        print(chat.article.writer_id)
+        print(user.id)
+        if chat.article.writer_id == user.id:
+            chat.order_status = new_status
+            chat.save()
+            return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    
+    @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
+    def set_wish_price(self, request, pk=None):
+        user = request.user
+        data = request.data
+        new_price = data['wish_price']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        #if chat.article.writer_id == user.id:
+            
+        if pk in self.chat_list(user.id):
+            participant = get_object_or_404(ParticipantProfile, participant_id=user.id, order_chat_id=pk)
+            participant.wish_price = new_price
+            participant.save()
+            return Response(ParticipantProfileSerializer(participant).data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['PUT'])
-    def set_buy_amount(self, request, pk=None):
-        return Response(status=status.HTTP_200_OK)
-    
-    @action(detail=True, methods=['PUT'])
-    def pain(self, request, pk=None):
-        return Response(status=status.HTTP_200_OK)
+    @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
+    def paid(self, request, pk=None):
+        user = request.user
+        data = request.data
+        target_user_id = data['user_id']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        if chat.article.writer_id == user.id and pk in self.chat_list(target_user_id):
+            participant = ParticipantProfile.objects.get(order_chat_id=pk, participant_id=target_user_id)
+            participant.pay_status = True
+            participant.save()
+            return Response(status=status.HTTP_200_OK)
 
 class ChatMessageViewSet(viewsets.GenericViewSet):
     queryset = ChatMessage.objects.all()
