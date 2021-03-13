@@ -11,7 +11,7 @@ class OrderChat(models.Model):
         related_name='order_chat'
     )
 
-    participant = models.ManyToManyField(
+    participants = models.ManyToManyField(
         User,
         related_name = 'order_chat',
         through = 'ParticipantProfile'
