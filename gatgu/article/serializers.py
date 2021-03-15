@@ -12,7 +12,7 @@ from article.models import Article
 class ArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
     deleted_at = serializers.DateTimeField(read_only=True)
-    need_type = serializers.ChoiceField(Article.NEED_TYPE)
+    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
     people_min = serializers.IntegerField(required=True)
     price_min = serializers.IntegerField(required=True)
 
