@@ -33,7 +33,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'need_type',
             'people_min',
             'price_min',
-            'time_in',
+            # 'time_in',
             'written_at',
             'updated_at',
             'deleted_at',
@@ -94,7 +94,6 @@ class OrderChatSerializer(serializers.ModelSerializer):
 
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ParticipantProfile
         fields = (
@@ -104,7 +103,16 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
             'wish_price',
         )
 
+
 class SimpleArticleSerializer(serializers.ModelSerializer):
+    article_id = serializers.ReadOnlyField(source='id')
+    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
+    people_min = serializers.IntegerField(required=True)
+    price_min = serializers.IntegerField(required=True)
+
+    participants_summary = serializers.SerializerMethodField()
+    order_status = serializers.SerializerMethodField()
+
     class Meta:
         model = Article
         fields = (
@@ -116,13 +124,16 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'need_type',
             'people_min',
             'price_min',
-            'time_in',
             'written_at',
             'updated_at',
-            'deleted_at',
-
-            'order_chat',
 
             'participants_summary',
+            'order_status',
+
         )
 
+    def get_participants_summary(self, article):
+        return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+
+    def get_order_status(self, article):
+        return article.order_chat.order_status

@@ -250,7 +250,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
     def list(self, request):
-        nickname = self.request.query_params.get('nickname')
 
         if request.user.is_superuser:
             users = self.get_queryset()
@@ -260,7 +259,6 @@ class UserViewSet(viewsets.GenericViewSet):
         page = self.paginate_queryset(users)
         assert page is not None
         serializer = self.get_serializer(page, many=True)
-        # return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
         return self.get_paginated_response(serializer.data)
 
     # 회원탈퇴
