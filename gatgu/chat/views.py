@@ -14,7 +14,7 @@ def chats(request):
         if user.is_anonymous: 
             return HttpResponse(status=401)
         # find which chats this user participated
-        chat_in = [chat['order_chat'] for chat in ParticipantProfile.objects.filter(participant=user, out_at=None).values('order_chat')]
+        chat_in = [chat['order_chat'] for chat in ParticipantProfile.objects.filter(participant=user ).values('order_chat')]
         chats = []
         #print(chat_in)
         for chat_id in chat_in:
@@ -78,7 +78,7 @@ def chat(request, chat_id):
 def join(request, chat_id):
     if request.method == 'PUT': # already in => success
         #participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
-        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id).values('participant_id')]
         print(request.user)
         if request.user.is_anonymous:
             return HttpResponse(status=401)
@@ -88,7 +88,7 @@ def join(request, chat_id):
             return HttpResponse(status=200)
         elif chat.order_status==1: # can go in => success =========> order_status에 따른 것으로 변경
             # participant 추가
-            new_participant = ParticipantProfile(order_chat_id=chat.id, participant=request.user, out_at=None)
+            new_participant = ParticipantProfile(order_chat_id=chat.id, participant=request.user )
             print(new_participant)
             new_participant.save()
             #chat.cur_people += 1
@@ -107,7 +107,7 @@ def out(request, chat_id):
     if request.method == 'PUT':
         try:
             print(ParticipantProfile.objects.all())
-            participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+            participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id).values('participant_id')]
 
         except Exception as e:
             return HttpResponse(status=404)
@@ -117,9 +117,8 @@ def out(request, chat_id):
         if user_id not in participants: # not in room
             return HttpResponse(status=403)
         else: # room member is going out
-            profile = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=user_id, out_at=None)
-            profile.out_at=datetime.datetime.now()
-            profile.save()
+            profile = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=user_id)
+            profile.delete()
             #chat = OrderChat.objects.get(id=chat_id)
             #chat.save()
 
@@ -161,7 +160,7 @@ def messages(request, chat_id):
             chat = OrderChat.objects.get(id=chat_id)
         except Exception as e:
             return HttpResponse(status=404)
-        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id,  ).values('participant_id')]
 
         if request.user.id not in participants:
             return HttpResponse(status=403)
@@ -193,7 +192,7 @@ def participants(request, chat_id):
     if request.method == 'GET':
         if request.user.is_anonymous:
             return HttpResponse(status=401)
-        participants = [participant for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id', 'joined_at', 'pay_status', 'wish_price')]
+        participants = [participant for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id,  ).values('participant_id', 'joined_at', 'pay_status', 'wish_price')]
         '''res = []
         for participant_id in participants:
             person = ParticipantProfile.objects.get(order_chat_id=)'''
@@ -229,13 +228,13 @@ def set_buy_amount(request, chat_id):
         if request.user.is_anonymous:
             return HttpResponse(status=401)
 
-        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id,  ).values('participant_id')]
         if not request.user.id in participants:
             return HttpResponse(status=403)
         
         body = json.loads(request.body.decode())
         new_amount = body['amount']
-        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=request.user.id, out_at=None)
+        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=request.user.id)
         participant.wish_price = new_amount
         participant.save()
 
@@ -263,11 +262,11 @@ def paid(request, chat_id):
             return HttpResponse(status=403)
 
         body = json.loads(request.body.decode())
-        participants = participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+        participants = participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id,  ).values('participant_id')]
         if not body['user_id'] in participants:
             return HttpResponse(status=403)
         
-        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=body['user_id'], out_at=None)
+        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=body['user_id'] )
         participant.pay_status = True
         participant.save()
         return HttpResponse(status=200)
