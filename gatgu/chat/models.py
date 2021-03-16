@@ -31,10 +31,6 @@ class OrderChat(models.Model):
 
     tracking_number = models.CharField(max_length=30, null=True)
 
-    '''participants.count로 대체'''
-    # cur_people = models.IntegerField()
-
-
 class ChatMessage(models.Model):
     text = models.TextField(null=True)
     sent_by = models.ForeignKey(
@@ -66,7 +62,6 @@ class ParticipantProfile(models.Model):
         related_name='participant_profile',
     )
     joined_at = models.DateTimeField(auto_now=True)
-    #out_at = models.DateTimeField(null=True)
     pay_status = models.BooleanField(default=False)
     wish_price = models.IntegerField(null=True)
 
