@@ -17,7 +17,6 @@ class ArticleSerializer(serializers.ModelSerializer):
     price_min = serializers.IntegerField(required=True)
 
     order_chat = serializers.SerializerMethodField()
-    order_status = serializers.IntegerField(write_only=True, required=False)
 
     participants_summary = serializers.SerializerMethodField()
 
@@ -40,7 +39,6 @@ class ArticleSerializer(serializers.ModelSerializer):
             'deleted_at',
 
             'order_chat',
-            'order_status',
 
             'participants_summary',
         )
@@ -105,15 +103,3 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
             'pay_status',
             'wish_price',
         )
-
-#
-# class NeedSerializer(serializers.ModelSerializer):
-#     people_min = serializers.IntegerField()
-#     price_min = serializers.IntegerField()
-#
-#     class Meta:
-#         model = Article
-#         fields = (
-#             'people_min',
-#             'price_min',
-#         )
