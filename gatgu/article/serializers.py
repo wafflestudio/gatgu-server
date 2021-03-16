@@ -103,3 +103,26 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
             'pay_status',
             'wish_price',
         )
+
+class SimpleArticleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Article
+        fields = (
+            'writer_id',
+            'article_id',
+            'title',
+            'location',
+            'thumbnail',
+            'need_type',
+            'people_min',
+            'price_min',
+            'time_in',
+            'written_at',
+            'updated_at',
+            'deleted_at',
+
+            'order_chat',
+
+            'participants_summary',
+        )
+

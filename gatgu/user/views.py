@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
+from rest_framework.pagination import CursorPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -22,10 +23,17 @@ from .makecode import generate_code
 import requests
 
 
+class CursorSetPagination(CursorPagination):
+    page_size = 5
+    ordering = "-date_joined"
+    page_size_query_param = "page_size"
+
+
 class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
+    pagination_class = CursorSetPagination
 
     def get_permissions(self):
         if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate'):
@@ -242,14 +250,18 @@ class UserViewSet(viewsets.GenericViewSet):
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
     def list(self, request):
+        nickname = self.request.query_params.get('nickname')
 
         if request.user.is_superuser:
             users = self.get_queryset()
-            serializer = self.get_serializer()
         else:
-            users = User.objects.filter(is_active=True, is_superuser=False)
+            users = self.get_queryset().filter(is_active=True, is_superuser=False)
 
-        return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
+        page = self.paginate_queryset(users)
+        assert page is not None
+        serializer = self.get_serializer(page, many=True)
+        # return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
+        return self.get_paginated_response(serializer.data)
 
     # 회원탈퇴
     @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
