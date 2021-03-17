@@ -1,7 +1,16 @@
-from django.urls import path
-from chat import views
+from django.urls import path, include
+from rest_framework.routers import SimpleRouter
+from chat.views import OrderChatViewSet, ChatMessageViewSet
+
+router = SimpleRouter()
+router.register('chat', OrderChatViewSet, basename='chat')
+router.register('message', ChatMessageViewSet, basename='message')
 
 urlpatterns = [
+    path('', include((router.urls)))
+]
+
+'''urlpatterns = [
     path('', views.chats, name='chats'),
     path('<int:chat_id>/', views.chat, name='chat'),
     path('<int:chat_id>/join/', views.join, name='join'),
@@ -14,4 +23,4 @@ urlpatterns = [
     path('<int:chat_id>/set_buy_amount/', views.set_buy_amount, name='set_buy_amount'),
     path('<int:chat_id>/paid/', views.paid, name='paid')
 
-]
+]'''
