@@ -15,6 +15,7 @@ from rest_framework.response import Response
 
 from article.models import Article
 from article.serializers import ArticleSerializer
+
 from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
@@ -30,6 +31,14 @@ class UserViewSet(viewsets.GenericViewSet):
         if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate'):
             return (AllowAny(),)
         return self.permission_classes
+
+    # def get_serializer_class(self):
+    #     if self.action == 'list':
+    #         return SimpleUserSerializer
+    #     if self.request.user.is_superuser:
+    #         return UserSerializer
+    #     else:
+    #         return SimpleUserSerializer
 
     def get_message(self, code):
 
@@ -159,7 +168,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         cache.set(email, code, timeout=300)
 
-        ncache.set(email, confirm_number+1, timeout=1200)
+        ncache.set(email, confirm_number + 1, timeout=1200)
 
         self.send_mail(email, code)
 
@@ -195,33 +204,48 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
+        qp = self.request.query_params.get('activity')
 
-        if pk == 'me':
-            user = request.user
+        if qp:
+            # show hosted articles list undeleted
+            if qp == 'hosted':
+                articles = Article.objects.filter(writer_id=request.user.id, deleted_at=None) \
+                    if pk == 'me' else \
+                    Article.objects.filter(writer_id=pk, deleted_at=None)
+
+                # pagination to be added
+                return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
+
+            # show participated articles list undeleted
+            elif qp == 'participated':
+                articles = Article.objects.filter(order_chat__participant_profile__participant_id=request.user.id,
+                                                  deleted_at=None) \
+                    if pk == 'me' else \
+                    Article.objects.filter(order_chat__participant_profile__participant_id=pk, deleted_at=None)
+
+                # pagination to be added
+                return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
         else:
-            try:
-                user = User.objects.get(pk=pk)
-            except User.DoesNotExist:
-                response_data = {"message": "해당하는 회원이 없습니다."}
-                return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
-        if not request.user.is_superuser:
-
-            if not user.is_active or user.is_superuser:
-                response_data = {
-                    "message": "다른 회원의 정보를 볼 수 없습니다."}
-                return Response(response_data, status=status.HTTP_403_FORBIDDEN)
+            if pk == 'me':
+                user = request.user
+                return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
             else:
-                pass
-        else:
-            pass
+                user = self.get_object()
+                if user:
+                    serializer = self.get_serializer(user)
+                    if not user.is_active:
+                        return Response({'message : 탈퇴한 회원입니다.'}, status=status.HTTP_404_NOT_FOUND)
+                else:
+                    return Response({'message: 해당하는 회원이 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
+                return Response(serializer.data, status=status.HTTP_200_OK)
 
     def list(self, request):
 
         if request.user.is_superuser:
-            users = User.objects.all()
+            users = self.get_queryset()
+            serializer = self.get_serializer()
         else:
             users = User.objects.filter(is_active=True, is_superuser=False)
 
@@ -282,17 +306,3 @@ class UserViewSet(viewsets.GenericViewSet):
         serializer.update(user, serializer.validated_data)
 
         return Response(serializer.data)
-
-    @action(detail=True, methods=['GET'], url_path='activity')
-    def hosted_list(self, request, pk):
-        user_tar = self.get_object()
-        if user_tar.is_active:
-            hosted = Article.objects.filter(
-                deleted_at=None, writer=user_tar).all()
-            if hosted:
-                data = ArticleSerializer(hosted, many=True).data
-                return Response(data, status=status.HTTP_200_OK)
-            else:
-                return Response(' message : 해당 글이 없습니다. ', status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response('message : 탈퇴한 회원입니다. ', status=status.HTTP_404_NOT_FOUND)

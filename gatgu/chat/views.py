@@ -13,6 +13,7 @@ from article.models import Article
 from chat.models import OrderChat, ChatMessage, ParticipantProfile
 from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer, SimpleOrderChatSerializer
 
+
 class OrderChatViewSet(viewsets.GenericViewSet):
     queryset = OrderChat.objects.all()
     serializer_class = OrderChatSerializer
@@ -149,6 +150,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
 
 class ChatMessageViewSet(viewsets.GenericViewSet):
     queryset = ChatMessage.objects.all()
