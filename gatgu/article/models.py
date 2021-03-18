@@ -8,7 +8,6 @@ class Article(models.Model):
     title = models.CharField(max_length=50, db_index=True)
     description = models.TextField()
     location = models.CharField(max_length=50)
-    product_url = models.URLField()
     thumbnail = models.URLField(null=True)
     image = models.URLField(null=True)
     product_url = models.URLField()
