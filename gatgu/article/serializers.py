@@ -4,6 +4,7 @@ from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist
 
 from chat.models import OrderChat, ParticipantProfile
+from chat.serializers import ParticipantProfileSerializer, OrderChatSerializer
 from user.serializers import *
 
 from article.models import Article
@@ -71,35 +72,3 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 
     def get_price(self, participants):
         return participants.aggregate(Sum('wish_price'))['wish_price__sum']
-
-
-class OrderChatSerializer(serializers.ModelSerializer):
-    participants_profile = serializers.SerializerMethodField()
-
-    class Meta:
-        model = OrderChat
-        fields = (
-            'id',
-            'order_status',
-            'tracking_number',
-
-            'participants_profile',
-
-        )
-
-    def get_participants_profile(self, orderchat):
-        participants_profile = orderchat.participant_profile
-        data = ParticipantProfileSerializer(participants_profile, many=True, context=self.context).data
-        return data
-
-
-class ParticipantProfileSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = ParticipantProfile
-        fields = (
-            'id',
-            'joined_at',
-            'pay_status',
-            'wish_price',
-        )
