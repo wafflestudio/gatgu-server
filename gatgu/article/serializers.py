@@ -1,10 +1,6 @@
 from django.db.models import Sum
-from rest_framework import serializers
-
-from django.core.exceptions import ObjectDoesNotExist
-
-from chat.models import OrderChat, ParticipantProfile
-from chat.serializers import ParticipantProfileSerializer, OrderChatSerializer
+from chat.models import OrderChat
+from chat.serializers import OrderChatSerializer
 from user.serializers import *
 
 from article.models import Article
@@ -13,7 +9,7 @@ from article.models import Article
 class ArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
     deleted_at = serializers.DateTimeField(read_only=True)
-    need_type = serializers.ChoiceField(Article.NEED_TYPE)
+    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
     people_min = serializers.IntegerField(required=True)
     price_min = serializers.IntegerField(required=True)
 
@@ -31,6 +27,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'location',
             'product_url',
             'thumbnail',
+            'image',
             'need_type',
             'people_min',
             'price_min',
@@ -72,3 +69,40 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 
     def get_price(self, participants):
         return participants.aggregate(Sum('wish_price'))['wish_price__sum']
+
+
+class SimpleArticleSerializer(serializers.ModelSerializer):
+    article_id = serializers.ReadOnlyField(source='id')
+    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
+    people_min = serializers.IntegerField(required=True)
+    price_min = serializers.IntegerField(required=True)
+
+    participants_summary = serializers.SerializerMethodField()
+    order_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = (
+            'writer_id',
+            'article_id',
+            'title',
+            'location',
+            'thumbnail',
+            'need_type',
+            'people_min',
+            'price_min',
+            'written_at',
+            'updated_at',
+
+            'participants_summary',
+            'order_status',
+
+        )
+
+    def get_participants_summary(self, article):
+        return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+
+    def get_order_status(self, article):
+        return article.order_chat.order_status
+
+

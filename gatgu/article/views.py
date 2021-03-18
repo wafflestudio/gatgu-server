@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from article.models import Article
-from article.serializers import ArticleSerializer
+from article.serializers import ArticleSerializer, SimpleArticleSerializer
 
 
 class CursorSetPagination(CursorPagination):
@@ -25,9 +25,14 @@ class ArticleViewSet(viewsets.GenericViewSet):
     pagination_class = CursorSetPagination
 
     def get_permissions(self):
-        if self.action in ('list',):
+        if self.action == 'list':
             return (AllowAny(),)
         return self.permission_classes
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SimpleArticleSerializer
+        return ArticleSerializer
 
     @transaction.atomic
     def create(self, request):
