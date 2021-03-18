@@ -18,6 +18,13 @@ from chat.models import OrderChat, ChatMessage, ParticipantProfile
 from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer, \
     SimpleOrderChatSerializer
 
+class OrderChatViewSet(viewsets.GenericViewSet):
+    queryset = OrderChat.objects.all()
+    serializer_class = OrderChatSerializer
+    permission_classes = (IsAuthenticated(),)
+    
+    def get_permissions(self):
+        return self.permission_classes
 
 # /chat/
 def chats(request):
@@ -151,130 +158,11 @@ def messages(request, chat_id):
         participants = [participant['participant_id'] for participant in
                         ParticipantProfile.objects.filter(order_chat_id=chat_id).values('participant_id')]
 
-        if request.user.id not in participants:
-            return HttpResponse(status=403)
 
-        new_message = ChatMessage(text=msg_text, media=msg_img, sent_by=request.user, chat=chat)
-        new_message.save()
-
-        response = {"message_id": new_message.id}
-        return JsonResponse(response, safe=False, status=200)
-
-    return HttpResponseNotAllowed(['GET', 'POST'])
-
-
-# /chat/message/<int:message_id>/
-def message(request, message_id):
-    if request.method == 'GET':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        message = ChatMessage.objects.filter(id=message_id).values()[0]
-        print(message)
-        user_profile = User.objects.get(id=message['sent_by_id']).userprofile
-        return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'],
-                             'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname,
-                                      'profile': user_profile.picture.url}, 'sent_at': message['sent_at'],
-                             'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
-
-    else:
-        return HttpResponseNotAllowed(['GET'])
-
-
-# /chat/<int:chat_id>/participants/
-@csrf_exempt
-def participants(request, chat_id):
-    if request.method == 'GET':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        participants = [participant for participant in
-                        ParticipantProfile.objects.filter(order_chat_id=chat_id).values('participant_id', 'joined_at',
-                                                                                        'pay_status', 'wish_price')]
-
-        '''res = []
-        for participant_id in participants:
-            person = ParticipantProfile.objects.get(order_chat_id=)'''
-        # participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
-
-        print(participants)
-        return JsonResponse(participants, safe=False, status=200)
-    else:
-        return HttpResponseNotAllowed(['GET'])
-
-
-# /chat/<int:chat_id>/set_status/
-@csrf_exempt
-def set_status(request, chat_id):
-    if request.method == 'PUT':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        body = json.loads(request.body.decode())
-        new_status = body["status"]
-        chat = OrderChat.objects.get(id=chat_id)
-        chat.order_status = new_status
-        chat.save()
-
-        response = body
-        return JsonResponse(response, safe=False, status=200)
-
-    else:
-        return HttpResponseNotAllowed(['GET', 'PUT'])
-
-
-@csrf_exempt
-def set_buy_amount(request, chat_id):
-    if request.method == 'PUT':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-
-        participants = [participant['participant_id'] for participant in
-                        ParticipantProfile.objects.filter(order_chat_id=chat_id).values('participant_id')]
-
-        if not request.user.id in participants:
-            return HttpResponse(status=403)
-
-        body = json.loads(request.body.decode())
-        new_amount = body['amount']
-        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=request.user.id)
-        participant.wish_price = new_amount
-        participant.save()
-
-        response = body
-        return JsonResponse(response, safe=False, status=200)
-
-    else:
-        return HttpResponseNotAllowed(['PUT'])
-
-
-@csrf_exempt
-def paid(request, chat_id):
-    if request.method == 'PUT':
-        print(request.user.id)
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-
-        try:
-            chat = OrderChat.objects.get(id=chat_id)
-        except Exception as e:
-            return HttpResponse(status=404)
-
-        if not request.user.id == chat.article.writer_id:
-            print(request.user.id)
-            print(chat.article.writer_id)
-            return HttpResponse(status=403)
-
-        body = json.loads(request.body.decode())
-        participants = participants = [participant['participant_id'] for participant in
-                                       ParticipantProfile.objects.filter(order_chat_id=chat_id).values(
-                                           'participant_id')]
-
-        if not body['user_id'] in participants:
-            return HttpResponse(status=403)
-
-        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=body['user_id'])
-
-        participant.pay_status = True
-        participant.save()
-        return HttpResponse(status=200)
+class ChatMessageViewSet(viewsets.GenericViewSet):
+    queryset = ChatMessage.objects.all()
+    serializer_class = ChatMessageSerializer
+    permission_classes = (IsAuthenticated(),)
 
     def get_permissions(self):
         return self.permission_classes

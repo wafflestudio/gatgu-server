@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist
 
 from chat.models import OrderChat, ParticipantProfile
-from chat.serializers import SimpleOrderChatSerializer
+from chat.serializers import ParticipantProfileSerializer, OrderChatSerializer
 from user.serializers import *
 
 from article.models import Article
