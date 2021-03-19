@@ -1,31 +1,25 @@
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
-from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
-from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.pagination import CursorPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from article.models import Article
 from article.serializers import ArticleSerializer
+from gatgu.paginations import CursorSetPagination
 
 from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
-import requests
 
-class CursorSetPagination(CursorPagination):
-    page_size = 5
-    ordering = "-date_joined"
-    page_size_query_param = "page_size"
+
+class Ordering(CursorSetPagination):
+    ordering = '-date_joined'
 
 
 class UserViewSet(viewsets.GenericViewSet):

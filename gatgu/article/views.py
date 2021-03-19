@@ -1,21 +1,16 @@
 from django.db import transaction
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import viewsets, status, pagination
-from rest_framework.decorators import action
-from rest_framework.pagination import CursorPagination, PageNumberPagination
-
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
+from gatgu.paginations import CursorSetPagination
 
 
-class CursorSetPagination(CursorPagination):
-    page_size = 5
-    ordering = "-written_at"
-    page_size_query_param = "page_size"
+class Ordering(CursorSetPagination):
+    ordering = '-written_by'
 
 
 class ArticleViewSet(viewsets.GenericViewSet):
