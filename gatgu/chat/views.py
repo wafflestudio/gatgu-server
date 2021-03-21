@@ -1,299 +1,186 @@
-from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from chat.models import OrderChat, ChatMessage, ParticipantProfile
+from django.db import transaction
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from rest_framework import viewsets, status, pagination
+from rest_framework.decorators import action
+from rest_framework.pagination import CursorPagination, PageNumberPagination
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
 from django.contrib.auth.models import User
-import json
-import datetime
-# Create your views here.
+from article.models import Article
+from chat.models import OrderChat, ChatMessage, ParticipantProfile
+from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer, \
+    SimpleOrderChatSerializer
+from gatgu.paginations import CursorSetPagination
 
-# /chat/
-def chats(request):
-    if request.method == 'GET': # needs : list of chatting overview(recent message, sender, send_at, article_title)
+
+class CursorSetPagination(CursorSetPagination):
+    ordering = '-sent_at'
+
+
+class OrderChatViewSet(viewsets.GenericViewSet):
+    queryset = OrderChat.objects.all()
+    serializer_class = OrderChatSerializer
+    permission_classes = (IsAuthenticated(),)
+
+    def get_permissions(self):
+        return self.permission_classes
+
+    '''@transaction.atomic
+    def create(self, request):
         user = request.user
-        if user.is_anonymous: 
-            return HttpResponse(status=401)
-        # find which chats this user participated
-        chat_in = [chat['order_chat'] for chat in ParticipantProfile.objects.filter(participant=user, out_at=None).values('order_chat')]
-        chats = []
-        #print(chat_in)
-        for chat_id in chat_in:
-            chat = list(OrderChat.objects.filter(id=chat_id).values('id', 'messages'))
+        data = request.data
 
-            #if len(chat)>0:
-            print(chat)
-            
-            message_id = chat[-1]['messages']
-            
-            print(message_id)
-            #else:
-            #    continue
-            try:
-                message = ChatMessage.objects.get(id=message_id)
-            except:
-                chats.append({'chat_id': chat_id, 'recent_message': None, 'sent_by_id': None, 'sent_at': None})
-                continue
-                #recent message
-            print(chat_id)
-            msg = {'chat_id': chat_id, 'recent_message':{'text': message.text, 'media': message.media}, 'sent_by_id': message.sent_by.id, 'sent_at': message.sent_at}
-            chats.append(msg)
-        print(chats)
-        return JsonResponse({'chats': chats}, safe=False, status=200)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()'''
 
-    else:
-        return HttpResponseNotAllowed(['GET'])
-        
-# /chat/<int:chat_id>/
-def chat(request, chat_id):
-    if request.method == 'GET': # needs: messages, participants
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        try:
-            chat = OrderChat.objects.get(id=chat_id)
-        except Exception as e:
-            return HttpResponse(status=404)
-        msgs = []
-        messages = list(chat.messages.all().values())
-        for message in messages:
-            #message = ChatMessage.objects.get(id=msg['messages'])
-            msgs.append({'id': message['id'], 'text': message['text'], 'media': message['media'], 'sent_by_id': message['sent_by_id'], 'sent_at': message['sent_at']})
-        chat_info = {
-            'order_status': chat.order_status,
-            'tracking_number': chat.tracking_number,
-            'required_people': chat.article.people_min,
-            'required_price': chat.article.price_min,
-            #'cur_people': chat.article.cur_people,
-            #'participants_id': [id['id'] for id in chat..all().values('id')],
-            'article_id': chat.article_id,
-            #'messages': msgs
-        }
-        print(chat_info)
-        return JsonResponse(chat_info, safe=False, status=200)
+    # list of chat user is in
 
-    else:
-        return HttpResponseNotAllowed(['GET'])
+    def chat_list(self, user_id):
+        participants = [str(participant['order_chat_id']) for participant in
+                        ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
+        return participants
 
-# /chat/<int:chat_id>/join/
-@csrf_exempt
-def join(request, chat_id):
-    if request.method == 'PUT': # already in => success
-        #participants = [part['participants'] for part in OrderChat.objects.filter(id=chat_id).values('participants')]
-        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
-        print(request.user)
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
+    def list(self, request):  # get: /chat/
+        user = request.user
+        if user is None:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        queryset = User.objects.get(id=user.id).order_chat
+        serializer = SimpleOrderChatSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    # get one chat
+    def retrieve(self, request, pk=None):  # get: /chat/{chat_id}/
+        order_chat = get_object_or_404(OrderChat, pk=pk)
+        return Response(OrderChatSerializer(order_chat).data)
+
+    # join a chat
+    @action(detail=True, methods=['PUT'])
+    def join(self, request, pk=None):
         user_id = request.user.id
-        chat = OrderChat.objects.get(id=chat_id)
-        if user_id in participants:
-            return HttpResponse(status=200)
-        elif chat.order_status==1: # can go in => success =========> order_status에 따른 것으로 변경
-            # participant 추가
-            new_participant = ParticipantProfile(order_chat_id=chat.id, participant=request.user, out_at=None)
-            print(new_participant)
-            new_participant.save()
-            #chat.cur_people += 1
-
-            chat.save()
-            return HttpResponse(status=200)
+        article = get_object_or_404(Article, pk=pk)
+        if article.writer_id == user_id:
+            return Response(status=status.HTTP_200_OK)
+        elif pk in self.chat_list(user_id):
+            return Response(status=status.HTTP_200_OK)
         else:
-             # full room => failure
-             return HttpResponse(status=403)
-    else:
-        return HttpResponseNotAllowed(['PUT'])
+            participant = ParticipantProfile(order_chat_id=pk, participant_id=user_id)
+            participant.save()
+            return Response(status=status.HTTP_201_CREATED)
 
-# /chat/out/<int:chat_id>/
-@csrf_exempt
-def out(request, chat_id):
-    if request.method == 'PUT':
-        try:
-            print(ParticipantProfile.objects.all())
-            participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
-
-        except Exception as e:
-            return HttpResponse(status=404)
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
+    @action(detail=True, methods=['PUT'])
+    def out(self, request, pk=None):
         user_id = request.user.id
-        if user_id not in participants: # not in room
-            return HttpResponse(status=403)
-        else: # room member is going out
-            profile = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=user_id, out_at=None)
-            profile.out_at=datetime.datetime.now()
-            profile.save()
-            #chat = OrderChat.objects.get(id=chat_id)
-            #chat.save()
+        if pk in self.chat_list(user_id):
+            participant = ParticipantProfile.objects.get(order_chat_id=pk, participant_id=user_id)
+            participant.delete()
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
-            return HttpResponse(status=200)
-    else:
-        return HttpResponseNotAllowed(['PUT'])
-        
-# /chat/<int:chat_id>/messages/
-@csrf_exempt
-def messages(request, chat_id):
-    if request.method == 'GET':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        try:
-            chat = OrderChat.objects.get(id=chat_id)
-        except Exception as e:
-            return HttpResponse(status=404)
-        msgs = []
-        messages = list(chat.messages.all().values())
-        for message in messages:
-            #message = ChatMessage.objects.get(id=msg['messages'])
-            user_profile = User.objects.get(id=message['sent_by_id']).userprofile
-            msgs.append({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture.url}, 'sent_at': message['sent_at']})
-        # joined_at = ParticipantProfile.objects.get(order_id==chat_id, participant_id==user.id)
-        # messages = messages.filter(joined_at<sent_at) if you need after joined messages
-        
-        return JsonResponse(msgs, safe=False, status=200)
+    @action(detail=True, methods=['GET', 'POST'], serializer_class=ChatMessageSerializer)
+    def messages(self, request, pk=None):
+        if request.method == 'GET':
+            chat = get_object_or_404(OrderChat, pk=pk)
+            messages = chat.messages
+
+            page = self.paginate_queryset(messages)
+            assert page is not None
+            serializer = ChatMessageSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        elif request.method == 'POST':
+            data = request.data
+            user = request.user
+            serializer = ChatMessageSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(sent_by=user, chat_id=pk)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['GET'])
+    def participants(self, request, pk=None):
+        chat = get_object_or_404(OrderChat, pk=pk)
+        participants = chat.participant_profile
+        return Response(ParticipantProfileSerializer(participants, many=True).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['PUT'])
+    def set_status(self, request, pk=None):
+        user = request.user
+        data = request.data
+        new_status = data['order_status']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        print(chat.article.writer_id)
+        print(user.id)
+        if chat.article.writer_id == user.id:
+            chat.order_status = new_status
+            chat.save()
+            return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+    @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
+    def set_wish_price(self, request, pk=None):
+        user = request.user
+        data = request.data
+        new_price = data['wish_price']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        # if chat.article.writer_id == user.id:
+
+        if pk in self.chat_list(user.id):
+            participant = get_object_or_404(ParticipantProfile, participant_id=user.id, order_chat_id=pk)
+            participant.wish_price = new_price
+            participant.save()
+            return Response(ParticipantProfileSerializer(participant).data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
+    def paid(self, request, pk=None):
+        user = request.user
+        data = request.data
+        target_user_id = data['user_id']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        if chat.article.writer_id == user.id and pk in self.chat_list(target_user_id):
+            participant = ParticipantProfile.objects.get(order_chat_id=pk, participant_id=target_user_id)
+            participant.pay_status = True
+            participant.save()
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+    @action(detail=True, methods=['PUT'])
+    def set_tracking_number(self, request, pk=None):
+        user = request.user
+        data = request.data
+        new_tracking_number = data['tracking_number']
+        chat = get_object_or_404(OrderChat, pk=pk)
+        if chat.article.writer_id == user.id:
+            chat.tracking_number = new_tracking_number
+            chat.save()
+            return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
 
-    elif request.method == 'POST':
-        body = json.loads(request.body.decode())
-        msg_text = body["text"]
-        msg_img = body["media"]
+class ChatMessageViewSet(viewsets.GenericViewSet):
+    queryset = ChatMessage.objects.all()
+    serializer_class = ChatMessageSerializer
+    permission_classes = (IsAuthenticated(),)
 
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        #sent_at = datetime.datetime.now()
-        try:
-            chat = OrderChat.objects.get(id=chat_id)
-        except Exception as e:
-            return HttpResponse(status=404)
-        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
+    def get_permissions(self):
+        return self.permission_classes
 
-        if request.user.id not in participants:
-            return HttpResponse(status=403)
+    def list(self, request):
+        user = request.user
+        if user is None:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        queryset = User.objects.get(id=user.id).messages
+        serializer = ChatMessageSerializer(queryset, many=True)
+        return Response(serializer.data)
 
-        new_message = ChatMessage(text=msg_text, media=msg_img, sent_by=request.user, chat=chat)
-        new_message.save()
-
-        response = {"message_id": new_message.id}
-        return JsonResponse(response, safe=False, status=200)
-    
-    return HttpResponseNotAllowed(['GET', 'POST'])
-
-# /chat/message/<int:message_id>/
-def message(request, message_id):
-    if request.method == 'GET':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        message = ChatMessage.objects.filter(id=message_id).values()[0]
-        print(message)
-        user_profile = User.objects.get(id=message['sent_by_id']).userprofile
-        return JsonResponse({'id': message['id'], 'text': message['text'], 'media': message['media'], 'user': {'user_id': message['sent_by_id'], 'nickname': user_profile.nickname, 'profile': user_profile.picture.url}, 'sent_at': message['sent_at'], 'chat_id': message['chat_id'], 'type': message['type']}, safe=False, status=200)
-
-    else:
-        return HttpResponseNotAllowed(['GET'])
-
-# /chat/<int:chat_id>/participants/
-@csrf_exempt
-def participants(request, chat_id):
-    if request.method == 'GET':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        participants = [participant for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id', 'joined_at', 'pay_status', 'wish_price')]
-        '''res = []
-        for participant_id in participants:
-            person = ParticipantProfile.objects.get(order_chat_id=)'''
-        #participants = ParticipantProfile.objects.filter(participant_id=chat_id).values()[0]
-
-        print(participants)     
-        return JsonResponse(participants, safe=False, status=200)
-    else:
-        return HttpResponseNotAllowed(['GET'])
-
-# /chat/<int:chat_id>/set_status/
-@csrf_exempt
-
-def set_status(request, chat_id):
-    if request.method == 'PUT':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        body = json.loads(request.body.decode())
-        new_status = body["status"]
-        chat = OrderChat.objects.get(id=chat_id)
-        chat.order_status = new_status
-        chat.save()
-
-        response = body
-        return JsonResponse(response, safe=False, status=200)
-    
-    else:
-        return HttpResponseNotAllowed(['GET', 'PUT'])
-
-@csrf_exempt 
-def set_buy_amount(request, chat_id):
-    if request.method == 'PUT':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-
-        participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
-        if not request.user.id in participants:
-            return HttpResponse(status=403)
-        
-        body = json.loads(request.body.decode())
-        new_amount = body['amount']
-        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=request.user.id, out_at=None)
-        participant.wish_price = new_amount
-        participant.save()
-
-        response = body
-        return JsonResponse(response, safe=False, status=200)
-    
-    else:
-        return HttpResponseNotAllowed(['PUT'])
-
-@csrf_exempt
-def paid(request, chat_id):
-    if request.method == 'PUT':
-        print(request.user.id)
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        
-        try:
-            chat = OrderChat.objects.get(id=chat_id)
-        except Exception as e:
-            return HttpResponse(status=404)
-
-        if not request.user.id == chat.article.writer_id:
-            print(request.user.id)
-            print(chat.article.writer_id)
-            return HttpResponse(status=403)
-
-        body = json.loads(request.body.decode())
-        participants = participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chat_id, out_at=None).values('participant_id')]
-        if not body['user_id'] in participants:
-            return HttpResponse(status=403)
-        
-        participant = ParticipantProfile.objects.get(order_chat_id=chat_id, participant_id=body['user_id'], out_at=None)
-        participant.pay_status = True
-        participant.save()
-        return HttpResponse(status=200)
-
-    else:
-        return HttpResponseNotAllowed(['PUT'])
-
-@csrf_exempt
-def set_tracking(request, chat_id):
-    if request.method == 'PUT':
-        if request.user.is_anonymous:
-            return HttpResponse(status=401)
-        
-        try:
-            chat = OrderChat.objects.get(id=chat_id)
-        except Exception as e:
-            return HttpResponse(status=404)
-        
-        if not request.user.id == chat.article.writer_id:
-            print(request.user.id)
-            print(chat.article.writer_id)
-            return HttpResponse(status=403)
-        body = json.loads(request.body.decode())
-        chat['tracking_number'] = body['tracking_number']
-        chat.save()
-        return HttpResponse(status=200)
-    
-    else:
-        return HttpResponseNotAllowed(['PUT'])
+    def retrieve(self, request, pk=None):
+        message = get_object_or_404(ChatMessage, pk=pk)
+        return Response(self.get_serializer(message).data)
