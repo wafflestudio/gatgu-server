@@ -121,17 +121,14 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/3",
-        # "LOCATION": "redis://3.16.167.21:6379/3",
     },
     "email": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/1",
-        # "LOCATION": "redis://3.16.167.21:6379/1",
     },
     "number_of_confirm": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/2",
-        # "LOCATION": "redis://3.16.167.21:6379/2",
     },
     "activated_email": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -165,7 +162,7 @@ EMAIL_PORT = '587'
 # gmail과의 통신하는 포트
 EMAIL_HOST_USER = 'swppsend@gmail.com'
 # 발신할 이메일
-EMAIL_HOST_PASSWORD = 'swpp2020'
+EMAIL_HOST_PASSWORD = 'swppsend2020'
 # 발신할 메일의 비밀번호
 EMAIL_USE_TLS = True
 # TLS 보안 방법
