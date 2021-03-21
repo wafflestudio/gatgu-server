@@ -1,12 +1,8 @@
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
-from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
-from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -15,17 +11,22 @@ from rest_framework.response import Response
 
 from article.models import Article
 from article.serializers import ArticleSerializer
+from gatgu.paginations import CursorSetPagination
 
 from user.serializers import UserSerializer, UserProfileSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
-import requests
+
+
+class Ordering(CursorSetPagination):
+    ordering = '-date_joined'
 
 
 class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
+    pagination_class = CursorSetPagination
 
     def get_permissions(self):
         if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate'):
@@ -245,11 +246,13 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if request.user.is_superuser:
             users = self.get_queryset()
-            serializer = self.get_serializer()
         else:
-            users = User.objects.filter(is_active=True, is_superuser=False)
+            users = self.get_queryset().filter(is_active=True, is_superuser=False)
 
-        return Response(self.get_serializer(users, many=True).data, status=status.HTTP_200_OK)
+            page = self.paginate_queryset(users)
+            assert page is not None
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
     # 회원탈퇴
     @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')

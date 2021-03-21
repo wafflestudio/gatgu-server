@@ -25,6 +25,7 @@ class OrderChatSerializer(serializers.ModelSerializer):
         data = ParticipantProfileSerializer(participants_profile, many=True, context=self.context).data
         return data
 
+
 class SimpleOrderChatSerializer(serializers.ModelSerializer):
     recent_message = serializers.SerializerMethodField()
 
