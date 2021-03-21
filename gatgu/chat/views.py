@@ -68,10 +68,12 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             return Response(status=status.HTTP_200_OK)
         elif pk in self.chat_list(user_id):
             return Response(status=status.HTTP_200_OK)
-        else:
+        elif article.order_chat.order_status==1:
             participant = ParticipantProfile(order_chat_id=pk, participant_id=user_id)
             participant.save()
             return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
     @action(detail=True, methods=['PUT'])
     def out(self, request, pk=None):
