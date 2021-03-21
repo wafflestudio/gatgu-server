@@ -18,7 +18,7 @@ from .models import User, UserProfile
 from .makecode import generate_code
 
 
-class Ordering(CursorSetPagination):
+class CursorSetPagination(CursorSetPagination):
     ordering = '-date_joined'
 
 

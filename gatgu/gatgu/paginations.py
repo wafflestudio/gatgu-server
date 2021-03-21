@@ -8,6 +8,7 @@ from rest_framework.utils.urls import replace_query_param
 class CursorSetPagination(CursorPagination):
     page_size = 5
     page_size_query_param = "page_size"
+    ordering = "-written_at"
 
     def encode_cursor(self, cursor):
 

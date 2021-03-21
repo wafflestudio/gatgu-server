@@ -10,7 +10,7 @@ from gatgu.paginations import CursorSetPagination
 
 
 class Ordering(CursorSetPagination):
-    ordering = '-written_by'
+    ordering = '-written_at'
 
 
 class ArticleViewSet(viewsets.GenericViewSet):
