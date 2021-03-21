@@ -16,7 +16,7 @@ from chat.serializers import OrderChatSerializer, ChatMessageSerializer, Partici
 from gatgu.paginations import CursorSetPagination
 
 
-class Ordering(CursorSetPagination):
+class CursorSetPagination(CursorSetPagination):
     ordering = '-sent_at'
 
 
