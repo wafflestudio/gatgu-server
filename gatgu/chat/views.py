@@ -48,7 +48,9 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         user = request.user
         if user is None:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        queryset = User.objects.get(id=user.id).order_chat
+        queryset = User.objects.get(id=user.id).order_chat.all()
+        writerset = OrderChat.objects.filter(article__writer=user)
+        queryset = queryset | writerset
         serializer = SimpleOrderChatSerializer(queryset, many=True)
         return Response(serializer.data)
 
