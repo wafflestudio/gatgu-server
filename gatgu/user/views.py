@@ -13,7 +13,7 @@ from article.models import Article
 from article.serializers import ArticleSerializer
 from gatgu.paginations import CursorSetPagination
 
-from user.serializers import UserSerializer, UserProfileSerializer
+from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
 
@@ -33,13 +33,13 @@ class UserViewSet(viewsets.GenericViewSet):
             return (AllowAny(),)
         return self.permission_classes
 
-    # def get_serializer_class(self):
-    #     if self.action == 'list':
-    #         return SimpleUserSerializer
-    #     if self.request.user.is_superuser:
-    #         return UserSerializer
-    #     else:
-    #         return SimpleUserSerializer
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SimpleUserSerializer
+        if self.request.user.is_superuser:
+            return UserSerializer
+        else:
+            return SimpleUserSerializer
 
     def get_message(self, code):
 

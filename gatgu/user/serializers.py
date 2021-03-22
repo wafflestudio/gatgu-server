@@ -157,19 +157,29 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class SimpleUserSerializer(serializers.ModelSerializer):
-    nickname = serializers.CharField(allow_blank=False, max_length=20)
-    picture = serializers.ImageField(allow_null=True, use_url=True, required=False)
+    nickname = serializers.SerializerMethodField()
+    picture = serializers.SerializerMethodField()
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
 
+
+
     class Meta:
-        model = UserProfile
+        model = User
         fields = (
+            'id',
             'nickname',
             'picture',
             'participated_count',
             'hosted_count',
         )
+
+    def get_nickname(self, user):
+        return user.userprofile.nickname
+
+    def get_picture(self, user):
+        return user.userprofile.picture
+
 
     def get_participated_count(self, user):
         part_cnt = user.participant_profile.count()
