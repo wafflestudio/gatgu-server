@@ -13,6 +13,7 @@ class Article(models.Model):
     people_min = models.PositiveSmallIntegerField()
     price_min = models.PositiveIntegerField()
 
+
     TAG_LIST = (
         (1, '식품/배달음식'),
         (2, '디지털/가구/인테리어'),
