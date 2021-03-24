@@ -24,6 +24,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     queryset = OrderChat.objects.all()
     serializer_class = OrderChatSerializer
     permission_classes = (IsAuthenticated(),)
+    pagination_class = CursorSetPagination
 
     def get_permissions(self):
         return self.permission_classes
@@ -86,6 +87,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         if request.method == 'GET':
             chat = get_object_or_404(OrderChat, pk=pk)
             messages = chat.messages
+            # messages = ChatMessage.objects.filter(chat__article_id=pk)
 
             page = self.paginate_queryset(messages)
             assert page is not None
@@ -113,8 +115,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         data = request.data
         new_status = data['order_status']
         chat = get_object_or_404(OrderChat, pk=pk)
-        print(chat.article.writer_id)
-        print(user.id)
         if chat.article.writer_id == user.id:
             chat.order_status = new_status
             chat.save()
