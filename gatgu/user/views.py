@@ -35,10 +35,12 @@ class UserViewSet(viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
+
             if self.request.user.is_superuser:
                 return UserSerializer
             return SimpleUserSerializer
         return UserSerializer
+
 
     def get_message(self, code):
 
