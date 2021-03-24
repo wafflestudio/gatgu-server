@@ -13,7 +13,7 @@ from article.models import Article
 from article.serializers import ArticleSerializer
 from gatgu.paginations import CursorSetPagination
 
-from user.serializers import UserSerializer, UserProfileSerializer
+from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
 
@@ -29,17 +29,17 @@ class UserViewSet(viewsets.GenericViewSet):
     pagination_class = CursorSetPagination
 
     def get_permissions(self):
-        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate'):
+        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate') or self.request.user.is_superuser:
             return (AllowAny(),)
         return self.permission_classes
 
-    # def get_serializer_class(self):
-    #     if self.action == 'list':
-    #         return SimpleUserSerializer
-    #     if self.request.user.is_superuser:
-    #         return UserSerializer
-    #     else:
-    #         return SimpleUserSerializer
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SimpleUserSerializer
+        if self.request.user.is_superuser:
+            return UserSerializer
+        else:
+            return SimpleUserSerializer
 
     def get_message(self, code):
 
@@ -249,10 +249,11 @@ class UserViewSet(viewsets.GenericViewSet):
         else:
             users = self.get_queryset().filter(is_active=True, is_superuser=False)
 
-            page = self.paginate_queryset(users)
-            assert page is not None
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+        page = self.paginate_queryset(users)
+        assert page is not None
+        serializer = self.get_serializer(page, many=True)
+
+        return self.get_paginated_response(serializer.data)
 
     # 회원탈퇴
     @action(detail=False, methods=['PUT'], url_path='withdrawal', url_name='withdrawal')
