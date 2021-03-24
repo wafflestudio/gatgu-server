@@ -33,13 +33,13 @@ class UserViewSet(viewsets.GenericViewSet):
             return (AllowAny(),)
         return self.permission_classes
 
+
     def get_serializer_class(self):
         if self.action == 'list':
+            if self.request.user.is_superuser:
+                return UserSerializer
             return SimpleUserSerializer
-        if self.request.user.is_superuser:
-            return UserSerializer
-        else:
-            return SimpleUserSerializer
+        return UserSerializer
 
     def get_message(self, code):
 

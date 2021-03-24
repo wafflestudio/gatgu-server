@@ -9,6 +9,11 @@ from article.models import Article
 class ArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
     deleted_at = serializers.DateTimeField(read_only=True)
+
+    title = serializers.CharField(required=True)
+    description = serializers.CharField(required=True)
+    location = serializers.CharField()
+
     need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
     people_min = serializers.IntegerField(required=True)
     price_min = serializers.IntegerField(required=True)
@@ -31,7 +36,6 @@ class ArticleSerializer(serializers.ModelSerializer):
             'need_type',
             'people_min',
             'price_min',
-            'time_in',
             'written_at',
             'updated_at',
             'deleted_at',
