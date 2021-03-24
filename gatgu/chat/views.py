@@ -115,8 +115,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         data = request.data
         new_status = data['order_status']
         chat = get_object_or_404(OrderChat, pk=pk)
-        print(chat.article.writer_id)
-        print(user.id)
         if chat.article.writer_id == user.id:
             chat.order_status = new_status
             chat.save()
