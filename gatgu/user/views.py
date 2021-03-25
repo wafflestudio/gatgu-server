@@ -33,6 +33,7 @@ class UserViewSet(viewsets.GenericViewSet):
             return (AllowAny(),)
         return self.permission_classes
 
+
     def get_serializer_class(self):
         if self.action == 'list':
 
