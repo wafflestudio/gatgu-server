@@ -10,8 +10,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from article.models import Article
-from article.serializers import ArticleSerializer
-from gatgu.paginations import CursorSetPagination
+from article.serializers import ArticleSerializer, SimpleArticleSerializer
+from article.views import ArticleViewSet
+from gatgu.paginations import CursorSetPagination, UserActivityPagination
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer
 from .models import User, UserProfile
@@ -32,7 +33,6 @@ class UserViewSet(viewsets.GenericViewSet):
         if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate') or self.request.user.is_superuser:
             return (AllowAny(),)
         return self.permission_classes
-
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -207,15 +207,16 @@ class UserViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         qp = self.request.query_params.get('activity')
 
+        # return user's article list
         if qp:
             # show hosted articles list undeleted
             if qp == 'hosted':
-                articles = Article.objects.filter(writer_id=request.user.id, deleted_at=None) \
+                queryset = Article.objects.all()
+                articles = queryset.filter(writer_id=request.user.id, deleted_at=None) \
                     if pk == 'me' else \
-                    Article.objects.filter(writer_id=pk, deleted_at=None)
-
-                # pagination to be added
-                return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
+                    queryset.filter(writer_id=pk, deleted_at=None)
+                if not articles:
+                    return Response("호스트한 같구가 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
             # show participated articles list undeleted
             elif qp == 'participated':
@@ -223,9 +224,17 @@ class UserViewSet(viewsets.GenericViewSet):
                                                   deleted_at=None) \
                     if pk == 'me' else \
                     Article.objects.filter(order_chat__participant_profile__participant_id=pk, deleted_at=None)
+                if not articles:
+                    return Response("참여한 같구가 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
-                # pagination to be added
-                return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
+            # query_params 있을 때 response
+            print(type(articles))
+            page = ArticleViewSet.paginate_queryset(articles)
+            assert page is not None
+            serializer = SimpleArticleSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        # return user detail
         else:
 
             if pk == 'me':
