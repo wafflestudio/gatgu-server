@@ -12,7 +12,10 @@ from rest_framework.response import Response
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from article.views import ArticleViewSet
-from gatgu.paginations import CursorSetPagination, UserActivityPagination
+from chat.models import OrderChat
+from chat.serializers import SimpleOrderChatSerializer
+from chat.views import OrderChatViewSet
+from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer
 from .models import User, UserProfile
@@ -30,7 +33,10 @@ class UserViewSet(viewsets.GenericViewSet):
 
     def get_pagination_class(self):
         if self.action == 'retrieve':
-            return UserActivityPagination
+            if self.request.query_params.get('activity') in ('hosted', 'participated'):
+                return UserActivityPagination
+            if self.request.query_params.get('activity') == 'chats':
+                return OrderChatPagination
         return CursorSetPagination
 
     pagination_class = property(fget=get_pagination_class)
@@ -230,8 +236,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 serializer = SimpleArticleSerializer(page, many=True)
                 return self.get_paginated_response(serializer.data)
 
-
-
             # show participated articles list undeleted
             elif qp == 'participated':
                 articles = Article.objects.filter(order_chat__participant_profile__participant_id=request.user.id,
@@ -246,6 +250,19 @@ class UserViewSet(viewsets.GenericViewSet):
                 assert page is not None
                 serializer = SimpleArticleSerializer(page, many=True)
                 return self.get_paginated_response(serializer.data)
+
+            # show chat list that targeted user in
+            elif qp == 'chats' and pk == 'me':
+                user = request.user
+
+                chats = OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id, article__writer_id=user.id)
+                if not chats:
+                    return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
+                page = self.paginate_queryset(chats)
+                assert page is not None
+                serializer = SimpleOrderChatSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
 
         # return user detail
         else:

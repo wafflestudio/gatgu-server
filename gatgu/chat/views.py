@@ -47,8 +47,8 @@ class OrderChatViewSet(viewsets.GenericViewSet):
 
     def list(self, request):  # get: /chat/
         user = request.user
-        if user is None:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        if user is None or not user.is_active:
+            return Response('message: 탈퇴하거나 없는 회원입니다.', status=status.HTTP_403_FORBIDDEN)
         queryset = User.objects.get(id=user.id).order_chat
         serializer = SimpleOrderChatSerializer(queryset, many=True)
         return Response(serializer.data)
