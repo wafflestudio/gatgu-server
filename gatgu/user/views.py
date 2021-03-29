@@ -27,7 +27,13 @@ class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
-    pagination_class = CursorSetPagination
+
+    def get_pagination_class(self):
+        if self.action == 'retrieve':
+            return UserActivityPagination
+        return CursorSetPagination
+
+    pagination_class = property(fget=get_pagination_class)
 
     def get_permissions(self):
         if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate') or self.request.user.is_superuser:
@@ -205,6 +211,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
+
         qp = self.request.query_params.get('activity')
 
         # return user's article list
@@ -218,6 +225,13 @@ class UserViewSet(viewsets.GenericViewSet):
                 if not articles:
                     return Response("호스트한 같구가 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
+                page = self.paginate_queryset(articles)
+                assert page is not None
+                serializer = SimpleArticleSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+
+
             # show participated articles list undeleted
             elif qp == 'participated':
                 articles = Article.objects.filter(order_chat__participant_profile__participant_id=request.user.id,
@@ -227,12 +241,11 @@ class UserViewSet(viewsets.GenericViewSet):
                 if not articles:
                     return Response("참여한 같구가 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
-            # query_params 있을 때 response
-            print(type(articles))
-            page = ArticleViewSet.paginate_queryset(articles)
-            assert page is not None
-            serializer = SimpleArticleSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+                # query_params 있을 때 response
+                page = self.paginate_queryset(articles)
+                assert page is not None
+                serializer = SimpleArticleSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
 
         # return user detail
         else:
