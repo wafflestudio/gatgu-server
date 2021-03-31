@@ -44,14 +44,14 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         participants = [str(participant['order_chat_id']) for participant in
                         ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
         return participants
-
-    def list(self, request):  # get: /chat/
-        user = request.user
-        if user is None or not user.is_active:
-            return Response('message: 탈퇴하거나 없는 회원입니다.', status=status.HTTP_403_FORBIDDEN)
-        queryset = User.objects.get(id=user.id).order_chat
-        serializer = SimpleOrderChatSerializer(queryset, many=True)
-        return Response(serializer.data)
+    #
+    # def list(self, request):  # get: /chat/
+    #     user = request.user
+    #     if user is None or not user.is_active:
+    #         return Response('message: 탈퇴하거나 없는 회원입니다.', status=status.HTTP_403_FORBIDDEN)
+    #     queryset = User.objects.get(id=user.id).order_chat
+    #     serializer = SimpleOrderChatSerializer(queryset, many=True)
+    #     return Response(serializer.data)
 
     # get one chat
     def retrieve(self, request, pk=None):  # get: /chat/{chat_id}/

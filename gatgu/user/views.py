@@ -1,6 +1,7 @@
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import status, viewsets
@@ -255,13 +256,20 @@ class UserViewSet(viewsets.GenericViewSet):
             elif qp == 'chats' and pk == 'me':
                 user = request.user
 
-                chats = OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id, article__writer_id=user.id)
+                chats = OrderChatViewSet.queryset.filter(
+                    Q(participant_profile__participant_id=user.id) | Q(article__writer_id=user.id))
+
+                # chats = OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id) |
+                # OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id)
+
                 if not chats:
                     return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
                 page = self.paginate_queryset(chats)
                 assert page is not None
                 serializer = SimpleOrderChatSerializer(page, many=True)
                 return self.get_paginated_response(serializer.data)
+                # serializer = SimpleOrderChatSerializer(chats, many=True)
+                # return Response(serializer.data, status=status.HTTP_200_OK)
 
 
         # return user detail
