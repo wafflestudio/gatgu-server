@@ -1,6 +1,7 @@
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import status, viewsets
@@ -10,8 +11,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from article.models import Article
-from article.serializers import ArticleSerializer
-from gatgu.paginations import CursorSetPagination
+from article.serializers import ArticleSerializer, SimpleArticleSerializer
+from article.views import ArticleViewSet
+from chat.models import OrderChat
+from chat.serializers import SimpleOrderChatSerializer
+from chat.views import OrderChatViewSet
+from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer
 from .models import User, UserProfile
@@ -26,13 +31,21 @@ class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
-    pagination_class = CursorSetPagination
+
+    def get_pagination_class(self):
+        if self.action == 'retrieve':
+            if self.request.query_params.get('activity') in ('hosted', 'participated'):
+                return UserActivityPagination
+            if self.request.query_params.get('activity') == 'chats':
+                return OrderChatPagination
+        return CursorSetPagination
+
+    pagination_class = property(fget=get_pagination_class)
 
     def get_permissions(self):
         if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate') or self.request.user.is_superuser:
             return (AllowAny(),)
         return self.permission_classes
-
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -205,27 +218,70 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
+
         qp = self.request.query_params.get('activity')
 
+        # pk == me 인 경우 요청을 보낸 유저의 정보 찾기, 그 이외의 pk 인 경우 타겟유저를 조회
+        user = self.request.user if pk == 'me' else self.get_object()
+
+        if not user or not user.is_active:
+            return Response("message: 해당 유저를 찾을 수 없습니다.", status=status.HTTP_404_NOT_FOUND)
+
+        # return user's article list
         if qp:
-            # show hosted articles list undeleted
+            # 관리자모드에서만 지워진 글 확인
+            queryset = Article.objects.all() if user.is_superuser else Article.objects.filter(deleted_at=None)
+
             if qp == 'hosted':
-                articles = Article.objects.filter(writer_id=request.user.id, deleted_at=None) \
-                    if pk == 'me' else \
-                    Article.objects.filter(writer_id=pk, deleted_at=None)
+                articles = queryset.filter(writer=user, deleted_at=None)
+                if not articles:
+                    return Response("호스트한 같구가 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
-                # pagination to be added
-                return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
+                page = self.paginate_queryset(articles)
+                assert page is not None
+                serializer = SimpleArticleSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
 
-            # show participated articles list undeleted
             elif qp == 'participated':
-                articles = Article.objects.filter(order_chat__participant_profile__participant_id=request.user.id,
-                                                  deleted_at=None) \
-                    if pk == 'me' else \
-                    Article.objects.filter(order_chat__participant_profile__participant_id=pk, deleted_at=None)
+                articles = queryset.filter(order_chat__participant_profile__participant=user)
+                if not articles:
+                    return Response("참여한 같구가 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
-                # pagination to be added
-                return Response(ArticleSerializer(articles, many=True).data, status=status.HTTP_200_OK)
+                page = self.paginate_queryset(articles)
+                assert page is not None
+                serializer = SimpleArticleSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            # show chat list that 'me' in if not superuser
+            elif qp == 'chats':
+
+                # 관리자 모드인 경우에만 다른 유저의 채팅 리스트 조회 가능
+                if pk == 'me':
+                    user = request.user
+                else:
+                    user = self.get_object()
+                    if not user.is_superuser:
+                        return Response("message: 다른회원의 채팅리스트를 열람할 수 없습니다.", status=status.HTTP_403_FORBIDDEN)
+
+                chats = OrderChatViewSet.queryset.filter(
+                    Q(participant_profile__participant=user) | Q(article__writer=user))
+                # chats = OrderChatViewSet.queryset.filter(participant_profile__participant=user)
+                # chats = OrderChatViewSet.queryset.filter(article__writer=user)
+
+                # chats = OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id) |
+                # OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id)
+
+                if not chats:
+                    return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
+                page = self.paginate_queryset(chats)
+                assert page is not None
+                serializer = SimpleOrderChatSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+                # serializer = SimpleOrderChatSerializer(chats, many=True)
+                # return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # return user detail
         else:
 
             if pk == 'me':

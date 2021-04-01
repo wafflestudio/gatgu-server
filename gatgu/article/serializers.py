@@ -36,6 +36,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'need_type',
             'people_min',
             'price_min',
+            'tag',
             'written_at',
             'updated_at',
             'deleted_at',
@@ -95,6 +96,7 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'need_type',
             'people_min',
             'price_min',
+            'tag',
             'written_at',
             'updated_at',
 
