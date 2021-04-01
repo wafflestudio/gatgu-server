@@ -232,7 +232,6 @@ class UserViewSet(viewsets.GenericViewSet):
             # 관리자모드에서만 지워진 글 확인
             queryset = Article.objects.all() if user.is_superuser else Article.objects.filter(deleted_at=None)
 
-            # show hosted articles list undeleted
             if qp == 'hosted':
                 articles = queryset.filter(writer=user, deleted_at=None)
                 if not articles:
@@ -243,7 +242,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 serializer = SimpleArticleSerializer(page, many=True)
                 return self.get_paginated_response(serializer.data)
 
-            # show participated articles list undeleted
             elif qp == 'participated':
                 articles = queryset.filter(order_chat__participant_profile__participant=user)
                 if not articles:
@@ -254,27 +252,34 @@ class UserViewSet(viewsets.GenericViewSet):
                 serializer = SimpleArticleSerializer(page, many=True)
                 return self.get_paginated_response(serializer.data)
 
-            # show chat list that targeted user in
+            # show chat list that 'me' in if not superuser
             elif qp == 'chats':
-                user = request.user if pk == 'me' else None
-                if not user:
-                    return Response("message: 다른 회원의 채팅목록을 볼 수 없습니다. ", status=status.HTTP_403_FORBIDDEN)
+
+                # 관리자 모드인 경우에만 다른 유저의 채팅 리스트 조회 가능
+                if pk == 'me':
+                    user = request.user
+                else:
+                    user = self.get_object()
+                    if not user.is_superuser:
+                        return Response("message: 다른회원의 채팅리스트를 열람할 수 없습니다.", status=status.HTTP_403_FORBIDDEN)
 
                 chats = OrderChatViewSet.queryset.filter(
                     Q(participant_profile__participant=user) | Q(article__writer=user))
+                # chats = OrderChatViewSet.queryset.filter(participant_profile__participant=user)
+                # chats = OrderChatViewSet.queryset.filter(article__writer=user)
 
                 # chats = OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id) |
                 # OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id)
 
                 if not chats:
                     return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
-                # page = self.paginate_queryset(chats)
-                # assert page is not None
-                # serializer = SimpleOrderChatSerializer(page, many=True)
-                # return self.get_paginated_response(serializer.data)
-                serializer = SimpleOrderChatSerializer(chats, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                page = self.paginate_queryset(chats)
+                assert page is not None
+                serializer = SimpleOrderChatSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
 
+                # serializer = SimpleOrderChatSerializer(chats, many=True)
+                # return Response(serializer.data, status=status.HTTP_200_OK)
 
         # return user detail
         else:
