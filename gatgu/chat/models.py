@@ -49,6 +49,7 @@ class ChatMessage(models.Model):
     )
     media = models.URLField(null=True)
     type = models.CharField(max_length=30)
+    system = models.BooleanField(defalut=False)
 
 
 class ParticipantProfile(models.Model):
