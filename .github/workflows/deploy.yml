@@ -1,0 +1,28 @@
+name: Deploy to ec2
+
+on:
+  push:
+    branches: [ main ]
+jobs:
+  django-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AWS SSM Send-Command
+      # You may pin to the exact commit or the version.
+      # uses: peterkimzz/aws-ssm-send-command@88467a58e8da19dba79c3124344307b417ca0aa4
+      uses: peterkimzz/aws-ssm-send-command@v1.1.0
+      with:
+        # AWS access key id
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        # AWS secret access key
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        # Where EC2 instance is
+        aws-region: ap-northeast-2
+        # AWS EC2 Instance id or ids
+        instance-ids: i-0880127beccbd6357
+        # Bash command you want to execute
+        command: |
+          cd gatgu
+          git pull
+          bash deploy.sh
+        
