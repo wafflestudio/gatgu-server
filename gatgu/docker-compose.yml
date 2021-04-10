@@ -1,0 +1,21 @@
+  version: '2'
+  services:
+    nginx:
+      image: nginx:latest
+      ports:
+        - "80:80"
+      volumes:
+        - .:/docker-server
+        - ./gatgu/nginx:/etc/nginx/conf.d
+        - ${EB_LOG_BASE_DIR}/nginx:/var/log/nginx
+      depends_on:
+        - web
+    web:  
+      build:
+        context: ./
+        dockerfile : Dockerfile
+      command: uwsgi --ini /gatgu-server/gatgu/gatgu_uwsgi.ini
+      volumes:
+        - .:/docker-server
+      expose:
+        - "8000"
