@@ -6,7 +6,7 @@
         - "80:80"
       volumes:
         - .:/docker-server
-        - ./gatgu/nginx:/etc/nginx/conf.d
+        - ./gatgu/nginx/gatgu.conf:/etc/nginx/conf.d
         - ${EB_LOG_BASE_DIR}/nginx:/var/log/nginx
       depends_on:
         - web
@@ -14,7 +14,7 @@
       build:
         context: ./
         dockerfile : Dockerfile
-      command: uwsgi --ini /gatgu-server/gatgu/gatgu_uwsgi.ini
+      command: uwsgi --ini /gatgu-server/gatgu_uwsgi.ini
       volumes:
         - .:/docker-server
       expose:
