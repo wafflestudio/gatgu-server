@@ -40,6 +40,7 @@ jobs:
     - name: Docker Build, tag, and push image to ECR
       id: build-image
       run: |
+        cd gatgu
         docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
