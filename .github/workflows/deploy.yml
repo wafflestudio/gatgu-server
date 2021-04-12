@@ -1,28 +1,60 @@
-name: Deploy to ec2
+name: Deploy
 
 on:
   push:
     branches: [ main ]
+
 jobs:
-  django-test:
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: latest
+      BUILD_NUMBER: ${{ github.run_number }}
+      DOCKER_ID: noaarhk
+      DOCKER_REPOSITORY: gatgu
+      S3_BUCKET_NAME: gatgubucket
+
     steps:
-    - name: AWS SSM Send-Command
-      # You may pin to the exact commit or the version.
-      # uses: peterkimzz/aws-ssm-send-command@88467a58e8da19dba79c3124344307b417ca0aa4
-      uses: peterkimzz/aws-ssm-send-command@v1.1.0
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        # AWS access key id
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        # AWS secret access key
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        # Where EC2 instance is
         aws-region: ap-northeast-2
-        # AWS EC2 Instance id or ids
-        instance-ids: i-0880127beccbd6357
-        # Bash command you want to execute
-        command: |
-          cd gatgu
-          git pull
-          bash deploy.sh
+
+    - name: Upload Dockerrun.aws.json to S3
+      run: |
+        zip deploy.zip Dockerrun.aws.json
+        aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
+
+    - name: Docker Login
+      # You may pin to the exact commit or the version.
+      # uses: docker/login-action@f3364599c6aa293cdc2b8391b1b56d0c30e45c8a
+      uses: docker/login-action@v1.8.0
+      with:
+        # Username used to log against the Docker registry
+        username: noaarhk
+        # Password or personal access token used to log against the Docker registry
+        password: ${{ secrets.DOCKER_PASSWORD}}
+
+    - name: Docker Build, tag, and push image to ECR
+      id: build-image
+      run: |
+        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
+        docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
         
+    - name: Deploy to ElasticBeanstalk
+      run: |
+        aws elasticbeanstalk create-application-version \
+          --application-name gatgu-server \
+          --version-label $BUILD_NUMBER \
+          --description $BUILD_NUMBER \
+          --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key='deploy.zip'
+        aws elasticbeanstalk update-environment \
+          --environment-name Gatguserver-env \
+          --version-label $BUILD_NUMBER
