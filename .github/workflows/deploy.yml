@@ -49,7 +49,7 @@ jobs:
         protocol: 'tcp'
         description: 'GitHub Action'
 
-    - name: Docker Build, tag, and push image to ECR
+    - name: Docker Build, tag, and push image to Dockerhub
       id: build-image
       run: |
         cd gatgu
