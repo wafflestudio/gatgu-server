@@ -13,7 +13,7 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
       DOCKER_ID: noaarhk
       DOCKER_REPOSITORY: gatgu
-      S3_BUCKET_NAME: gatgubucket
+      S3_BUCKET_NAME: 	elasticbeanstalk-ap-northeast-2-814473694736
 
     steps:
     - name: Checkout
@@ -60,10 +60,10 @@ jobs:
     - name: Deploy to ElasticBeanstalk
       run: |
         aws elasticbeanstalk create-application-version \
-          --application-name gatgu-server \
+          --application-name gatgu \
           --version-label $BUILD_NUMBER \
           --description $BUILD_NUMBER \
           --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key='deploy.zip'
         aws elasticbeanstalk update-environment \
-          --environment-name Gatguserver-env \
+          --environment-name gatgu-env \
           --version-label $BUILD_NUMBER
