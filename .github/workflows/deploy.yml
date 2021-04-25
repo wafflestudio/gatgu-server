@@ -13,7 +13,7 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
       DOCKER_ID: noaarhk
       DOCKER_REPOSITORY: gatgu
-      S3_BUCKET_NAME: 	elasticbeanstalk-ap-northeast-2-814473694736
+      S3_BUCKET_NAME: elasticbeanstalk-ap-northeast-2-814473694736
 
     steps:
     - name: Checkout
