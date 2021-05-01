@@ -76,6 +76,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             'id',
             'text',
             'media',
+            'system',
             'sent_by',
             'sent_at'
         )

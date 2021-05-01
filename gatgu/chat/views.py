@@ -163,6 +163,16 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+    
+    @action(detail=True, methods=['GET'])
+    def get_presigned_url(self, request, pk=None):
+        user = request.user
+        data = request.data
+        method = data['method']
+        file_name = data['file_name']
+        upload_file_name = file_name+str(user.id)
+        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+        url = 
 
 
 class ChatMessageViewSet(viewsets.GenericViewSet):
@@ -184,3 +194,4 @@ class ChatMessageViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         message = get_object_or_404(ChatMessage, pk=pk)
         return Response(self.get_serializer(message).data)
+
