@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 SECRET_KEY = 'h#^&^v*zwvbqk8^8e*ne23q7e$7+ppz*dl1mp==o&do_plg9+d'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
 ALLOWED_HOSTS = ['*']
@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'user.apps.UserConfig',
+
+    'corsheaders',
 
     'article',
     'chat',
@@ -67,13 +69,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'corsheaders.middleware.CorsMiddleware',
+
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
 
-        # 'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
 
     ),
 }
@@ -189,3 +194,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = [
+    'admin.gatgu.site:3000',
+    'dev.test.admin.site:3000',
+]
