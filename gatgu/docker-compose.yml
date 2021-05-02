@@ -1,15 +1,16 @@
-  version: '2'
-  services:
+version: '2'
+services:
     nginx:
       image: nginx:latest
       ports:
         - "80:80"
       volumes:
         - .:/docker-server
-        - ./gatgu/nginx/gatgu.conf:/etc/nginx/conf.d
+        - ./gatgu/nginx:/etc/nginx/conf.d
+          #- "${EB_LOG_BASE_DIR}/nginx:/var/log/nginx"
       depends_on:
         - web
-    web:  
+    web:
       build:
         context: ./
         dockerfile : Dockerfile
