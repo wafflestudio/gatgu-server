@@ -2,36 +2,23 @@ name: Django CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ develop ]
 jobs:
   django-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       
-#       - name: Setup MySQL
-#         # You may pin to the exact commit or the version.
-#         # uses: mirromutth/mysql-action@de1fba8b3f90ce8db80f663a7043be3cf3231248
-#         uses: mirromutth/mysql-action@v1.1
-#         with:
-#           # The port of host
-#           host port: 3306
-#           # The port of container
-#           container port: 3306
-#           # --character-set-server - The character set of MySQL server
-#           character set server: # optional, default is utf8mb4
-#           # --collation-server - The character collation of MySQL server
-#           collation server: # optional, default is utf8mb4_general_ci
-#           # Version of MySQL to use
-#           mysql version: # optional, default is latest
-#           # MYSQL_ROOT_PASSWORD - root superuser password
-#           mysql root password: # optional, default is 
-#           # MYSQL_DATABASE - name for the default database that is created
-#           mysql database: # optional, default is 
-#           # MYSQL_USER - create the specified user with superuser power for created database
-#           mysql user: # optional, default is 
-#           # MYSQL_PASSWORD - specified superuser password which user is power for created database
-#           mysql password: # optional, default is 
+      - name: Setup MySQL
+        # You may pin to the exact commit or the version.
+        # uses: mirromutth/mysql-action@de1fba8b3f90ce8db80f663a7043be3cf3231248
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          host port: 3306
+          container port: 3306
+          mysql database: gatgu_db
+          mysql user: team-gatgu
+          mysql password: gatgu
       
       - name: Set up Python 3.8
         uses: actions/setup-python@v1
@@ -41,7 +28,7 @@ jobs:
         working-directory: ./
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r gatgu/requirements.txt
       - name: Run Tests
         working-directory: ./gatgu
         run: |

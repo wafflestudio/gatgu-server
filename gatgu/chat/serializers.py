@@ -20,7 +20,6 @@ class OrderChatSerializer(serializers.ModelSerializer):
         )
 
     def get_participant_profile(self, orderchat):
-        print(orderchat)
         participants_profile = orderchat.participant_profile
         data = ParticipantProfileSerializer(participants_profile, many=True, context=self.context).data
         return data
@@ -41,7 +40,6 @@ class SimpleOrderChatSerializer(serializers.ModelSerializer):
     
     def get_recent_message(self, orderchat):
         message = orderchat.messages.last()
-        print(message)
         data = ChatMessageSerializer(message, context=self.context).data
         return data
 

@@ -9,8 +9,8 @@ from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
 
 
-class Ordering(CursorSetPagination):
-    ordering = '-written_by'
+class CursorSetPagination(CursorSetPagination):
+    ordering = '-written_at'
 
 
 class ArticleViewSet(viewsets.GenericViewSet):
