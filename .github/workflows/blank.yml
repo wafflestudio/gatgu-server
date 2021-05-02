@@ -32,4 +32,5 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
+          mysql.server start
           python manage.py test
