@@ -197,6 +197,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = [
-    'admin.gatgu.site:3000',
-    'dev.test.admin.site:3000',
+    'https://admin.gatgu.site:3000',
+    'https://dev.test.admin.site:3000',
 ]
