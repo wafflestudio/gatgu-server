@@ -28,7 +28,7 @@ jobs:
         working-directory: ./
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r gatgu/requirements.txt
       - name: Run Tests
         working-directory: ./gatgu
         run: |
