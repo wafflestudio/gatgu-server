@@ -32,4 +32,6 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
+          sudo systemctl start mysql
+          python manage.py migrate
           python manage.py test
