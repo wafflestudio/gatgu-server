@@ -16,7 +16,7 @@ jobs:
         with:
           host port: 3306
           container port: 3306
-          mysql database: test_gatgu_db
+          mysql database: gatgu_db
           mysql user: team-gatgu
           mysql password: gatgu
           mysql root password: gatgu
@@ -33,5 +33,5 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
-          mysql --host 127.0.0.1 --port 3306 -u root -pgatgu -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%';"
+          mysql --host 127.0.0.1 --port 3306 -u root -pgatgu -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%' identified by 'gatgu';"
           python manage.py test
