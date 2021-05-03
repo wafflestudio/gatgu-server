@@ -16,7 +16,7 @@ jobs:
         with:
           host port: 3306
           container port: 3306
-          mysql database: gatgu_db
+          mysql database: test_gatgu_db
           mysql user: team-gatgu
           mysql password: gatgu
       
@@ -32,5 +32,4 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
-          python manage.py migrate
           python manage.py test
