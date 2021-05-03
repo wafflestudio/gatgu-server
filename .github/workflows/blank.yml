@@ -16,7 +16,7 @@ jobs:
         with:
           host port: 3306
           container port: 3306
-          mysql database: gatgu_db
+          mysql database: test_gatgu_db
           mysql user: team-gatgu
           mysql password: gatgu
       
