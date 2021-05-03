@@ -32,4 +32,5 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
+          mysql -u root < "grant all privileges on *.* to userid@host identified by 'password'; exit;"
           python manage.py test
