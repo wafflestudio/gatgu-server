@@ -32,5 +32,5 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
-          mysql.server start
+          mysql --host 127.0.0.1 --port 3306 -u root -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%';"
           python manage.py test
