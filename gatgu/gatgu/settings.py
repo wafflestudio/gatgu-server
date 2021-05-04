@@ -27,7 +27,7 @@ SECRET_KEY = 'h#^&^v*zwvbqk8^8e*ne23q7e$7+ppz*dl1mp==o&do_plg9+d'
 DEBUG = True
 DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*','0.0.0.0']
 
 # Application definition
 
@@ -195,8 +195,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
-    'https://admin.gatgu.site:3000',
-    'https://dev.test.admin.site:3000',
+   'https://admin.gatgu.site:3000',
+   'https://dev.test.admin.site:3000',
 ]
