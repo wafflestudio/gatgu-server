@@ -12,8 +12,8 @@ class OrderChat(models.Model):
 
     participants = models.ManyToManyField(
         User,
-        related_name = 'order_chat',
-        through = 'ParticipantProfile'
+        related_name='order_chat',
+        through='ParticipantProfile'
     )
 
     ORDER_STATUS = (
