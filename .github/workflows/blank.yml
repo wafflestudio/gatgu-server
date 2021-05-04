@@ -6,6 +6,11 @@ on:
 jobs:
   django-test:
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [ 3.8.3 ]
+        
     steps:
       - uses: actions/checkout@v2
       
@@ -16,10 +21,11 @@ jobs:
         with:
           host port: 3306
           container port: 3306
-          mysql database: test_gatgu_db
+          mysql database: gatgu_db
           mysql user: team-gatgu
           mysql password: gatgu
-      
+          mysql root password: gatgu
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v1
         with:
@@ -32,6 +38,5 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
-          
-          mysql --host 127.0.0.1 --port 3306 -u root -e "create user 'root'@'%' identified by 'gatgu';" -e "grant all privileges on *.* to 'root'@'%' with grant option;" -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%';"
+          mysql --host 127.0.0.1 --port 3306 -u root -pgatgu -e "create user 'root'@'%' identified by 'gatgu';" -e "grant all privileges on *.* to 'root'@'%' with grant option;" -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%';"
           python manage.py test
