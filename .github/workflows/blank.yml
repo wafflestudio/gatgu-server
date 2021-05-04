@@ -32,5 +32,6 @@ jobs:
       - name: Run Tests
         working-directory: ./gatgu
         run: |
-          mysql --host 127.0.0.1 --port 3306 -u root -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%';"
+          
+          mysql --host 127.0.0.1 --port 3306 -u root -e "create user 'root'@'%' identified by 'gatgu';" -e "grant all privileges on *.* to 'root'@'%' with grant option;" -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%';"
           python manage.py test
