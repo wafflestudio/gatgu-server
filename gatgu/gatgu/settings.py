@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 SECRET_KEY = 'h#^&^v*zwvbqk8^8e*ne23q7e$7+ppz*dl1mp==o&do_plg9+d'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
 ALLOWED_HOSTS = ['*']
@@ -116,6 +116,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
+        # 'HOST': '127.0.0.1',
         'PORT': 3306,
         'NAME': 'gatgu_db',
         'USER': 'team-gatgu',
@@ -196,6 +197,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = [
-    'admin.gatgu.site:3000',
-    'dev.test.admin.site:3000',
+    'https://admin.gatgu.site',
+    'https://dev.test.admin.gatgu.site:3000',
 ]

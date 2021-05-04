@@ -20,7 +20,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
     pagination_class = CursorSetPagination
 
     def get_permissions(self):
-        if self.action == 'list':
+        if self.action == 'list' or 'retrieve':
             return (AllowAny(),)
         return self.permission_classes
 
