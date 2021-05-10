@@ -288,9 +288,11 @@ class UserViewSet(viewsets.GenericViewSet):
                 user = request.user
                 return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
             else:
-                user = self.get_object()
                 if user:
                     serializer = self.get_serializer(user)
+                    if user.is_superuser:
+                        return Response({'message : 테스트유저 입니다.'}, status=status.HTTP_200_OK)
+
                     if not user.is_active:
                         return Response({'message : 탈퇴한 회원입니다.'}, status=status.HTTP_404_NOT_FOUND)
                 else:

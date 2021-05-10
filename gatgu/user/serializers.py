@@ -68,6 +68,11 @@ class UserSerializer(serializers.ModelSerializer):
         return hst_cnt
 
     def get_userprofile(self, user):
+
+        # superuser 인 경우 userprofile 을 가져오지 않는다.
+        if user.is_superuser:
+            return None
+
         try:
             return UserProfileSerializer(user.userprofile,
                                          context=self.context).data
@@ -77,8 +82,6 @@ class UserSerializer(serializers.ModelSerializer):
             api_exception = serializers.ValidationError(message)
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
-
-            return None
 
     def validate_password(self, value):
         return make_password(value)

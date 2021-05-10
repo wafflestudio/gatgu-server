@@ -78,6 +78,13 @@ class ArticleViewSet(viewsets.GenericViewSet):
         user = request.user
         article = get_object_or_404(Article, pk=pk)
         if user != article.writer:
+
+            if user.is_superuser:
+
+                article.deleted_at = timezone.now()
+                article.save()
+                return Response({"successfully deleted this article."}, status=status.HTTP_200_OK)
+
             return Response({"error": "Can't delete other User's article"}, status=status.HTTP_403_FORBIDDEN)
 
         article.deleted_at = timezone.now()
