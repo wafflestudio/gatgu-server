@@ -1,0 +1,14 @@
+{
+    "AWSEBDockerrunVersion": "1",
+    "Logging": "/tmp/gatgu-server",
+    "Image": {
+        "Name": "noaarhk/gatgu2",
+        "Update": "true"
+    },
+    "Ports": [
+        {
+            "ContainerPort": 8000,
+            "HostPort": 8000
+        }
+    ]
+}
