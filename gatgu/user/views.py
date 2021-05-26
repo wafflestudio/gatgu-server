@@ -4,7 +4,6 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.core.mail import EmailMessage
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -28,7 +27,7 @@ class CursorSetPagination(CursorSetPagination):
     ordering = '-date_joined'
 
 
-class UserViewSet(viewsets.ViewSet):
+class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
@@ -121,9 +120,7 @@ class UserViewSet(viewsets.ViewSet):
                 "error": "해당 아이디는 사용할 수 없습니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        request.csrf_cookie_needs_reset = False
         login(request, user)
-        request.csrf_cookie_needs_reset = False
 
         ecache.set(email, 0, timeout=0)
 
@@ -137,19 +134,19 @@ class UserViewSet(viewsets.ViewSet):
     def login(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
+
         user = authenticate(request, username=username, password=password)
 
         if user:
             login(request, user)
 
-            data = dict()
+            data = self.get_serializer(user).data
             token, created = Token.objects.get_or_create(user=user)
-            data['message'] = "성공적으로 로그인 하였습니다."
             data['token'] = token.key
             return Response(data)
 
         response_data = {"error": "아이디나 패스워드가 잘못 됐습니다."}
-        return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(response_data, status=status.HTTP_403_FORBIDDEN)
 
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
