@@ -121,9 +121,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "해당 아이디는 사용할 수 없습니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        request.csrf_cookie_needs_reset = False
         login(request, user)
-        request.csrf_cookie_needs_reset = False
 
         ecache.set(email, 0, timeout=0)
 
