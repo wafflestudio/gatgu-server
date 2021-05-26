@@ -66,7 +66,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         article = get_object_or_404(Article, pk=pk)
 
         if user != article.writer:
-            return Response({"error": "다른 회원의 게시물을 수정할 수 없습니다. "}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Can't update other User's article"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(article, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
