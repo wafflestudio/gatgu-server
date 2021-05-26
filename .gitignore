@@ -379,3 +379,5 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/django,python,pycharm+all,macos,linux,windows,vscode:g
 /
+# redis
+dump.rdb
