@@ -28,7 +28,7 @@ class CursorSetPagination(CursorSetPagination):
     ordering = '-date_joined'
 
 
-class UserViewSet(viewsets.ViewSet):
+class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
