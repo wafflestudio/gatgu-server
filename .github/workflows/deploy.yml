@@ -30,7 +30,7 @@ jobs:
 
     - name: Upload Dockerrun.aws.json to S3
       run: |
-        zip -r deploy.zip Dockerrun.aws.json
+        zip -r deploy.zip docker-compose.yml
         aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
 
     - name: Docker Login
@@ -58,7 +58,6 @@ jobs:
         docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
-        
     - name: Deploy to ElasticBeanstalk
       run: |
         aws elasticbeanstalk create-application-version \
