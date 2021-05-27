@@ -44,7 +44,8 @@ class UserViewSet(viewsets.GenericViewSet):
     pagination_class = property(fget=get_pagination_class)
 
     def get_permissions(self):
-        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate','session_flush') or self.request.user.is_superuser:
+        if self.action in (
+        'create', 'login', 'confirm', 'reconfirm', 'activate', 'session_flush') or self.request.user.is_superuser:
             return (AllowAny(),)
         return self.permission_classes
 
