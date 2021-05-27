@@ -11,15 +11,6 @@ services:
         - ${EB_LOG_BASE_DIR}/nginx:/var/log/nginx
       depends_on:
         - web
-    web:
-      build:
-        context: ./
-        dockerfile : Dockerfile
-      command: gunicorn gatgu.wsgi:application --bind 0.0.0.0:8000
-      volumes:
-        - .:/docker-server
-      expose:
-        - "8000"
     redis:
       image: redis:latest
       command: redis-server --port 6379
@@ -28,4 +19,12 @@ services:
         - "mode=standalone"
       ports:
         - "6379:6379"
-      
+    web:
+      image: noaarhk/gatgu:latest
+      command: gunicorn gatgu.wsgi:application --bind 0.0.0.0:8000
+      volumes:
+        - .:/docker-server
+      expose:
+        - "8000"
+      depends_on:
+        - redis
