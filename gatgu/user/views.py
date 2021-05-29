@@ -131,6 +131,7 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response(data, status=status.HTTP_201_CREATED)
 
     # PUT /user/login/  로그인
+    @csrf_exempt
     @action(detail=False, methods=['PUT'])
     def login(self, request):
         username = request.data.get('username')
@@ -149,6 +150,7 @@ class UserViewSet(viewsets.GenericViewSet):
         response_data = {"error": "아이디나 패스워드가 잘못 됐습니다."}
         return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
 
+    @csrf_exempt
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
         user = request.user
@@ -166,6 +168,7 @@ class UserViewSet(viewsets.GenericViewSet):
         #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
 
+    @csrf_exempt
     @action(detail=False, methods=['GET'], url_path='flush')
     def session_flush(self, request):
         request.session.flush()
