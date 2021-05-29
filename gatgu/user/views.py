@@ -1,5 +1,5 @@
 from django.core.cache import caches
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, _get_user_session_key
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -44,7 +44,7 @@ class UserViewSet(viewsets.GenericViewSet):
     pagination_class = property(fget=get_pagination_class)
 
     def get_permissions(self):
-        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate') or self.request.user.is_superuser:
+        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate','session_flush') or self.request.user.is_superuser:
             return (AllowAny(),)
         return self.permission_classes
 
@@ -151,8 +151,25 @@ class UserViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
+        user = request.user
+        try:
+            request.session['_auth_user_id']
+        except KeyError:
+            return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if request.session['_auth_user_id'] != user.pk:
+        #     return Response({"message": "not this id "}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if _get_user_session_key(request)
         logout(request)
+        # if user is None:
+        #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['GET'], url_path='flush')
+    def session_flush(self, request):
+        request.session.flush()
+        return Response({"flush session"})
 
     @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
