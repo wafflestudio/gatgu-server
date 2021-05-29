@@ -71,7 +71,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
-
+    'gatgu.middleware.DisableCSRF',
 ]
 
 REST_FRAMEWORK = {
