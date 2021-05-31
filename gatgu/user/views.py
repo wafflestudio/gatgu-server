@@ -169,7 +169,7 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
 
     @csrf_exempt
-    @action(detail=False, methods=['GET'], url_path='flush')
+    @action(detail=False, methods=['POST'], url_path='flush')
     def session_flush(self, request):
         request.session.flush()
         return Response({"flush session"})
