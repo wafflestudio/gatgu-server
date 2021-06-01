@@ -9,6 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
@@ -31,6 +32,7 @@ class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
+    authentication_classes = (JSONWebTokenAuthentication,)
 
     def get_pagination_class(self):
         if self.action == 'retrieve':
@@ -126,7 +128,6 @@ class UserViewSet(viewsets.GenericViewSet):
 
         data = serializer.data
         data['token'] = user.auth_token.key
-
         return Response(data, status=status.HTTP_201_CREATED)
 
     # PUT /user/login/  로그인
@@ -142,7 +143,8 @@ class UserViewSet(viewsets.GenericViewSet):
             data = dict()
             token, created = Token.objects.get_or_create(user=user)
             data['message'] = "성공적으로 로그인 하였습니다."
-            data['token'] = token.key
+            # data['token'] = token.key
+            data['token'] = JSONWebTokenAuthentication
             return Response(data)
 
         response_data = {"error": "아이디나 패스워드가 잘못 됐습니다."}
