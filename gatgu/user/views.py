@@ -12,6 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt import tokens
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from article.models import Article
@@ -37,6 +38,7 @@ class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated(),)
+    authentication_classes = (JWTAuthentication,)
 
     def get_pagination_class(self):
         if self.action == 'retrieve':
