@@ -10,9 +10,11 @@ from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_simplejwt import tokens
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from article.models import Article
@@ -25,7 +27,7 @@ from gatgu import settings
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
 from gatgu.settings import SECRET_KEY
 
-from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer
+from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
 
@@ -132,8 +134,9 @@ class UserViewSet(viewsets.GenericViewSet):
 
         ecache.set(email, 0, timeout=0)
 
-        data = serializer.data
-        data['token'] = user.auth_token.key
+        data = TokenResponseSerializer(user).data
+        data["message"] = "성공적으로 회원가입 되었습니다."
+
         return Response(data, status=status.HTTP_201_CREATED)
 
     # PUT /user/login/  로그인
@@ -145,22 +148,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if user:
             login(request, user)
-
-            data = dict()
-            token, created = Token.objects.get_or_create(user=user)
-            data['message'] = "성공적으로 로그인 하였습니다."
-            data['token'] = token.key
-
-
-            # ####
-            # access_token = tokens.AccessToken
-            # res = JsonResponse({'success': True})
-            # res.set_cookie('access_token', access_token)
-            # ####
-            #
-
-
-            return Response(data)
+            return Response(TokenResponseSerializer(user).data)
 
         response_data = {"error": "아이디나 패스워드가 잘못 됐습니다."}
         return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
