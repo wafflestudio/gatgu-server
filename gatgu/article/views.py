@@ -4,6 +4,8 @@ from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
@@ -17,6 +19,8 @@ class ArticleViewSet(viewsets.GenericViewSet):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     permission_classes = (IsAuthenticated(),)
+    authentication_classes = (JWTAuthentication,)
+
     pagination_class = CursorSetPagination
 
     def get_permissions(self):

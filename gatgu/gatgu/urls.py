@@ -3,9 +3,17 @@ from django.conf.urls import url
 from django.contrib import admin
 from django.urls import path, include
 
+from rest_framework_simplejwt import views as jwt_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
+    path('api/token/', jwt_views.token_obtain_pair),
+    path('api/token/refresh/', jwt_views.token_refresh),
+    path('api/token/verify/', jwt_views.token_verify),
+
+    path('api/token/sliding/', jwt_views.token_obtain_sliding),
+    path('api/token/sliding/refresh', jwt_views.token_refresh_sliding),
+
     path('v1/', include('user.urls')),
     path('v1/', include('article.urls')),
     path('v1/', include('chat.urls'))

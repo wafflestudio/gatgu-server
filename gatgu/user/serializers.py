@@ -4,6 +4,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from user.models import UserProfile
 
 
@@ -77,8 +79,6 @@ class UserSerializer(serializers.ModelSerializer):
             api_exception = serializers.ValidationError(message)
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
-
-            return None
 
     def validate_password(self, value):
         return make_password(value)
@@ -188,3 +188,14 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     def get_hosted_count(self, user):
         hst_cnt = user.article.count()
         return hst_cnt
+#
+class TokenResponseSerializer(serializers.Serializer):
+    token = serializers.SerializerMethodField()
+
+    def get_token(self,user):
+        refresh = TokenObtainPairSerializer.get_token(user)
+        data = dict()
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+        return data
+
