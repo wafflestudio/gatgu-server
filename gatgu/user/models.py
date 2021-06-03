@@ -10,3 +10,13 @@ class UserProfile(models.Model):
         max_length=20, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     withdrew_at = models.DateTimeField(null=True)
+    point = models.IntegerField(default=0)
+    GRADE = (
+        (1, '같구초보'),
+        (2, '같구중수'),
+        (3, '같구고수'),
+        (4, '같구마스터'),
+
+    )
+    grade = models.PositiveSmallIntegerField(choices=GRADE, default=1)
+    trading_place = models.CharField(max_length=50, null=True)

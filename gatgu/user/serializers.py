@@ -17,6 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(required=False)
     last_login = serializers.DateTimeField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
+
     userprofile = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(default=True)
     nickname = serializers.CharField(
@@ -31,6 +32,19 @@ class UserSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
+    trading_place = serializers.CharField(write_only=True,
+                                          allow_null=True,
+                                          required=False,
+                                          )
+    grade = serializers.IntegerField(write_only=True,
+                                  allow_null=True,
+                                  required=False
+                                  )
+    point = serializers.IntegerField(write_only=True,
+                                     allow_null=True,
+                                     required=False
+                                  )
+
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
 
@@ -49,6 +63,9 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'nickname',
             'picture',
+            'trading_place',
+            'grade',
+            'point',
 
             'participated_count',
             'hosted_count',
@@ -104,13 +121,16 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         nickname = validated_data.pop('nickname', '')
         picture = validated_data.pop('picture', None)
+        trading_place = validated_data.pop('trading_place', '')
+        grade = validated_data.pop('grade','')
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
 
         UserProfile.objects.create(user_id=user.id,
                                    nickname=nickname,
-                                   picture=picture)
+                                   picture=picture,
+                                   trading_place=trading_place)
 
         return user
 
@@ -118,6 +138,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         nickname = validated_data.get('nickname')
         picture = validated_data.get('picture')
+        trading_place = validated_data.get('trading_place')
 
         profile = user.userprofile
 
@@ -125,6 +146,8 @@ class UserSerializer(serializers.ModelSerializer):
             profile.nickname = nickname
         if picture:
             profile.picture = picture
+        if trading_place:
+            profile.trading_place = trading_place
 
         profile.save()
 
@@ -143,6 +166,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
     )
     updated_at = serializers.DateTimeField(read_only=True)
     withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    trading_place = serializers.CharField(
+        allow_blank=False,
+        max_length=30
+    )
+    grade = serializers.IntegerField(read_only=True, default=0)
+    point = serializers.IntegerField(read_only=True, default=0)
+
 
     class Meta:
         model = UserProfile
@@ -152,7 +182,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'picture',
             'updated_at',
             'withdrew_at',
-            'picture',
+            'trading_place',
+            'grade',
+            'point',
         )
 
 
@@ -161,8 +193,8 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     picture = serializers.SerializerMethodField()
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
-
-
+    trading_place = serializers.SerializerMethodField()
+    grade = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -170,6 +202,8 @@ class SimpleUserSerializer(serializers.ModelSerializer):
             'id',
             'nickname',
             'picture',
+            'trading_place',
+            'grade',
             'participated_count',
             'hosted_count',
         )
@@ -180,6 +214,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     def get_picture(self, user):
         return user.userprofile.picture
 
+    def get_trading_place(self, user):
+        return user.userprofile.trading_place
+
+    def get_grade(self,user):
+        return user.userprofile.grade
 
     def get_participated_count(self, user):
         part_cnt = user.participant_profile.count()
@@ -188,14 +227,15 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     def get_hosted_count(self, user):
         hst_cnt = user.article.count()
         return hst_cnt
+
+
 #
 class TokenResponseSerializer(serializers.Serializer):
     token = serializers.SerializerMethodField()
 
-    def get_token(self,user):
+    def get_token(self, user):
         refresh = TokenObtainPairSerializer.get_token(user)
         data = dict()
         data['refresh'] = str(refresh)
         data['access'] = str(refresh.access_token)
         return data
-

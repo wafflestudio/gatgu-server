@@ -46,11 +46,14 @@ class UserViewSet(viewsets.GenericViewSet):
             return (AllowAny(),)
         return self.permission_classes
 
-    def get_serializer_class(self):
+    def get_serializer_class(self, pk=None):
         if self.action == 'list':
             if self.request.user.is_superuser:
                 return UserSerializer
             return SimpleUserSerializer
+        if self.action == 'retrieve' and pk != 'me':
+            return SimpleUserSerializer
+
         return UserSerializer
 
     def get_message(self, code):
@@ -122,7 +125,6 @@ class UserViewSet(viewsets.GenericViewSet):
         login(request, user)
 
         ecache.set(email, 0, timeout=0)
-
 
         data = TokenResponseSerializer(user).data
         data["message"] = "성공적으로 회원가입 되었습니다."
@@ -325,9 +327,10 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response({"message": "성공적으로 탈퇴 하였습니다."}, status=status.HTTP_200_OK)
 
-    @transaction.atomic
     # PUT /user/me/  # 유저 정보 수정 (나)
-    def update(self, request, pk=None):
+    @transaction.atomic
+    @action(detail=True, methods=['PATCH'], url_path='edit')
+    def update_me(self, request, pk=None):
 
         if pk != 'me':
             response_data = {"error": "다른 회원의 정보를 수정할 수 없습니다."}
@@ -339,9 +342,9 @@ class UserViewSet(viewsets.GenericViewSet):
 
         cnt = 0
 
-        for key in ['nickname', 'picture', 'password']:
+        for key in ['username', 'nickname', 'picture', 'password', 'trading_place']:
             if key in data:
-                cnt = cnt + 1
+                cnt += 1
 
         if cnt != len(data):
             response_data = {"error": "수정할 수 없는 정보가 있는 요청입니다."}
@@ -352,7 +355,7 @@ class UserViewSet(viewsets.GenericViewSet):
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
             response_data = {
-                "error": "해당 닉네임은 사용할 수 없습니다."}
+                "error": "이미 사용중인 닉네임입니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(user, data=request.data, partial=True)
