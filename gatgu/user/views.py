@@ -1,31 +1,20 @@
-import jwt
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from django.http import JsonResponse
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import status, viewsets
-from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework_simplejwt import tokens
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from article.models import Article
-from article.serializers import ArticleSerializer, SimpleArticleSerializer
-from article.views import ArticleViewSet
-from chat.models import OrderChat
+from article.serializers import SimpleArticleSerializer
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
-from gatgu import settings
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
-from gatgu.settings import SECRET_KEY
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
