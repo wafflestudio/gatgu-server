@@ -18,12 +18,9 @@ class OrderChat(models.Model):
 
     ORDER_STATUS = (
         (1, 'WAITING_MEMBERS'),
-        (2, 'MEMBER_ASSEMBLED'),
-        (3, 'PAY_STATUS_CHECKED'),
-        (4, 'ORDER_COMPLETE'),
-        (5, 'WAITING_PARCELS'),
-        (6, 'WAITING_SHARE'),
-        (7, 'GATGU_COMPLETE'),
+        (2, 'WAITING_PAY'),
+        (3, 'WAITING_PARCELS'),
+        (4, 'GATGU_COMPLETE'),
     )
 
     order_status = models.PositiveSmallIntegerField(choices=ORDER_STATUS, default=1, null=True)
