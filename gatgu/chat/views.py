@@ -15,6 +15,9 @@ from chat.serializers import OrderChatSerializer, ChatMessageSerializer, Partici
     SimpleOrderChatSerializer
 from gatgu.paginations import CursorSetPagination
 
+import boto3
+from botocore.client import Config
+
 
 class CursorSetPagination(CursorSetPagination):
     ordering = '-sent_at'
@@ -163,6 +166,37 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+    
+    @action(detail=True, methods=['PUT'])
+    def get_presigned_url(self, request, pk=None):
+        user = request.user
+        data = request.data
+        if data['method'] == 'get' or data['method'] == 'GET':
+            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+            url = s3.generate_presigned_url(
+            ClientMethod='put_object',
+            Params={
+                'Bucket': 'gatgubucket',
+                'Key': 'chat/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)
+            },
+            ExpiresIn=3600,
+            HttpMethod='GET')
+            return Response({'presigned_url': url}, status=status.HTTP_200_OK)
+        elif data['method'] == 'put' or data['method'] == 'PUT':
+            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+            url = s3.generate_presigned_url(
+            ClientMethod='put_object',
+            Params={
+                'Bucket': 'gatgubucket',
+                'Key': 'chat/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)
+            },
+            ExpiresIn=3600,
+            HttpMethod='PUT')
+            return Response({'presigned_url': url}, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+
 
 
 class ChatMessageViewSet(viewsets.GenericViewSet):
