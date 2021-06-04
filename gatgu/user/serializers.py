@@ -4,8 +4,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from gatgu.utils import DamnError
 from user.models import UserProfile
 
 
@@ -95,27 +97,13 @@ class UserSerializer(serializers.ModelSerializer):
         return make_password(value)
 
     def validate(self, data):
-        first_name = data.get('first_name')
-        last_name = data.get('last_name')
-
-        if bool(first_name) ^ bool(last_name):
-            message = "First name and last name should appear together."
-            api_exception = serializers.ValidationError(message)
-            api_exception.status_code = status.HTTP_400_BAD_REQUEST
-            raise api_exception
-        if first_name and last_name and not (first_name.isalpha() and last_name.isalpha()):
-            message = "First name or last name should not have number."
-            api_exception = serializers.ValidationError(message)
-            api_exception.status_code = status.HTTP_400_BAD_REQUEST
-            raise api_exception
 
         nickname = data.get('nickname')
 
         if not nickname:
-            message = "닉네임 필수임 "
-            code = 100
-            api_exception = serializers.ValidationError(detail=message, code=code)
-            api_exception.status_code = status.HTTP_400_BAD_REQUEST
+            # api_exception = ValidationError()
+            api_exception = DamnError()
+            # api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
 
         # if UserProfile.objects.filter(nickname__iexact=nickname,
@@ -123,7 +111,6 @@ class UserSerializer(serializers.ModelSerializer):
         #     response_data = {
         #         "error": "해당 닉네임은 사용할 수 없습니다."}
         #     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
 
         return data
 
@@ -133,6 +120,7 @@ class UserSerializer(serializers.ModelSerializer):
         picture = validated_data.pop('picture', None)
         trading_place = validated_data.pop('trading_place', '')
         grade = validated_data.pop('grade', '')
+        point = validated_data.pop('point', '')
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -140,7 +128,9 @@ class UserSerializer(serializers.ModelSerializer):
         UserProfile.objects.create(user_id=user.id,
                                    nickname=nickname,
                                    picture=picture,
-                                   trading_place=trading_place)
+                                   trading_place=trading_place,
+                                   grade=grade,
+                                   point=point)
 
         return user
 

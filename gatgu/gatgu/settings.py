@@ -81,7 +81,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'EXCEPTION_HANDLER': 'gatgu.utils.gatgu_exception_handler'
+    'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler'
     ,
 }
 SIMPLE_JWT = {
@@ -112,22 +112,6 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': datetime.timedelta(days=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': datetime.timedelta(days=10),
 }
-# JWT_AUTH = {
-#     'JWT_SECRET_KEY': SECRET_KEY,
-#     'JWT_ALGORITHM': 'HS256',
-#     'JWT_ALLOW_REFRESH': True,
-#     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=7),
-#     'JWT_REFRESH_EXPIRATION_DELTA': datetime.timedelta(days=28),
-# }
-
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': (
-#         'rest_framework.authentication.TokenAuthentication',
-#
-#         'rest_framework.authentication.SessionAuthentication',
-#
-#     ),
-# }
 
 if DEBUG_TOOLBAR:
     INSTALLED_APPS.append('debug_toolbar')
