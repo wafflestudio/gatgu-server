@@ -56,22 +56,22 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return UserSerializer
 
-    def get_message(self, code):
-
-        message = "인증번호입니다.\n\n인증번호 : " + code
-
-        return message
-
-    def send_mail(self, email_address, code):
-
-        message = self.get_message(code)
-
-        mail_subject = "[gatgu] 회원가입 인증 메일입니다."
-        user_email = email_address
-        email = EmailMessage(mail_subject, message, to=[user_email])
-        email.send()
-
-        return
+    # def get_message(self, code):
+    #
+    #     message = "인증번호입니다.\n\n인증번호 : " + code
+    #
+    #     return message
+    #
+    # def send_mail(self, email_address, code):
+    #
+    #     message = self.get_message(code)
+    #
+    #     mail_subject = "[gatgu] 회원가입 인증 메일입니다."
+    #     user_email = email_address
+    #     email = EmailMessage(mail_subject, message, to=[user_email])
+    #     email.send()
+    #
+    #     return
 
     # POST /user/ 회원가입
     @transaction.atomic
@@ -79,29 +79,29 @@ class UserViewSet(viewsets.GenericViewSet):
 
         data = request.data
 
-        username = data.get('username')
-        password = data.get('password')
-        email = data.get('email')
+        # username = data.get('username')
+        # password = data.get('password')
+        # email = data.get('email')
+        #
+        # if not username or not password or not email:
+        #     response_data = {
+        #         "error": "아이디, 비밀번호, 이메일은 필수 항목입니다."}
+        #     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if not username or not password or not email:
-            response_data = {
-                "error": "아이디, 비밀번호, 이메일은 필수 항목입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        ecache = caches["activated_email"]
-        chk_email = ecache.get(email)
-
-        if chk_email is None:
-            response_data = {
-                "error": "인증되지 않은 이메일입니다. 인증을 해주세요."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        # ecache = caches["activated_email"]
+        # chk_email = ecache.get(email)
+        #
+        # if chk_email is None:
+        #     response_data = {
+        #         "error": "인증되지 않은 이메일입니다. 인증을 해주세요."}
+        #     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         nickname = data.get('nickname')
 
-        if not nickname:
-            response_data = {
-                "error": "닉네임은 필수 항목입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        # if not nickname:
+        #     response_data = {
+        #         "error": "닉네임은 필수 항목입니다."}
+        #     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
@@ -124,7 +124,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         login(request, user)
 
-        ecache.set(email, 0, timeout=0)
+        # ecache.set(email, 0, timeout=0)
 
         data = TokenResponseSerializer(user).data
         data["message"] = "성공적으로 회원가입 되었습니다."
@@ -151,68 +151,68 @@ class UserViewSet(viewsets.GenericViewSet):
         logout(request)
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
-    def confirm(self, request):
+    # @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
+    # def confirm(self, request):
+    #
+    #     email = request.data.get("email")
+    #
+    #     ecache = caches["activated_email"]
+    #     chk_email = ecache.get(email)
+    #
+    #     if chk_email is not None:
+    #         response_data = {"error": "이미 인증이 된 이메일입니다."}
+    #         return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     ncache = caches["number_of_confirm"]
+    #
+    #     confirm_number = ncache.get(email)
+    #
+    #     if confirm_number is None:
+    #         confirm_number = 0
+    #
+    #     if confirm_number >= 10:
+    #         response_data = {"error": "너무 많이 인증요청을 하셨습니다. 2시간 후에 다시 시도해주십시오."}
+    #         return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     code = generate_code()
+    #
+    #     cache = caches["email"]
+    #
+    #     cache.set(email, code, timeout=300)
+    #
+    #     ncache.set(email, confirm_number + 1, timeout=1200)
+    #
+    #     self.send_mail(email, code)
+    #
+    #     return Response({"message": "성공적으로 인증 메일을 발송하였습니다."}, status=status.HTTP_200_OK)
 
-        email = request.data.get("email")
-
-        ecache = caches["activated_email"]
-        chk_email = ecache.get(email)
-
-        if chk_email is not None:
-            response_data = {"error": "이미 인증이 된 이메일입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        ncache = caches["number_of_confirm"]
-
-        confirm_number = ncache.get(email)
-
-        if confirm_number is None:
-            confirm_number = 0
-
-        if confirm_number >= 10:
-            response_data = {"error": "너무 많이 인증요청을 하셨습니다. 2시간 후에 다시 시도해주십시오."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        code = generate_code()
-
-        cache = caches["email"]
-
-        cache.set(email, code, timeout=300)
-
-        ncache.set(email, confirm_number + 1, timeout=1200)
-
-        self.send_mail(email, code)
-
-        return Response({"message": "성공적으로 인증 메일을 발송하였습니다."}, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['PUT'], url_path='activate', url_name='activate')
-    def activate(self, request):
-
-        email = request.data.get("email")
-        code = request.data.get("code")
-
-        cache = caches["email"]
-        ncache = caches["number_of_confirm"]
-
-        email_code = cache.get(email)
-
-        if email_code is None:
-            response_data = {"error": "시간이 초과되었거나, 인증 요청을 하지 않은 이메일입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        if email_code != code:
-            response_data = {"error": "코드가 맞지 않습니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        ecache = caches["activated_email"]
-
-        cache.set(email, code, timeout=0)  # erase from cache
-        ncache.set(email, 0, timeout=0)
-        ecache.set(email, 1, timeout=10800)
-
-        response_data = {"message": "성공적으로 인증하였습니다."}
-        return Response(response_data, status=status.HTTP_200_OK)
+    # @action(detail=False, methods=['PUT'], url_path='activate', url_name='activate')
+    # def activate(self, request):
+    #
+    #     email = request.data.get("email")
+    #     code = request.data.get("code")
+    #
+    #     cache = caches["email"]
+    #     ncache = caches["number_of_confirm"]
+    #
+    #     email_code = cache.get(email)
+    #
+    #     if email_code is None:
+    #         response_data = {"error": "시간이 초과되었거나, 인증 요청을 하지 않은 이메일입니다."}
+    #         return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     if email_code != code:
+    #         response_data = {"error": "코드가 맞지 않습니다."}
+    #         return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     ecache = caches["activated_email"]
+    #
+    #     cache.set(email, code, timeout=0)  # erase from cache
+    #     ncache.set(email, 0, timeout=0)
+    #     ecache.set(email, 1, timeout=10800)
+    #
+    #     response_data = {"message": "성공적으로 인증하였습니다."}
+    #     return Response(response_data, status=status.HTTP_200_OK)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):

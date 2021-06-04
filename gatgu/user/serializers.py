@@ -10,19 +10,19 @@ from user.models import UserProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
-    email = serializers.EmailField(allow_blank=False)
-    first_name = serializers.CharField(required=False)
-    last_name = serializers.CharField(required=False)
-    last_login = serializers.DateTimeField(read_only=True)
-    date_joined = serializers.DateTimeField(read_only=True)
+    # username = serializers.CharField(required=True)
+    # password = serializers.CharField(required=True, write_only=True)
+    # email = serializers.EmailField(required=True)
+    # first_name = serializers.CharField(required=False)
+    # last_name = serializers.CharField(required=False)
+    # last_login = serializers.DateTimeField(read_only=True)
+    # date_joined = serializers.DateTimeField(read_only=True)
 
     userprofile = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(default=True)
     nickname = serializers.CharField(
         write_only=True,
-        allow_blank=False,
+        allow_blank=True,
         max_length=20,
         required=False,
     )
@@ -37,13 +37,13 @@ class UserSerializer(serializers.ModelSerializer):
                                           required=False,
                                           )
     grade = serializers.IntegerField(write_only=True,
-                                  allow_null=True,
-                                  required=False
-                                  )
+                                     allow_null=True,
+                                     required=False
+                                     )
     point = serializers.IntegerField(write_only=True,
                                      allow_null=True,
                                      required=False
-                                  )
+                                     )
 
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
@@ -71,12 +71,6 @@ class UserSerializer(serializers.ModelSerializer):
             'hosted_count',
 
         )
-
-    # def get_participated_count(self, user):
-    #     part_cnt = user.participant_profile.count()
-    #     hst_cnt = user.article.count()
-    #
-    #     return {"participanted_count":part_cnt,"hosted_count": hst_cnt}
 
     def get_participated_count(self, user):
         part_cnt = user.participant_profile.count()
@@ -115,6 +109,22 @@ class UserSerializer(serializers.ModelSerializer):
             api_exception.status_code = status.HTTP_400_BAD_REQUEST
             raise api_exception
 
+        nickname = data.get('nickname')
+
+        if not nickname:
+            message = "닉네임 필수임 "
+            code = 100
+            api_exception = serializers.ValidationError(detail=message, code=code)
+            api_exception.status_code = status.HTTP_400_BAD_REQUEST
+            raise api_exception
+
+        # if UserProfile.objects.filter(nickname__iexact=nickname,
+        #                               withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
+        #     response_data = {
+        #         "error": "해당 닉네임은 사용할 수 없습니다."}
+        #     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+
         return data
 
     @transaction.atomic
@@ -122,7 +132,7 @@ class UserSerializer(serializers.ModelSerializer):
         nickname = validated_data.pop('nickname', '')
         picture = validated_data.pop('picture', None)
         trading_place = validated_data.pop('trading_place', '')
-        grade = validated_data.pop('grade','')
+        grade = validated_data.pop('grade', '')
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
@@ -155,24 +165,23 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    nickname = serializers.CharField(
-        allow_blank=False,
-        max_length=20
-    )
-    picture = serializers.ImageField(
-        allow_null=True,
-        use_url=True,
-        required=False,
-    )
-    updated_at = serializers.DateTimeField(read_only=True)
-    withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
-    trading_place = serializers.CharField(
-        allow_blank=False,
-        max_length=30
-    )
-    grade = serializers.IntegerField(read_only=True, default=0)
-    point = serializers.IntegerField(read_only=True, default=0)
-
+    # nickname = serializers.CharField(
+    #     allow_blank=False,
+    #     max_length=20
+    # )
+    # picture = serializers.ImageField(
+    #     allow_null=True,
+    #     use_url=True,
+    #     required=False,
+    # )
+    # updated_at = serializers.DateTimeField(read_only=True)
+    # withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    # trading_place = serializers.CharField(
+    #     allow_blank=False,
+    #     max_length=30
+    # )
+    # grade = serializers.IntegerField(read_only=True, default=0)
+    # point = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = UserProfile
@@ -217,7 +226,7 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     def get_trading_place(self, user):
         return user.userprofile.trading_place
 
-    def get_grade(self,user):
+    def get_grade(self, user):
         return user.userprofile.grade
 
     def get_participated_count(self, user):
