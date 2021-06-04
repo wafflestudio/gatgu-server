@@ -97,21 +97,18 @@ class UserSerializer(serializers.ModelSerializer):
         return make_password(value)
 
     def validate(self, data):
+        #
+        # nickname = data.get('nickname')
+        # email = data.get('email')
+        # username = data.get('username')
 
-        nickname = data.get('nickname')
-
-        if not nickname:
-            # api_exception = ValidationError()
-            api_exception = DamnError()
-            # api_exception.status_code = status.HTTP_400_BAD_REQUEST
-            raise api_exception
-
+        #
         # if UserProfile.objects.filter(nickname__iexact=nickname,
         #                               withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
         #     response_data = {
         #         "error": "해당 닉네임은 사용할 수 없습니다."}
         #     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
+        #
         return data
 
     @transaction.atomic
@@ -119,18 +116,14 @@ class UserSerializer(serializers.ModelSerializer):
         nickname = validated_data.pop('nickname', '')
         picture = validated_data.pop('picture', None)
         trading_place = validated_data.pop('trading_place', '')
-        grade = validated_data.pop('grade', '')
-        point = validated_data.pop('point', '')
 
         user = super(UserSerializer, self).create(validated_data)
-        Token.objects.create(user=user)
 
         UserProfile.objects.create(user_id=user.id,
                                    nickname=nickname,
                                    picture=picture,
                                    trading_place=trading_place,
-                                   grade=grade,
-                                   point=point)
+                                   )
 
         return user
 
@@ -155,23 +148,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    # nickname = serializers.CharField(
-    #     allow_blank=False,
-    #     max_length=20
-    # )
-    # picture = serializers.ImageField(
-    #     allow_null=True,
-    #     use_url=True,
-    #     required=False,
-    # )
-    # updated_at = serializers.DateTimeField(read_only=True)
-    # withdrew_at = serializers.DateTimeField(read_only=True, allow_null=True)
-    # trading_place = serializers.CharField(
-    #     allow_blank=False,
-    #     max_length=30
-    # )
-    # grade = serializers.IntegerField(read_only=True, default=0)
-    # point = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = UserProfile

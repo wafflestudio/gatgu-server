@@ -15,6 +15,7 @@ from article.serializers import SimpleArticleSerializer
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
+from gatgu.utils import DamnError
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
@@ -118,9 +119,10 @@ class UserViewSet(viewsets.GenericViewSet):
         try:
             user = serializer.save()
         except IntegrityError:
-            response_data = {
-                "error": "해당 아이디는 사용할 수 없습니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise DamnError()
+            # response_data = {
+            #     "error": "해당 아이디는 사용할 수 없습니다."}
+            # return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         login(request, user)
 
@@ -358,10 +360,11 @@ class UserViewSet(viewsets.GenericViewSet):
                 "error": "이미 사용중인 닉네임입니다."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer = self.get_serializer(user, data=data, partial=True)
 
         serializer.is_valid(raise_exception=True)
 
-        serializer.update(user, serializer.validated_data)
+        # serializer.update(user, serializer.validated_data)
+        serializer.save()
 
         return Response(serializer.data)
