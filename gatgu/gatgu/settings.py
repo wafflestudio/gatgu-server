@@ -70,8 +70,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
-
+    # 'gatgu.middleware.GatguExceptionHandlingMiddleware',
 ]
+
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
@@ -81,16 +82,14 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler'
-    ,
+    'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler',
 }
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(seconds=10),
-    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=10),
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=20),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(hours=30),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
-
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,

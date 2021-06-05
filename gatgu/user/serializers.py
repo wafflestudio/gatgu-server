@@ -7,7 +7,6 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from gatgu.utils import DamnError
 from user.models import UserProfile
 
 
@@ -97,18 +96,6 @@ class UserSerializer(serializers.ModelSerializer):
         return make_password(value)
 
     def validate(self, data):
-        #
-        # nickname = data.get('nickname')
-        # email = data.get('email')
-        # username = data.get('username')
-
-        #
-        # if UserProfile.objects.filter(nickname__iexact=nickname,
-        #                               withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
-        #     response_data = {
-        #         "error": "해당 닉네임은 사용할 수 없습니다."}
-        #     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-        #
         return data
 
     @transaction.atomic
