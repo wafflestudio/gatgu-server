@@ -1,3 +1,5 @@
+import boto3
+from botocore.config import Config
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
