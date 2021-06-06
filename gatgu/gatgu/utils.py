@@ -1,11 +1,11 @@
 from sqlite3 import IntegrityError
 
+import rest_framework
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError, NotAuthenticated
 from rest_framework.views import exception_handler
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
-from twisted.cred.error import Unauthorized
 
 
 def custom_exception_handler(exc: APIException, context):
@@ -44,7 +44,14 @@ def custom_exception_handler(exc: APIException, context):
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
+        elif type(exc) is rest_framework.exceptions.MethodNotAllowed:
+            return JsonResponse(
+                {
+                    'detail': "요청 방식이 올바르지 않습니다.",
+                    'error_code': 300
+                },
+                status=status.HTTP_405_METHOD_NOT_ALLOWED
+            )
         else:
             print(type(exc))
             # response.data['detail'] = '올바른 요청이 아닙니다.'
@@ -104,3 +111,5 @@ class NotWritableFields(APIException):
     status_code = 400
     default_detail = '수정할 수 없는 항목이 포함된 요청입니다.'
     default_code = 109
+
+
