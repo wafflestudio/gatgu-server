@@ -1,31 +1,23 @@
-import jwt
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from django.http import JsonResponse
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import status, viewsets
-from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework_simplejwt import tokens
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from article.models import Article
-from article.serializers import ArticleSerializer, SimpleArticleSerializer
-from article.views import ArticleViewSet
-from chat.models import OrderChat
+from article.serializers import SimpleArticleSerializer
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
-from gatgu import settings
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
-from gatgu.settings import SECRET_KEY
+from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
+    UserInfoNotMatch, UserNotFound, NotPermitted, NotWritableFields
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
@@ -57,11 +49,14 @@ class UserViewSet(viewsets.GenericViewSet):
             return (AllowAny(),)
         return self.permission_classes
 
-    def get_serializer_class(self):
+    def get_serializer_class(self, pk=None):
         if self.action == 'list':
             if self.request.user.is_superuser:
                 return UserSerializer
             return SimpleUserSerializer
+        if self.action == 'retrieve' and pk != 'me':
+            return SimpleUserSerializer
+
         return UserSerializer
 
     def get_message(self, code):
@@ -90,32 +85,22 @@ class UserViewSet(viewsets.GenericViewSet):
         username = data.get('username')
         password = data.get('password')
         email = data.get('email')
+        trading_place = data.get('trading_place')
 
-        if not username or not password or not email:
-            response_data = {
-                "error": "아이디, 비밀번호, 이메일은 필수 항목입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        if not username or not password or not email or not trading_place:
+            raise FieldsNotFilled
 
-        ecache = caches["activated_email"]
-        chk_email = ecache.get(email)
-
-        if chk_email is None:
-            response_data = {
-                "error": "인증되지 않은 이메일입니다. 인증을 해주세요."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        # ecache = caches["activated_email"]
+        # chk_email = ecache.get(email)
+        #
+        # if chk_email is None:
+        #     raise MailActivateFailed
 
         nickname = data.get('nickname')
 
-        if not nickname:
-            response_data = {
-                "error": "닉네임은 필수 항목입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
-            response_data = {
-                "error": "해당 닉네임은 사용할 수 없습니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise UsedNickname
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -123,16 +108,14 @@ class UserViewSet(viewsets.GenericViewSet):
         userprofile_serializer = UserProfileSerializer(data=data)
         userprofile_serializer.is_valid(raise_exception=True)
 
-        try:
-            user = serializer.save()
-        except IntegrityError:
-            response_data = {
-                "error": "해당 아이디는 사용할 수 없습니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        # try:
+        user = serializer.save()
+        # except IntegrityError:
+        #     raise Exception()
 
         login(request, user)
 
-        ecache.set(email, 0, timeout=0)
+        # ecache.set(email, 0, timeout=0)
 
         data = TokenResponseSerializer(user).data
         data["message"] = "성공적으로 회원가입 되었습니다."
@@ -144,14 +127,18 @@ class UserViewSet(viewsets.GenericViewSet):
     def login(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
+
+        if not username or not password:
+            raise FieldsNotFilled
+
         user = authenticate(request, username=username, password=password)
 
         if user:
             login(request, user)
+
             return Response(TokenResponseSerializer(user).data)
 
-        response_data = {"error": "아이디나 패스워드가 잘못 됐습니다."}
-        return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
+        raise UserInfoNotMatch
 
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
@@ -167,8 +154,7 @@ class UserViewSet(viewsets.GenericViewSet):
         chk_email = ecache.get(email)
 
         if chk_email is not None:
-            response_data = {"error": "이미 인증이 된 이메일입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise MailActivateDone
 
         ncache = caches["number_of_confirm"]
 
@@ -205,12 +191,10 @@ class UserViewSet(viewsets.GenericViewSet):
         email_code = cache.get(email)
 
         if email_code is None:
-            response_data = {"error": "시간이 초과되었거나, 인증 요청을 하지 않은 이메일입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise MailActivateFailed
 
         if email_code != code:
-            response_data = {"error": "코드가 맞지 않습니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise CodeNotMatch
 
         ecache = caches["activated_email"]
 
@@ -229,8 +213,8 @@ class UserViewSet(viewsets.GenericViewSet):
         # pk == me 인 경우 요청을 보낸 유저의 정보 찾기, 그 이외의 pk 인 경우 타겟유저를 조회
         user = self.request.user if pk == 'me' else self.get_object()
 
-        if not user or not user.is_active:
-            return Response("message: 해당 유저를 찾을 수 없습니다.", status=status.HTTP_404_NOT_FOUND)
+        # if not user or not user.is_active:
+        #     return Response("message: 해당 유저를 찾을 수 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
         # return user's article list
         if qp:
@@ -297,9 +281,11 @@ class UserViewSet(viewsets.GenericViewSet):
                 if user:
                     serializer = self.get_serializer(user)
                     if not user.is_active:
-                        return Response({'message : 탈퇴한 회원입니다.'}, status=status.HTTP_404_NOT_FOUND)
+                        raise UserNotFound
+                        # return Response({'message : 탈퇴한 회원입니다.'}, status=status.HTTP_404_NOT_FOUND)
                 else:
-                    return Response({'message: 해당하는 회원이 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+                    raise UserNotFound
+                    # return Response({'message: 해당하는 회원이 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -334,13 +320,15 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response({"message": "성공적으로 탈퇴 하였습니다."}, status=status.HTTP_200_OK)
 
-    @transaction.atomic
     # PUT /user/me/  # 유저 정보 수정 (나)
-    def update(self, request, pk=None):
+    @transaction.atomic
+    @action(detail=True, methods=['PATCH'], url_path='edit')
+    def update_me(self, request, pk=None):
 
         if pk != 'me':
-            response_data = {"error": "다른 회원의 정보를 수정할 수 없습니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise NotPermitted
+            # response_data = {"error": "다른 회원의 정보를 수정할 수 없습니다."}
+            # return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         user = request.user
 
@@ -348,26 +336,21 @@ class UserViewSet(viewsets.GenericViewSet):
 
         cnt = 0
 
-        for key in ['nickname', 'picture', 'password']:
+        for key in ['username', 'nickname', 'picture', 'password', 'trading_place']:
             if key in data:
-                cnt = cnt + 1
+                cnt += 1
 
         if cnt != len(data):
-            response_data = {"error": "수정할 수 없는 정보가 있는 요청입니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise NotWritableFields
 
         nickname = data.get('nickname')
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
-            response_data = {
-                "error": "해당 닉네임은 사용할 수 없습니다."}
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            raise UsedNickname
 
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-
+        serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-
-        serializer.update(user, serializer.validated_data)
+        serializer.save()
 
         return Response(serializer.data)

@@ -7,9 +7,9 @@ from rest_framework_simplejwt import views as jwt_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/token/', jwt_views.token_obtain_pair),
-    path('api/token/refresh/', jwt_views.token_refresh),
-    path('api/token/verify/', jwt_views.token_verify),
+    path('v1/token/', jwt_views.token_obtain_pair),
+    path('v1/token/refresh/', jwt_views.token_refresh),
+    path('v1/token/verify/', jwt_views.token_verify),
 
     path('api/token/sliding/', jwt_views.token_obtain_sliding),
     path('api/token/sliding/refresh', jwt_views.token_refresh_sliding),

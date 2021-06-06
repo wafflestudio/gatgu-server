@@ -7,6 +7,16 @@ class UserProfile(models.Model):
         User, related_name='userprofile', on_delete=models.CASCADE)
     picture = models.URLField(null=True)
     nickname = models.CharField(
-        max_length=20, db_index=True)
+        max_length=20, db_index=True, null=False)
     updated_at = models.DateTimeField(auto_now=True)
     withdrew_at = models.DateTimeField(null=True)
+    point = models.IntegerField(default=0, null=True)
+    GRADE = (
+        (1, '같구초보'),
+        (2, '같구중수'),
+        (3, '같구고수'),
+        (4, '같구마스터'),
+
+    )
+    grade = models.PositiveSmallIntegerField(choices=GRADE, default=1, null=True)
+    trading_place = models.CharField(max_length=50, null=True)
