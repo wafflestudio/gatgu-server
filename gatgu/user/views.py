@@ -47,7 +47,8 @@ class UserViewSet(viewsets.GenericViewSet):
     pagination_class = property(fget=get_pagination_class)
 
     def get_permissions(self):
-        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate','list') or self.request.user.is_superuser:
+        if self.action in (
+                'create', 'login', 'confirm', 'reconfirm', 'activate', 'list') or self.request.user.is_superuser:
             return (AllowAny(),)
         return self.permission_classes
 
@@ -56,7 +57,7 @@ class UserViewSet(viewsets.GenericViewSet):
             if self.request.user.is_superuser:
                 return UserSerializer
             return SimpleUserSerializer
-        if self.action == 'retrieve':
+        if self.action == 'retrieve' and pk != 'me':
             return SimpleUserSerializer
 
         return UserSerializer
@@ -277,7 +278,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
             if pk == 'me':
                 user = request.user
-                return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
+                return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
             else:
                 user = self.get_object()
                 if user:
@@ -356,7 +357,7 @@ class UserViewSet(viewsets.GenericViewSet):
         serializer.save()
 
         return Response(serializer.data)
-    
+
     @action(detail=False, methods=['PUT'])
     def get_presigned_url(self, request):
         user = request.user
@@ -364,24 +365,26 @@ class UserViewSet(viewsets.GenericViewSet):
         if data['method'] == 'get' or data['method'] == 'GET':
             s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={
-                'Bucket': 'gatgubucket',
-                'Key': data['file_name']
-            },
-            ExpiresIn=3600,
-            HttpMethod='GET')
+                ClientMethod='put_object',
+                Params={
+                    'Bucket': 'gatgubucket',
+                    'Key': data['file_name']
+                },
+                ExpiresIn=3600,
+                HttpMethod='GET')
             return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
         elif data['method'] == 'put' or data['method'] == 'PUT':
             s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={
-                'Bucket': 'gatgubucket',
-                'Key': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)
-            },
-            ExpiresIn=3600,
-            HttpMethod='PUT')
-            return Response({'presigned_url': url, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)}, status=status.HTTP_200_OK)
+                ClientMethod='put_object',
+                Params={
+                    'Bucket': 'gatgubucket',
+                    'Key': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)
+                },
+                ExpiresIn=3600,
+                HttpMethod='PUT')
+            return Response(
+                {'presigned_url': url, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)},
+                status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
