@@ -354,3 +354,32 @@ class UserViewSet(viewsets.GenericViewSet):
         serializer.save()
 
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['PUT'])
+    def get_presigned_url(self, request):
+        user = request.user
+        data = request.data
+        if data['method'] == 'get' or data['method'] == 'GET':
+            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+            url = s3.generate_presigned_url(
+            ClientMethod='put_object',
+            Params={
+                'Bucket': 'gatgubucket',
+                'Key': data['file_name']
+            },
+            ExpiresIn=3600,
+            HttpMethod='GET')
+            return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
+        elif data['method'] == 'put' or data['method'] == 'PUT':
+            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+            url = s3.generate_presigned_url(
+            ClientMethod='put_object',
+            Params={
+                'Bucket': 'gatgubucket',
+                'Key': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)
+            },
+            ExpiresIn=3600,
+            HttpMethod='PUT')
+            return Response({'presigned_url': url, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)}, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
