@@ -56,7 +56,7 @@ class UserViewSet(viewsets.GenericViewSet):
             if self.request.user.is_superuser:
                 return UserSerializer
             return SimpleUserSerializer
-        if self.action == 'retrieve' and pk != 'me':
+        if self.action == 'retrieve':
             return SimpleUserSerializer
 
         return UserSerializer
