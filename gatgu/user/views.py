@@ -1,3 +1,5 @@
+import boto3
+from botocore.config import Config
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
@@ -45,7 +47,7 @@ class UserViewSet(viewsets.GenericViewSet):
     pagination_class = property(fget=get_pagination_class)
 
     def get_permissions(self):
-        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate') or self.request.user.is_superuser:
+        if self.action in ('create', 'login', 'confirm', 'reconfirm', 'activate','list') or self.request.user.is_superuser:
             return (AllowAny(),)
         return self.permission_classes
 
