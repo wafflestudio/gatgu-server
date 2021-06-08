@@ -339,7 +339,8 @@ class UserViewSet(viewsets.GenericViewSet):
 
         cnt = 0
 
-        for key in ['username', 'nickname', 'picture', 'password', 'trading_place']:
+        # 유저 아이디 수정 불가로 변경
+        for key in ['nickname', 'picture', 'password', 'trading_place']:
             if key in data:
                 cnt += 1
 

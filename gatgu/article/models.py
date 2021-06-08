@@ -18,7 +18,7 @@ class Article(models.Model):
     image = models.URLField(null=True)
 
     # 글 작성자가 자신이 원하는 금액을 제외한 금액을 모집글에 작성한다.
-    price_min = models.PositiveIntegerField()
+    price_min = models.PositiveIntegerField(default=0)
 
     TAG_LIST = (
         (1, '식품/배달음식'),

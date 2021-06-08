@@ -34,7 +34,6 @@ class SimpleOrderChatSerializer(serializers.ModelSerializer):
             'id',
             'order_status',
             'tracking_number',
-            #'participant_profile',
             'recent_message'
         )
     
@@ -44,7 +43,6 @@ class SimpleOrderChatSerializer(serializers.ModelSerializer):
         return data
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):
-    #participant_count = serializers.SerializerMethodField()
     participant = serializers.SerializerMethodField()
 
     class Meta:

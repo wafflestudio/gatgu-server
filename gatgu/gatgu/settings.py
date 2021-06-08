@@ -85,8 +85,8 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler',
 }
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=20),
-    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(hours=30),
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
