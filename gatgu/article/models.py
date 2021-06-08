@@ -35,7 +35,10 @@ class Article(models.Model):
     )
 
     tag = models.PositiveSmallIntegerField(choices=TAG_LIST, null=True)
+
+    # 현재 날짜보다 커야 하는 조건 view 에서 적용
     time_in = models.DateField(null=True)
+
     written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)

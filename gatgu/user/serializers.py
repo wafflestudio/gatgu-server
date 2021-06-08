@@ -135,7 +135,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserProfile
         fields = (
@@ -147,6 +146,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'trading_place',
             'grade',
             'point',
+        )
+
+
+class SimpleParticipantsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'user_id',
+            'nickname',
+            'picture',
         )
 
 

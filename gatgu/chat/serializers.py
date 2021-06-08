@@ -22,6 +22,7 @@ class OrderChatSerializer(serializers.ModelSerializer):
     def get_participant_profile(self, orderchat):
         participants_profile = orderchat.participant_profile
         data = ParticipantProfileSerializer(participants_profile, many=True, context=self.context).data
+        # data = SimpleParticipantsSerializer(participants_profile, many=True, context=self.context).data
         return data
 
 
@@ -36,11 +37,12 @@ class SimpleOrderChatSerializer(serializers.ModelSerializer):
             'tracking_number',
             'recent_message'
         )
-    
+
     def get_recent_message(self, orderchat):
         message = orderchat.messages.last()
         data = ChatMessageSerializer(message, context=self.context).data
         return data
+
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):
     participant = serializers.SerializerMethodField()
@@ -54,20 +56,17 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
             'wish_price',
             'participant'
         )
-    
+
     def get_participant(self, participant_profile):
         user_profile = participant_profile.participant.userprofile
-        data = UserProfileSerializer(user_profile, context=self.context).data
+        # data = UserProfileSerializer(user_profile, context=self.context).data
+        data = SimpleParticipantsSerializer(user_profile, context=self.context).data
         return data
 
-'''    def get_participant_count(self, participant_profile):
-        print(participant_profile)
-        participant_count = participant_profile.objects.all().count()
-        print(participant_count)
-        return participant_count'''
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sent_by = serializers.SerializerMethodField()
+
     class Meta:
         model = ChatMessage
         fields = (
@@ -81,5 +80,4 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     def get_sent_by(self, chatmessage):
         sent_by = chatmessage.sent_by.userprofile
         data = UserProfileSerializer(sent_by, context=self.context).data
-        return data    
-    
+        return data

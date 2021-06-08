@@ -24,12 +24,10 @@ class ArticleSerializer(serializers.ModelSerializer):
             'writer_id',
             'article_id',
             'title',
-
-            'article_status',
-
             'description',
             'trading_place',
             'product_url',
+            'article_status',
             'image',
             'price_min',
             'tag',
@@ -63,7 +61,6 @@ class ParticipantsSummarySerializer(serializers.Serializer):
         fields = (
             'count',
             'price',
-            'progress_status',
         )
 
     def get_count(self, participants):
@@ -77,9 +74,7 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 class SimpleArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
     price_min = serializers.IntegerField(required=True)
-
-    participants_summary = serializers.SerializerMethodField()
-    order_status = serializers.SerializerMethodField()
+    article_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -87,20 +82,16 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'writer_id',
             'article_id',
             'title',
-            'location',
-            'thumbnail',
+            'trading_place',
+            'image',
             'price_min',
             'tag',
-            'written_at',
+            'time_in',
+            'article_status',
             'updated_at',
-
-            'participants_summary',
-            'order_status',
-
         )
 
-    def get_participants_summary(self, article):
-        return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
-
-    def get_order_status(self, article):
-        return article.order_chat.order_status
+    def get_article_status(self, article):
+        data = ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+        data['progress_status'] = article.article_status
+        return data
