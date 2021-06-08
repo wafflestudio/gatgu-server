@@ -14,7 +14,6 @@ class ArticleSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=True)
     location = serializers.CharField()
 
-    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
     people_min = serializers.IntegerField(required=True)
     price_min = serializers.IntegerField(required=True)
 
@@ -33,7 +32,6 @@ class ArticleSerializer(serializers.ModelSerializer):
             'product_url',
             'thumbnail',
             'image',
-            'need_type',
             'people_min',
             'price_min',
             'tag',
@@ -78,7 +76,6 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 
 class SimpleArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
-    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
     people_min = serializers.IntegerField(required=True)
     price_min = serializers.IntegerField(required=True)
 
@@ -93,7 +90,6 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'title',
             'location',
             'thumbnail',
-            'need_type',
             'people_min',
             'price_min',
             'tag',
