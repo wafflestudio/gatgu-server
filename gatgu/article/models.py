@@ -13,7 +13,7 @@ class Article(models.Model):
     )
     article_status = models.PositiveSmallIntegerField(choices=ARTICLE_STATUS, default=1, db_index=True)
     description = models.TextField()
-    trading_address = models.CharField(max_length=50)
+    trading_place = models.CharField(max_length=50)
     product_url = models.URLField()
     image = models.URLField(null=True)
 
