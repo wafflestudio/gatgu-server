@@ -68,12 +68,17 @@ class ArticleViewSet(viewsets.GenericViewSet):
             return Response(" message : This article is deleted", status=status.HTTP_404_NOT_FOUND)
         return Response(self.get_serializer(article).data)
 
-    def update(self, request, pk):
+    @transaction.atomic
+    @action(detail=True, methods=['PATCH'], url_path='edit')
+    def edit(self, request, pk):
         user = request.user
         article = get_object_or_404(Article, pk=pk)
 
         if user != article.writer:
             return Response({"error": "다른 회원의 게시물을 수정할 수 없습니다. "}, status=status.HTTP_403_FORBIDDEN)
+
+        # if article.article_status >= 2:
+        #     return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(article, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -90,7 +95,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         article.deleted_at = timezone.now()
         article.save()
         return Response({"successfully deleted this article."}, status=status.HTTP_200_OK)
-    
+
     @action(detail=True, methods=['PUT'])
     def get_presigned_url(self, request, pk=None):
         user = request.user
@@ -98,24 +103,26 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if data['method'] == 'get' or data['method'] == 'GET':
             s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={
-                'Bucket': 'gatgubucket',
-                'Key': data['file_name']
-            },
-            ExpiresIn=3600,
-            HttpMethod='GET')
+                ClientMethod='put_object',
+                Params={
+                    'Bucket': 'gatgubucket',
+                    'Key': data['file_name']
+                },
+                ExpiresIn=3600,
+                HttpMethod='GET')
             return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
         elif data['method'] == 'put' or data['method'] == 'PUT':
             s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={
-                'Bucket': 'gatgubucket',
-                'Key': 'article/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)
-            },
-            ExpiresIn=3600,
-            HttpMethod='PUT')
-            return Response({'presigned_url': url, 'file_name': 'article/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)}, status=status.HTTP_200_OK)
+                ClientMethod='put_object',
+                Params={
+                    'Bucket': 'gatgubucket',
+                    'Key': 'article/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)
+                },
+                ExpiresIn=3600,
+                HttpMethod='PUT')
+            return Response(
+                {'presigned_url': url, 'file_name': 'article/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)},
+                status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)

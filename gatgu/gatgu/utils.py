@@ -52,11 +52,13 @@ def custom_exception_handler(exc: APIException, context):
                 },
                 status=status.HTTP_405_METHOD_NOT_ALLOWED
             )
+        # elif type(exc) is django.http:
+        #     response.data['detail'] = 'Rdaf'
         else:
             print(type(exc))
-            # response.data['detail'] = '올바른 요청이 아닙니다.'
-            response.data['error_code'] = exc.default_code
-
+            response.data['detail'] = '올바른 요청이 아닙니다.'
+            # response.data['error_code'] = exc.detail
+            # return Response()
     return response
 
 

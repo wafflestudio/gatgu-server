@@ -31,11 +31,10 @@ class ArticleSerializer(serializers.ModelSerializer):
             'image',
             'price_min',
             'tag',
+            'order_chat',
             'written_at',
             'updated_at',
             'deleted_at',
-
-            'order_chat',
 
         )
 
