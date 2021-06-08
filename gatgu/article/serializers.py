@@ -11,7 +11,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     deleted_at = serializers.DateTimeField(read_only=True)
     title = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
-    trading_place = serializers.CharField(required=True)
+    trading_address = serializers.CharField(required=True)
     product_url = serializers.URLField(required=True)
 
     price_min = serializers.IntegerField(required=True)
@@ -25,7 +25,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'article_id',
             'title',
             'description',
-            'trading_place',
+            'trading_address',
             'product_url',
             'article_status',
             'image',
@@ -81,7 +81,7 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'writer_id',
             'article_id',
             'title',
-            'trading_place',
+            'trading_address',
             'image',
             'price_min',
             'tag',
