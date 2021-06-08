@@ -48,14 +48,40 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def list(self, request):
-        title = self.request.query_params.get('title')
-        if request.user.is_superuser:
-            articles = self.get_queryset() if not title else self.get_queryset().filter(
-                title__icontains=title)
+        # title = self.request.query_params.get('title')
+        # order_status = self.request.query_params.get('status')
+        qp = self.request.query_params
+
+        # 유저에게 지워지지 않은 게시물만 보여준다.
+        # if request.user.is_superuser:
+        #     articles = self.get_queryset() if not title else self.get_queryset().filter(
+        #         title__icontains=title)
+        # else:
+        #     articles = self.get_queryset().filter(deleted_at=None) if not title else self.get_queryset().filter(
+        #         title__icontains=title,
+        #         deleted_at=None)
+        if qp:
+            print(qp)
+            for key in qp.keys():
+                if key not in {'status', 'title'}:
+                    print(key)
+                    return Response({"message": "bad request"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if 'title' in qp and 'status' in qp:
+                articles = self.get_queryset().filter(
+                    title__icontains=qp.get('title'),
+                    article_status=qp.get('status'),
+                )
+            if len(qp) == 1 and 'title' in qp:
+                articles = self.get_queryset().filter(
+                    title__icontains=qp.get('title'),
+                )
+            if len(qp) == 1 and 'status' in qp:
+                articles = self.get_queryset().filter(
+                    article_status=qp.get('status'),
+                )
         else:
-            articles = self.get_queryset().filter(deleted_at=None) if not title else self.get_queryset().filter(
-                title__icontains=title,
-                deleted_at=None)
+            articles = self.get_queryset()
 
         page = self.paginate_queryset(articles)
         assert page is not None
