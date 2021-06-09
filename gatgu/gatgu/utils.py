@@ -52,13 +52,18 @@ def custom_exception_handler(exc: APIException, context):
                 },
                 status=status.HTTP_405_METHOD_NOT_ALLOWED
             )
-        # elif type(exc) is django.http:
-        #     response.data['detail'] = 'Rdaf'
         else:
             print(type(exc))
-            response.data['detail'] = '올바른 요청이 아닙니다.'
-            # response.data['error_code'] = exc.detail
-            # return Response()
+            if hasattr(exc, 'default_code'):
+                return JsonResponse(
+                    {
+                        'detail': "알 수 없는 에러가 발생했습니다.",
+                        'error_code': 500
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+
+                )
+            response.data['error_code'] = exc.default_code
     return response
 
 
@@ -99,19 +104,20 @@ class UserInfoNotMatch(APIException):
     default_detail = '아이디나 비밀번호를 확인해 주세요.'
     default_code = 106
 
+
 class UserNotFound(APIException):
     status_code = 404
     default_detail = '해당 회원을 찾을 수 없읍니다.'
     default_code = 107
+
 
 class NotPermitted(APIException):
     status_code = 403
     default_detail = '권한이 없습니다.'
     default_code = 108
 
+
 class NotWritableFields(APIException):
     status_code = 400
     default_detail = '수정할 수 없는 항목이 포함된 요청입니다.'
     default_code = 109
-
-

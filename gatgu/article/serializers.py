@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models import Sum
 from chat.models import OrderChat
 from chat.serializers import OrderChatSerializer
@@ -13,6 +15,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=True)
     trading_place = serializers.CharField(required=True)
     product_url = serializers.URLField(required=True)
+    time_in = serializers.DateField(default=datetime.date.today() + datetime.timedelta(days=7))
 
     price_min = serializers.IntegerField(required=True)
     article_status = serializers.SerializerMethodField()
@@ -27,6 +30,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'description',
             'trading_place',
             'product_url',
+            'time_in',
             'article_status',
             'image',
             'price_min',

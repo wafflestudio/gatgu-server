@@ -12,6 +12,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
@@ -389,3 +390,4 @@ class UserViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+

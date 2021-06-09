@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -37,7 +39,7 @@ class Article(models.Model):
     tag = models.PositiveSmallIntegerField(choices=TAG_LIST, null=True)
 
     # 현재 날짜보다 커야 하는 조건 view 에서 적용, default = 7일 후
-    time_in = models.DateField(null=True)
+    time_in = models.DateField("Date", default=datetime.date.today)
 
     written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
