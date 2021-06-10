@@ -144,6 +144,7 @@ WSGI_APPLICATION = 'gatgu.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
+
         'HOST': '127.0.0.1',
         # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
         'PORT': 3306,

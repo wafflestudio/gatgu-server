@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models import Sum
 from chat.models import OrderChat
 from chat.serializers import OrderChatSerializer
@@ -12,7 +14,8 @@ class ArticleSerializer(serializers.ModelSerializer):
     title = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
     trading_place = serializers.CharField(required=True)
-    product_url = serializers.URLField(required=True)
+    product_url = serializers.CharField(required=True, max_length=200)
+    time_in = serializers.DateField(default=datetime.date.today() + datetime.timedelta(days=7))
 
     price_min = serializers.IntegerField(required=True)
     article_status = serializers.SerializerMethodField()
@@ -27,7 +30,9 @@ class ArticleSerializer(serializers.ModelSerializer):
             'description',
             'trading_place',
             'product_url',
+            'time_in',
             'article_status',
+
             'image',
             'price_min',
             'tag',
@@ -45,6 +50,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     def get_order_chat(self, article):
         return OrderChatSerializer(article.order_chat).data
+
 
     def get_article_status(self, article):
         data = ParticipantsSummarySerializer(article.order_chat).data
@@ -64,6 +70,7 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 
     def get_count(self, order_chat):
         return order_chat.count_participant
+
 
     def get_price(self, order_chat):
         return order_chat.sum_wish_price
@@ -88,6 +95,7 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'article_status',
             'updated_at',
         )
+
 
     def get_article_status(self, article):
         data = ParticipantsSummarySerializer(article.order_chat).data

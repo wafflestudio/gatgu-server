@@ -17,6 +17,7 @@ class OrderChatSerializer(serializers.ModelSerializer):
     def get_participant_profile(self, orderchat):
         participants_profile = orderchat.participant_profile
         data = ParticipantProfileSerializer(participants_profile, many=True, context=self.context).data
+        # data = SimpleParticipantsSerializer(participants_profile, many=True, context=self.context).data
         return data
 
 
@@ -53,6 +54,7 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
 
     def get_participant(self, participant_profile):
         user_profile = participant_profile.participant.userprofile
+
         data = SimpleParticipantsSerializer(user_profile, context=self.context).data
         return data
 

@@ -14,6 +14,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
+from gatgu.utils import FieldsNotFilled
+
 from chat.models import ParticipantProfile
 
 from chat.models import OrderChat
@@ -64,12 +66,22 @@ class ArticleViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
 
+        title = data.get('title')
+        description = data.get('description')
+        trading_place = data.get('trading_place')
+        product_url = data.get('product_url')
+        time_in = data.get('time_in')
+
+        if not title or not description or not trading_place or not product_url or not time_in:
+            raise FieldsNotFilled
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(writer=user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def list(self, request):
+
         # Variables for query ====================
         count_participant = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
                                               .annotate(count=Count('participant_id')).values('count'),
@@ -125,7 +137,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         article.deleted_at = timezone.now()
         article.save()
-        return Response({"successfully deleted this article."}, status=status.HTTP_200_OK)
+        return Response({"message": "Successfully deleted this article."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['PUT'])
     def get_presigned_url(self, request, pk=None):

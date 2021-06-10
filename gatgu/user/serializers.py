@@ -5,7 +5,7 @@ from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
 from user.models import UserProfile
 

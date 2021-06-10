@@ -15,7 +15,8 @@ def custom_exception_handler(exc: APIException, context):
 
     # Now add the customed error code and detail to the response.
     if response is not None:
-        if type(exc) is InvalidToken:
+        # if type(exc) is InvalidToken:
+        if isinstance(exc, InvalidToken):
             return JsonResponse(
                 {
                     'detail': '다시 로그인 해주세요.',
@@ -25,7 +26,8 @@ def custom_exception_handler(exc: APIException, context):
             )
 
         # 탈퇴한 회원의 access token으로 활동 시
-        elif type(exc) is AuthenticationFailed or type(exc) is NotAuthenticated:
+        # elif type(exc) is AuthenticationFailed or type(exc) is NotAuthenticated:
+        elif isinstance(exc, AuthenticationFailed) or isinstance(exc, NotAuthenticated):
             return JsonResponse(
                 {
                     "detail": "로그인이 필요합니다.",
@@ -34,16 +36,23 @@ def custom_exception_handler(exc: APIException, context):
                 , status=status.HTTP_401_UNAUTHORIZED
             )
 
-        elif type(exc) is ValidationError:
+        elif isinstance(exc, ValidationError):
+            # print(exc.detail)
+            # response.data['error_code'] = 400
+
             if 'username' in exc.detail:
-                return JsonResponse(
-                    {
-                        # 'detail': exc.detail,
-                        'detail': "이미 사용중인 아이디 입니다.",
-                        'error_code': 105
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                if hasattr(exc.detail, 'username'):
+                    return JsonResponse(
+                        {
+                            'detail': "이미 사용중인 아이디 입니다.",
+                            'error_code': 105
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            print(exc.detail)
+
+
+
         elif type(exc) is rest_framework.exceptions.MethodNotAllowed:
             return JsonResponse(
                 {
@@ -56,9 +65,17 @@ def custom_exception_handler(exc: APIException, context):
         #     response.data['detail'] = 'Rdaf'
         else:
             print(type(exc))
-            response.data['detail'] = '올바른 요청이 아닙니다.'
-            # response.data['error_code'] = exc.detail
-            # return Response()
+            if not hasattr(exc, 'default_code'):
+                return JsonResponse(
+                    {
+                        'detail': "알 수 없는 에러가 발생했습니다.",
+                        'error_code': 500
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+
+                )
+            response.data['error_code'] = exc.default_code
+
     return response
 
 
@@ -99,15 +116,18 @@ class UserInfoNotMatch(APIException):
     default_detail = '아이디나 비밀번호를 확인해 주세요.'
     default_code = 106
 
+
 class UserNotFound(APIException):
     status_code = 404
-    default_detail = '해당 회원을 찾을 수 없읍니다.'
+    default_detail = '해당 회원을 찾을 수 없습니다.'
     default_code = 107
+
 
 class NotPermitted(APIException):
     status_code = 403
     default_detail = '권한이 없습니다.'
     default_code = 108
+
 
 class NotWritableFields(APIException):
     status_code = 400
@@ -115,3 +135,7 @@ class NotWritableFields(APIException):
     default_code = 109
 
 
+class ArticleNotFound(APIException):
+    status_code = 404
+    default_detail = '해당 게시글을 찾을 수 없습니다.'
+    default_code = 121
