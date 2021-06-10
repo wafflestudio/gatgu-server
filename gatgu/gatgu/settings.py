@@ -24,7 +24,8 @@ SECRET_KEY = 'h#^&^v*zwvbqk8^8e*ne23q7e$7+ppz*dl1mp==o&do_plg9+d'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
+DEBUG_TOOLBAR = True
+# DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
 ALLOWED_HOSTS = ['*']
 
@@ -143,8 +144,8 @@ WSGI_APPLICATION = 'gatgu.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
         'HOST': '127.0.0.1',
+        # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
         'PORT': 3306,
         'NAME': 'gatgu_db',
         'USER': 'team-gatgu',

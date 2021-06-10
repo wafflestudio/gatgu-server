@@ -47,7 +47,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         return OrderChatSerializer(article.order_chat).data
 
     def get_article_status(self, article):
-        data = ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+        data = ParticipantsSummarySerializer(article.order_chat).data
         data['progress_status'] = article.article_status
         return data
 
@@ -62,12 +62,11 @@ class ParticipantsSummarySerializer(serializers.Serializer):
             'price',
         )
 
-    def get_count(self, participants):
-        return participants.count()
+    def get_count(self, order_chat):
+        return order_chat.count_participant
 
-    # 글 작성자를 제외한 참가자들의 희망 금액의 총합
-    def get_price(self, participants):
-        return participants.aggregate(Sum('wish_price'))['wish_price__sum']
+    def get_price(self, order_chat):
+        return order_chat.sum_wish_price
 
 
 class SimpleArticleSerializer(serializers.ModelSerializer):
@@ -91,6 +90,6 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
         )
 
     def get_article_status(self, article):
-        data = ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+        data = ParticipantsSummarySerializer(article.order_chat).data
         data['progress_status'] = article.article_status
         return data
