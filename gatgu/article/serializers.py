@@ -9,18 +9,14 @@ from article.models import Article
 class ArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
     deleted_at = serializers.DateTimeField(read_only=True)
-
     title = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
-    location = serializers.CharField()
+    trading_place = serializers.CharField(required=True)
+    product_url = serializers.URLField(required=True)
 
-    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
-    people_min = serializers.IntegerField(required=True)
     price_min = serializers.IntegerField(required=True)
-
+    article_status = serializers.SerializerMethodField()
     order_chat = serializers.SerializerMethodField()
-
-    participants_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -29,21 +25,17 @@ class ArticleSerializer(serializers.ModelSerializer):
             'article_id',
             'title',
             'description',
-            'location',
+            'trading_place',
             'product_url',
-            'thumbnail',
+            'article_status',
             'image',
-            'need_type',
-            'people_min',
             'price_min',
             'tag',
+            'order_chat',
             'written_at',
             'updated_at',
             'deleted_at',
 
-            'order_chat',
-
-            'participants_summary',
         )
 
     def create(self, validated_data):
@@ -54,8 +46,10 @@ class ArticleSerializer(serializers.ModelSerializer):
     def get_order_chat(self, article):
         return OrderChatSerializer(article.order_chat).data
 
-    def get_participants_summary(self, article):
-        return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+    def get_article_status(self, article):
+        data = ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+        data['progress_status'] = article.article_status
+        return data
 
 
 class ParticipantsSummarySerializer(serializers.Serializer):
@@ -65,25 +59,21 @@ class ParticipantsSummarySerializer(serializers.Serializer):
     class Meta:
         fields = (
             'count',
-            'price'
-
+            'price',
         )
 
     def get_count(self, participants):
         return participants.count()
 
+    # 글 작성자를 제외한 참가자들의 희망 금액의 총합
     def get_price(self, participants):
         return participants.aggregate(Sum('wish_price'))['wish_price__sum']
 
 
 class SimpleArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
-    need_type = serializers.ChoiceField(Article.NEED_TYPE, required=True)
-    people_min = serializers.IntegerField(required=True)
     price_min = serializers.IntegerField(required=True)
-
-    participants_summary = serializers.SerializerMethodField()
-    order_status = serializers.SerializerMethodField()
+    article_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -91,24 +81,16 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'writer_id',
             'article_id',
             'title',
-            'location',
-            'thumbnail',
-            'need_type',
-            'people_min',
+            'trading_place',
+            'image',
             'price_min',
             'tag',
-            'written_at',
+            'time_in',
+            'article_status',
             'updated_at',
-
-            'participants_summary',
-            'order_status',
-
         )
 
-    def get_participants_summary(self, article):
-        return ParticipantsSummarySerializer(article.order_chat.participant_profile).data
-
-    def get_order_status(self, article):
-        return article.order_chat.order_status
-
-
+    def get_article_status(self, article):
+        data = ParticipantsSummarySerializer(article.order_chat.participant_profile).data
+        data['progress_status'] = article.article_status
+        return data

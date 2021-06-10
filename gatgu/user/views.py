@@ -88,9 +88,9 @@ class UserViewSet(viewsets.GenericViewSet):
         username = data.get('username')
         password = data.get('password')
         email = data.get('email')
-        trading_place = data.get('trading_place')
+        trading_address = data.get('trading_address')
 
-        if not username or not password or not email or not trading_place:
+        if not username or not password or not email or not trading_address:
             raise FieldsNotFilled
 
         # ecache = caches["activated_email"]
@@ -339,7 +339,8 @@ class UserViewSet(viewsets.GenericViewSet):
 
         cnt = 0
 
-        for key in ['username', 'nickname', 'picture', 'password', 'trading_place']:
+        # 유저 아이디 수정 불가로 변경
+        for key in ['nickname', 'picture', 'password', 'trading_address']:
             if key in data:
                 cnt += 1
 

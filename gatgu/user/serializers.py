@@ -33,7 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
         use_url=True,
         required=False,
     )
-    trading_place = serializers.CharField(write_only=True,
+    trading_address = serializers.CharField(write_only=True,
                                           allow_null=True,
                                           required=False,
                                           )
@@ -64,7 +64,7 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'nickname',
             'picture',
-            'trading_place',
+            'trading_address',
             'grade',
             'point',
 
@@ -102,14 +102,14 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         nickname = validated_data.pop('nickname', '')
         picture = validated_data.pop('picture', None)
-        trading_place = validated_data.pop('trading_place', '')
+        trading_address = validated_data.pop('trading_address', '')
 
         user = super(UserSerializer, self).create(validated_data)
 
         UserProfile.objects.create(user_id=user.id,
                                    nickname=nickname,
                                    picture=picture,
-                                   trading_place=trading_place,
+                                   trading_address=trading_address,
                                    )
 
         return user
@@ -118,7 +118,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         nickname = validated_data.get('nickname')
         picture = validated_data.get('picture')
-        trading_place = validated_data.get('trading_place')
+        trading_address = validated_data.get('trading_address')
 
         profile = user.userprofile
 
@@ -126,8 +126,8 @@ class UserSerializer(serializers.ModelSerializer):
             profile.nickname = nickname
         if picture:
             profile.picture = picture
-        if trading_place:
-            profile.trading_place = trading_place
+        if trading_address:
+            profile.trading_address = trading_address
 
         profile.save()
 
@@ -135,7 +135,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserProfile
         fields = (
@@ -144,9 +143,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'picture',
             'updated_at',
             'withdrew_at',
-            'trading_place',
+            'trading_address',
             'grade',
             'point',
+        )
+
+
+class SimpleParticipantsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'user_id',
+            'nickname',
+            'picture',
         )
 
 
@@ -155,7 +165,7 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     picture = serializers.SerializerMethodField()
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
-    trading_place = serializers.SerializerMethodField()
+    trading_address = serializers.SerializerMethodField()
     grade = serializers.SerializerMethodField()
 
     class Meta:
@@ -164,7 +174,7 @@ class SimpleUserSerializer(serializers.ModelSerializer):
             'id',
             'nickname',
             'picture',
-            'trading_place',
+            'trading_address',
             'grade',
             'participated_count',
             'hosted_count',
@@ -176,8 +186,8 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     def get_picture(self, user):
         return user.userprofile.picture
 
-    def get_trading_place(self, user):
-        return user.userprofile.trading_place
+    def get_trading_address(self, user):
+        return user.userprofile.trading_address
 
     def get_grade(self, user):
         return user.userprofile.grade

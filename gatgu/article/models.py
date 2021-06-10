@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -5,13 +7,20 @@ from django.db import models
 class Article(models.Model):
     writer = models.ForeignKey(User, related_name='article', on_delete=models.CASCADE)
     title = models.CharField(max_length=50, db_index=True)
+    ARTICLE_STATUS = (
+        (1, "모집중"),
+        (2, "모집완료"),
+        (3, "거래완료"),
+        (4, "기간만료"),
+    )
+    article_status = models.PositiveSmallIntegerField(choices=ARTICLE_STATUS, default=1, db_index=True)
     description = models.TextField()
-    location = models.CharField(max_length=50)
+    trading_place = models.CharField(max_length=50)
     product_url = models.URLField()
-    thumbnail = models.URLField(null=True)
     image = models.URLField(null=True)
-    people_min = models.PositiveSmallIntegerField()
-    price_min = models.PositiveIntegerField()
+
+    # 글 작성자가 자신이 원하는 금액을 제외한 금액을 모집글에 작성한다.
+    price_min = models.PositiveIntegerField(default=0)
 
     TAG_LIST = (
         (1, '식품/배달음식'),
@@ -29,15 +38,11 @@ class Article(models.Model):
 
     tag = models.PositiveSmallIntegerField(choices=TAG_LIST, null=True)
 
+    # 현재 날짜보다 커야 하는 조건 view 에서 적용, default = 7일 후
+    time_in = models.DateField(default=datetime.datetime.today)
+
     written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)
-
-    NEED_TYPE = (
-        (1, 'people'),
-        (2, 'money'),
-    )
-
-    need_type = models.PositiveSmallIntegerField(choices=NEED_TYPE, default=1, null=True)
 
     ordering = ['-written_at']

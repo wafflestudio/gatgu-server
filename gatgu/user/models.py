@@ -19,4 +19,4 @@ class UserProfile(models.Model):
 
     )
     grade = models.PositiveSmallIntegerField(choices=GRADE, default=1, null=True)
-    trading_place = models.CharField(max_length=50, null=True)
+    trading_address = models.CharField(max_length=50, null=True)
