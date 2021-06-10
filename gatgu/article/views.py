@@ -1,6 +1,8 @@
 import boto3
 from botocore.config import Config
 from django.db import transaction
+from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, status
@@ -13,6 +15,10 @@ from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
 from gatgu.utils import FieldsNotFilled
+
+from chat.models import ParticipantProfile
+
+from chat.models import OrderChat
 
 
 class CursorSetPagination(CursorSetPagination):
@@ -37,6 +43,23 @@ class ArticleViewSet(viewsets.GenericViewSet):
             return SimpleArticleSerializer
         return ArticleSerializer
 
+
+
+    def get_query_params(self, query_params):
+        for key in query_params.keys():
+            if key not in {'status', 'title'}:
+                return Response(
+                    {"message": "검색 조건이 올바르지 않습니다."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        rtn = dict()
+        if 'title' in query_params:
+            rtn['title__icontains'] = query_params.get('title')
+        if 'status' in query_params:
+            rtn['article_status'] = query_params.get('status')
+        return rtn
+
+
     @transaction.atomic
     def create(self, request):
 
@@ -58,41 +81,24 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def list(self, request):
-        # title = self.request.query_params.get('title')
-        # order_status = self.request.query_params.get('status')
-        qp = self.request.query_params
 
-        # 유저에게 지워지지 않은 게시물만 보여준다.
-        # if request.user.is_superuser:
-        #     articles = self.get_queryset() if not title else self.get_queryset().filter(
-        #         title__icontains=title)
-        # else:
-        #     articles = self.get_queryset().filter(deleted_at=None) if not title else self.get_queryset().filter(
-        #         title__icontains=title,
-        #         deleted_at=None)
-        if qp:
-            for key in qp.keys():
-                if key not in {'status', 'title'}:
-                    return Response({
-                        "detail": "검색 조건이 올바르지 않습니다.",
-                        "error_code" : 122,
-                    }, status=status.HTTP_400_BAD_REQUEST)
+        # Variables for query ====================
+        count_participant = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
+                                              .annotate(count=Count('participant_id')).values('count'),
+                                              output_field=IntegerField()), 0)
+        sum_wish_price = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
+                                           .annotate(sum=Sum('wish_price')).values('sum'),
+                                           output_field=IntegerField()), 0)
+        order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
+                                                                                sum_wish_price=sum_wish_price))
+        # ====================
 
-            if 'title' in qp and 'status' in qp:
-                articles = self.get_queryset().filter(
-                    title__icontains=qp.get('title'),
-                    article_status=qp.get('status'),
-                )
-            if len(qp) == 1 and 'title' in qp:
-                articles = self.get_queryset().filter(
-                    title__icontains=qp.get('title'),
-                )
-            if len(qp) == 1 and 'status' in qp:
-                articles = self.get_queryset().filter(
-                    article_status=qp.get('status'),
-                )
-        else:
-            articles = self.get_queryset()
+        filter_kwargs = self.get_query_params(self.request.query_params)
+        articles = self.get_queryset().filter(**filter_kwargs)
+        if not request.user.is_superuser:
+            articles = articles.filter(deleted_at=None)
+        articles = articles.prefetch_related(order_chat)
+
 
         page = self.paginate_queryset(articles)
         assert page is not None

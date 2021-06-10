@@ -1,8 +1,3 @@
-from django.db.models import Sum
-from rest_framework import serializers
-
-from django.core.exceptions import ObjectDoesNotExist
-
 from chat.models import OrderChat, ParticipantProfile, ChatMessage
 from user.serializers import *
 
@@ -59,7 +54,7 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
 
     def get_participant(self, participant_profile):
         user_profile = participant_profile.participant.userprofile
-        # data = UserProfileSerializer(user_profile, context=self.context).data
+
         data = SimpleParticipantsSerializer(user_profile, context=self.context).data
         return data
 

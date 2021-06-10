@@ -61,6 +61,8 @@ def custom_exception_handler(exc: APIException, context):
                 },
                 status=status.HTTP_405_METHOD_NOT_ALLOWED
             )
+        # elif type(exc) is django.http:
+        #     response.data['detail'] = 'Rdaf'
         else:
             print(type(exc))
             if not hasattr(exc, 'default_code'):
@@ -73,6 +75,7 @@ def custom_exception_handler(exc: APIException, context):
 
                 )
             response.data['error_code'] = exc.default_code
+
     return response
 
 
@@ -130,9 +133,6 @@ class NotWritableFields(APIException):
     status_code = 400
     default_detail = '수정할 수 없는 항목이 포함된 요청입니다.'
     default_code = 109
-
-
-
 
 
 class ArticleNotFound(APIException):

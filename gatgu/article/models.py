@@ -17,6 +17,7 @@ class Article(models.Model):
     description = models.TextField()
     trading_place = models.CharField(max_length=50)
     product_url = models.CharField(max_length=200)
+
     image = models.URLField(null=True)
 
     # 글 작성자가 자신이 원하는 금액을 제외한 금액을 모집글에 작성한다.
@@ -40,6 +41,7 @@ class Article(models.Model):
 
     # 현재 날짜보다 커야 하는 조건 view 에서 적용, default = 7일 후
     time_in = models.DateField("Date", default=datetime.date.today)
+
 
     written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
