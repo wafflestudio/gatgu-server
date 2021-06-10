@@ -12,6 +12,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
+from gatgu.utils import FieldsNotFilled
 
 
 class CursorSetPagination(CursorSetPagination):
@@ -42,6 +43,15 @@ class ArticleViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
 
+        title = data.get('title')
+        description = data.get('description')
+        trading_place = data.get('trading_place')
+        product_url = data.get('product_url')
+        time_in = data.get('time_in')
+
+        if not title or not description or not trading_place or not product_url or not time_in:
+            raise FieldsNotFilled
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(writer=user)
@@ -61,11 +71,12 @@ class ArticleViewSet(viewsets.GenericViewSet):
         #         title__icontains=title,
         #         deleted_at=None)
         if qp:
-            print(qp)
             for key in qp.keys():
                 if key not in {'status', 'title'}:
-                    print(key)
-                    return Response({"message": "bad request"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        "detail": "검색 조건이 올바르지 않습니다.",
+                        "error_code" : 122,
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
             if 'title' in qp and 'status' in qp:
                 articles = self.get_queryset().filter(
@@ -120,7 +131,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         article.deleted_at = timezone.now()
         article.save()
-        return Response({"successfully deleted this article."}, status=status.HTTP_200_OK)
+        return Response({"message": "Successfully deleted this article."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['PUT'])
     def get_presigned_url(self, request, pk=None):

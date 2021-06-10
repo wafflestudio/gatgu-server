@@ -16,7 +16,7 @@ class Article(models.Model):
     article_status = models.PositiveSmallIntegerField(choices=ARTICLE_STATUS, default=1, db_index=True)
     description = models.TextField()
     trading_place = models.CharField(max_length=50)
-    product_url = models.URLField()
+    product_url = models.CharField(max_length=200)
     image = models.URLField(null=True)
 
     # 글 작성자가 자신이 원하는 금액을 제외한 금액을 모집글에 작성한다.
