@@ -1,5 +1,6 @@
 import boto3
 from botocore.config import Config
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum
 from django.db.models.functions import Coalesce
@@ -14,7 +15,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
-from gatgu.utils import FieldsNotFilled
+from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound
 
 from chat.models import ParticipantProfile
 
@@ -33,6 +34,18 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     pagination_class = CursorSetPagination
 
+    # Variables for query ====================
+    count_participant = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
+                                          .annotate(count=Count('participant_id')).values('count'),
+                                          output_field=IntegerField()), 0)
+    sum_wish_price = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
+                                       .annotate(sum=Sum('wish_price')).values('sum'),
+                                       output_field=IntegerField()), 0)
+    order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
+                                                                            sum_wish_price=sum_wish_price))
+
+    # ====================
+
     def get_permissions(self):
         if self.action == 'list' or 'retrieve':
             return (AllowAny(),)
@@ -43,22 +56,16 @@ class ArticleViewSet(viewsets.GenericViewSet):
             return SimpleArticleSerializer
         return ArticleSerializer
 
-
-
     def get_query_params(self, query_params):
         for key in query_params.keys():
             if key not in {'status', 'title'}:
-                return Response(
-                    {"message": "검색 조건이 올바르지 않습니다."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                raise QueryParamsNOTMATCH
         rtn = dict()
         if 'title' in query_params:
             rtn['title__icontains'] = query_params.get('title')
         if 'status' in query_params:
             rtn['article_status'] = query_params.get('status')
         return rtn
-
 
     @transaction.atomic
     def create(self, request):
@@ -82,23 +89,13 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
 
-        # Variables for query ====================
-        count_participant = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
-                                              .annotate(count=Count('participant_id')).values('count'),
-                                              output_field=IntegerField()), 0)
-        sum_wish_price = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
-                                           .annotate(sum=Sum('wish_price')).values('sum'),
-                                           output_field=IntegerField()), 0)
-        order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
-                                                                                sum_wish_price=sum_wish_price))
-        # ====================
-
         filter_kwargs = self.get_query_params(self.request.query_params)
         articles = self.get_queryset().filter(**filter_kwargs)
-        if not request.user.is_superuser:
-            articles = articles.filter(deleted_at=None)
-        articles = articles.prefetch_related(order_chat)
 
+        # if not request.user.is_superuser:
+        #     articles = articles.filter(deleted_at=None)
+
+        articles = articles.prefetch_related(self.order_chat)
 
         page = self.paginate_queryset(articles)
         assert page is not None
@@ -106,9 +103,14 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return self.get_paginated_response(serializer.data)
 
     def retrieve(self, request, pk):
-        article = get_object_or_404(Article, pk=pk)
+        try:
+            article = Article.objects.prefetch_related(self.order_chat).get(id=pk)
+        except ObjectDoesNotExist:
+            raise ArticleNotFound
+
         if article.deleted_at:
-            return Response(" message : This article is deleted", status=status.HTTP_404_NOT_FOUND)
+            raise ArticleNotFound
+
         return Response(self.get_serializer(article).data)
 
     @transaction.atomic

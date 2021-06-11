@@ -1,5 +1,4 @@
 import datetime
-
 from django.db.models import Sum
 from chat.models import OrderChat
 from chat.serializers import OrderChatSerializer
@@ -51,7 +50,6 @@ class ArticleSerializer(serializers.ModelSerializer):
     def get_order_chat(self, article):
         return OrderChatSerializer(article.order_chat).data
 
-
     def get_article_status(self, article):
         data = ParticipantsSummarySerializer(article.order_chat).data
         data['progress_status'] = article.article_status
@@ -70,7 +68,6 @@ class ParticipantsSummarySerializer(serializers.Serializer):
 
     def get_count(self, order_chat):
         return order_chat.count_participant
-
 
     def get_price(self, order_chat):
         return order_chat.sum_wish_price
@@ -95,7 +92,6 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'article_status',
             'updated_at',
         )
-
 
     def get_article_status(self, article):
         data = ParticipantsSummarySerializer(article.order_chat).data

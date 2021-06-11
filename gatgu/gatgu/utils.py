@@ -139,3 +139,8 @@ class ArticleNotFound(APIException):
     status_code = 404
     default_detail = '해당 게시글을 찾을 수 없습니다.'
     default_code = 121
+
+class QueryParamsNOTMATCH(APIException):
+    status_code = 400
+    default_detail = '검색 조건이 올바르지 않습니다.'
+    default_code = 122
