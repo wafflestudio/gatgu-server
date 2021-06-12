@@ -1,3 +1,6 @@
+from django.db.models.functions import Coalesce
+from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F
+
 from django.db import transaction
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
@@ -9,7 +12,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django.contrib.auth.models import User
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from article.models import Article
+from article.serializers import ArticleSerializer
 from chat.models import OrderChat, ChatMessage, ParticipantProfile
 from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer, \
     SimpleOrderChatSerializer
@@ -28,6 +34,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     serializer_class = OrderChatSerializer
     permission_classes = (IsAuthenticated(),)
     pagination_class = CursorSetPagination
+    authentication_classes = (JWTAuthentication,)
 
     def get_permissions(self):
         return self.permission_classes
@@ -47,6 +54,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         participants = [str(participant['order_chat_id']) for participant in
                         ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
         return participants
+
     #
     # def list(self, request):  # get: /chat/
     #     user = request.user
@@ -130,14 +138,34 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
         new_price = data['wish_price']
-        chat = get_object_or_404(OrderChat, pk=pk)
-        # if chat.article.writer_id == user.id:
+        # chat = get_object_or_404(OrderChat, pk=pk)
 
         if pk in self.chat_list(user.id):
             participant = get_object_or_404(ParticipantProfile, participant_id=user.id, order_chat_id=pk)
             participant.wish_price = new_price
             participant.save()
-            return Response(ParticipantProfileSerializer(participant).data, status=status.HTTP_200_OK)
+
+            # sum_wish_price = Coalesce(Subquery(
+            #     ParticipantProfile.objects.filter(order_chat_id=pk).annotate(
+            #         sum=Sum('wish_price')).values('sum'), output_field=IntegerField()), 0)
+            chat = OrderChat.objects.annotate(sum_wish_price=Sum('participant_profile__wish_price')).get(id=pk)
+
+            serializer = self.get_serializer(chat, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.update(chat, serializer.validated_data)
+
+            if chat.sum_wish_price >= chat.article.price_min:
+                chat.article.article_status = 2
+
+            else:
+                chat.article.article_status = 1
+
+            serializer.save()
+
+            data = ParticipantProfileSerializer(participant).data
+            data['article_status'] = chat.article.article_status
+
+            return Response(data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
@@ -166,7 +194,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
-    
+
     @action(detail=True, methods=['PUT'])
     def get_presigned_url(self, request, pk=None):
         user = request.user
@@ -174,29 +202,29 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         if data['method'] == 'get' or data['method'] == 'GET':
             s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={
-                'Bucket': 'gatgubucket',
-                'Key': data['file_name']
-            },
-            ExpiresIn=3600,
-            HttpMethod='GET')
+                ClientMethod='put_object',
+                Params={
+                    'Bucket': 'gatgubucket',
+                    'Key': data['file_name']
+                },
+                ExpiresIn=3600,
+                HttpMethod='GET')
             return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
         elif data['method'] == 'put' or data['method'] == 'PUT':
             s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={
-                'Bucket': 'gatgubucket',
-                'Key': 'chat/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)
-            },
-            ExpiresIn=3600,
-            HttpMethod='PUT')
-            return Response({'presigned_url': url, 'file_name': 'chat/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)}, status=status.HTTP_200_OK)
+                ClientMethod='put_object',
+                Params={
+                    'Bucket': 'gatgubucket',
+                    'Key': 'chat/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)
+                },
+                ExpiresIn=3600,
+                HttpMethod='PUT')
+            return Response(
+                {'presigned_url': url, 'file_name': 'chat/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)},
+                status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
-
-
 
 
 class ChatMessageViewSet(viewsets.GenericViewSet):

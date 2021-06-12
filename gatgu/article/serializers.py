@@ -58,18 +58,18 @@ class ArticleSerializer(serializers.ModelSerializer):
 
 class ParticipantsSummarySerializer(serializers.Serializer):
     count = serializers.SerializerMethodField()
-    price = serializers.SerializerMethodField()
+    price_sum = serializers.SerializerMethodField()
 
     class Meta:
         fields = (
             'count',
-            'price',
+            'price_sum',
         )
 
     def get_count(self, order_chat):
         return order_chat.count_participant
 
-    def get_price(self, order_chat):
+    def get_price_sum(self, order_chat):
         return order_chat.sum_wish_price
 
 

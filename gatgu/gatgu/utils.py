@@ -51,16 +51,14 @@ def custom_exception_handler(exc: APIException, context):
                     )
             print(exc.detail)
 
-
-
-        elif type(exc) is rest_framework.exceptions.MethodNotAllowed:
-            return JsonResponse(
-                {
-                    'detail': "요청 방식이 올바르지 않습니다.",
-                    'error_code': 300
-                },
-                status=status.HTTP_405_METHOD_NOT_ALLOWED
-            )
+        # elif type(exc) is rest_framework.exceptions.MethodNotAllowed:
+        #     return JsonResponse(
+        #         {
+        #             'detail': "요청 방식이 올바르지 않습니다.",
+        #             'error_code': 300
+        #         },
+        #         status=status.HTTP_405_METHOD_NOT_ALLOWED
+        #     )
         # elif type(exc) is django.http:
         #     response.data['detail'] = 'Rdaf'
         else:
@@ -129,7 +127,7 @@ class NotPermitted(APIException):
     default_code = 108
 
 
-class NotWritableFields(APIException):
+class NotEditableFields(APIException):
     status_code = 400
     default_detail = '수정할 수 없는 항목이 포함된 요청입니다.'
     default_code = 109

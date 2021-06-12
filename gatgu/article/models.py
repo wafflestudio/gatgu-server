@@ -5,14 +5,21 @@ from django.db import models
 
 
 class Article(models.Model):
+    GATHERING = 1
+    GATHERED = 2
+    COMPLETED = 3
+    EXPIRED = 4
+
     writer = models.ForeignKey(User, related_name='article', on_delete=models.CASCADE)
     title = models.CharField(max_length=50, db_index=True)
+
     ARTICLE_STATUS = (
-        (1, "모집중"),
-        (2, "모집완료"),
-        (3, "거래완료"),
-        (4, "기간만료"),
+        (GATHERING, "모집중"),
+        (GATHERED, "모집완료"),
+        (COMPLETED, "거래완료"),
+        (EXPIRED, "기간만료"),
     )
+
     article_status = models.PositiveSmallIntegerField(choices=ARTICLE_STATUS, default=1, db_index=True)
     description = models.TextField()
     trading_place = models.CharField(max_length=50)
@@ -41,7 +48,6 @@ class Article(models.Model):
 
     # 현재 날짜보다 커야 하는 조건 view 에서 적용, default = 7일 후
     time_in = models.DateField("Date", default=datetime.date.today)
-
 
     written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)

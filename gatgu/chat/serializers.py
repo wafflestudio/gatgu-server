@@ -46,10 +46,10 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
         model = ParticipantProfile
         fields = (
             'id',
-            'joined_at',
             'pay_status',
             'wish_price',
-            'participant'
+            'participant',
+            'joined_at',
         )
 
     def get_participant(self, participant_profile):

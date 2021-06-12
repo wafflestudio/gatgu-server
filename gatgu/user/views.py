@@ -20,7 +20,7 @@ from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
-    UserInfoNotMatch, UserNotFound, NotPermitted, NotWritableFields
+    UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
@@ -300,6 +300,7 @@ class UserViewSet(viewsets.GenericViewSet):
         else:
             users = self.get_queryset().filter(is_active=True, is_superuser=False)
 
+        users = users.select_related('userprofile').prefetch_related('participant_profile', 'article')
         page = self.paginate_queryset(users)
         assert page is not None
         serializer = self.get_serializer(page, many=True)
@@ -326,18 +327,13 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # PUT /user/me/  # 유저 정보 수정 (나)
     @transaction.atomic
-    @action(detail=True, methods=['PATCH'], url_path='edit')
-    def update_me(self, request, pk=None):
+    def partial_update(self, request, pk=None):
 
         if pk != 'me':
             raise NotPermitted
-            # response_data = {"error": "다른 회원의 정보를 수정할 수 없습니다."}
-            # return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         user = request.user
-
         data = request.data
-
         cnt = 0
 
         # 유저 아이디 수정 불가로 변경
@@ -346,7 +342,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 cnt += 1
 
         if cnt != len(data):
-            raise NotWritableFields
+            raise NotEditableFields
 
         nickname = data.get('nickname')
 
@@ -390,4 +386,3 @@ class UserViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
-
