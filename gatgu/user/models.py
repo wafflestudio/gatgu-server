@@ -2,6 +2,10 @@ from django.contrib.auth.models import User
 from django.db import models
 
 
+def profile_avatar_path(instance, filename):
+    return 'accounts/avatar/{}/{}'.format(instance.user.username, filename)
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(
         User, related_name='userprofile', on_delete=models.CASCADE)
@@ -20,3 +24,4 @@ class UserProfile(models.Model):
     )
     grade = models.PositiveSmallIntegerField(choices=GRADE, default=1, null=True)
     trading_address = models.CharField(max_length=50, null=True)
+    avatar = models.ImageField(upload_to=profile_avatar_path, null=True, blank=True)
