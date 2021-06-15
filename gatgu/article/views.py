@@ -59,9 +59,12 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return ArticleSerializer
 
     def get_query_params(self, query_params):
-        for key in query_params.keys():
-            if key not in {'status', 'title'}:
-                raise QueryParamsNOTMATCH
+
+        # pagination 고려 => accept { cursor, page_size }
+
+        # for key in query_params.keys():
+        #     if key not in {'status', 'title'}:
+        #         raise QueryParamsNOTMATCH
         rtn = dict()
         if 'title' in query_params:
             rtn['title__icontains'] = query_params.get('title')
@@ -115,8 +118,8 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         return Response(self.get_serializer(article).data)
 
-    @action(detail=False, methods=['PATCH'], url_path='update_status')
-    def update_status(self, request):
+    @action(detail=False, methods=['PATCH'], url_path='status')
+    def article_status(self, request):
 
         # 함수화 or not
         articles = self.get_queryset()
@@ -127,7 +130,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if gathering_article:
             gathering_article.update(article_status=1)
 
-        return Response({"message": "successfully updated status of articles"}, status=status.HTTP_202_ACCEPTED)
+        return Response({"message": "Successfully updated status of articles"}, status=status.HTTP_202_ACCEPTED)
 
     @transaction.atomic
     def partial_update(self, request, pk):
