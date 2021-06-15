@@ -24,10 +24,9 @@ class Article(models.Model):
     description = models.TextField()
     trading_place = models.CharField(max_length=50)
     product_url = models.CharField(max_length=200)
-    image = models.URLField(null=True)
     price_min = models.PositiveIntegerField(default=0, help_text="글 작성자가 자신이 원하는 금액을 제외한 금액을 모집글에 작성한다.")
 
-    # 현재 날짜보다 커야 하는 조건 view 에서 적용, default = 7일 후
+    # 현재 날짜보다 커야 하는 조건 추가
     time_in = models.DateField("Date", default=datetime.date.today, help_text="7일 후를 기본값으로 가진다.")
     written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -37,8 +36,8 @@ class Article(models.Model):
 
 
 class ArticleImage(models.Model):
-    article = models.ForeignKey('article.Article', on_delete=models.CASCADE, related_name='images')
-    img = models.ImageField(blank=True, upload_to="img/article")
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='%(class)s_images')
+    img = models.URLField(blank=True)
 
 
 class ArticleTag(models.Model):
@@ -66,5 +65,5 @@ class ArticleTag(models.Model):
         (TAG_10, '기타물품'),
 
     )
-    article = models.ForeignKey('article.Article', on_delete=models.CASCADE, related_name='images')
-    name = models.TextField(choices=TAG_LIST, blank=True)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='%(class)s_images')
+    tag_name = models.CharField(choices=TAG_LIST, blank=True, max_length=50)

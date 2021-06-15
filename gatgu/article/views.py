@@ -37,12 +37,14 @@ class ArticleViewSet(viewsets.GenericViewSet):
     pagination_class = CursorSetPagination
 
     # Variables for query ====================
-    count_participant = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
-                                          .annotate(count=Count('participant_id')).values('count'),
-                                          output_field=IntegerField()), 0)
-    sum_wish_price = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
-                                       .annotate(sum=Sum('wish_price')).values('sum'),
-                                       output_field=IntegerField()), 0)
+    count_participant = Coalesce(
+        Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                 .annotate(count=Count('participant_id')).values('count'),
+                 output_field=IntegerField()), 0)
+    sum_wish_price = Coalesce(
+        Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                 .annotate(sum=Sum('wish_price')).values('sum'),
+                 output_field=IntegerField()), 0)
     order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
                                                                             sum_wish_price=sum_wish_price))
 
@@ -125,7 +127,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         articles = self.get_queryset()
         expired_article = articles.filter(time_in__lt=datetime.date.today())
         gathering_article = articles.filter(time_in__gte=datetime.date.today())
-        if expired_article:
+        if expired_article and expired_article.get('article_statu') == 1:
             expired_article.update(article_status=4)
         if gathering_article:
             gathering_article.update(article_status=1)
@@ -155,7 +157,6 @@ class ArticleViewSet(viewsets.GenericViewSet):
         # time_in field 변경시 오늘보다 작은 날짜 불가 하도록
         if data.get['time_in'] < datetime.date.today():
             return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
-
 
         if article.article_status == 2:
             return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)

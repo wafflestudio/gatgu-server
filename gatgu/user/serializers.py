@@ -27,10 +27,9 @@ class UserSerializer(serializers.ModelSerializer):
         max_length=20,
         required=False,
     )
-    picture = serializers.ImageField(
+    picture = serializers.URLField(
         write_only=True,
         allow_null=True,
-        use_url=True,
         required=False,
     )
     trading_address = serializers.CharField(write_only=True,
