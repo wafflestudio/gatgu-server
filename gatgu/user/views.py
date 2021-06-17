@@ -19,8 +19,9 @@ from article.serializers import SimpleArticleSerializer
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
-from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
-    UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields
+from gatgu.utils import MailActivateFailedException, MailActivateDoneException, CodeNotMatchException, \
+    FieldsNotFilledException, UsedNicknameException, \
+    UserInfoNotMatchException, UserNotFoundException, NotPermittedException, NotEditableFieldsException
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
@@ -92,7 +93,7 @@ class UserViewSet(viewsets.GenericViewSet):
         trading_address = data.get('trading_address')
 
         if not username or not password or not email or not trading_address:
-            raise FieldsNotFilled
+            raise FieldsNotFilledException
 
         # ecache = caches["activated_email"]
         # chk_email = ecache.get(email)
@@ -104,7 +105,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
-            raise UsedNickname
+            raise UsedNicknameException
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -112,10 +113,7 @@ class UserViewSet(viewsets.GenericViewSet):
         userprofile_serializer = UserProfileSerializer(data=data)
         userprofile_serializer.is_valid(raise_exception=True)
 
-        # try:
         user = serializer.save()
-        # except IntegrityError:
-        #     raise Exception()
 
         login(request, user)
 
@@ -133,7 +131,7 @@ class UserViewSet(viewsets.GenericViewSet):
         password = request.data.get('password')
 
         if not username or not password:
-            raise FieldsNotFilled
+            raise FieldsNotFilledException
 
         user = authenticate(request, username=username, password=password)
 
@@ -142,7 +140,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
             return Response(TokenResponseSerializer(user).data)
 
-        raise UserInfoNotMatch
+        raise UserInfoNotMatchException
 
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
@@ -158,7 +156,7 @@ class UserViewSet(viewsets.GenericViewSet):
         chk_email = ecache.get(email)
 
         if chk_email is not None:
-            raise MailActivateDone
+            raise MailActivateDoneException
 
         ncache = caches["number_of_confirm"]
 
@@ -195,10 +193,10 @@ class UserViewSet(viewsets.GenericViewSet):
         email_code = cache.get(email)
 
         if email_code is None:
-            raise MailActivateFailed
+            raise MailActivateFailedException
 
         if email_code != code:
-            raise CodeNotMatch
+            raise CodeNotMatchException
 
         ecache = caches["activated_email"]
 
@@ -216,9 +214,6 @@ class UserViewSet(viewsets.GenericViewSet):
 
         # pk == me 인 경우 요청을 보낸 유저의 정보 찾기, 그 이외의 pk 인 경우 타겟유저를 조회
         user = self.request.user if pk == 'me' else self.get_object()
-
-        # if not user or not user.is_active:
-        #     return Response("message: 해당 유저를 찾을 수 없습니다.", status=status.HTTP_404_NOT_FOUND)
 
         # return user's article list
         if qp:
@@ -258,11 +253,6 @@ class UserViewSet(viewsets.GenericViewSet):
 
                 chats = OrderChatViewSet.queryset.filter(
                     Q(participant_profile__participant=user) | Q(article__writer=user))
-                # chats = OrderChatViewSet.queryset.filter(participant_profile__participant=user)
-                # chats = OrderChatViewSet.queryset.filter(article__writer=user)
-
-                # chats = OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id) |
-                # OrderChatViewSet.queryset.filter(participant_profile__participant_id=user.id)
 
                 if not chats:
                     return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
@@ -271,8 +261,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 serializer = SimpleOrderChatSerializer(page, many=True)
                 return self.get_paginated_response(serializer.data)
 
-                # serializer = SimpleOrderChatSerializer(chats, many=True)
-                # return Response(serializer.data, status=status.HTTP_200_OK)
 
         # return user detail
         else:
@@ -285,10 +273,10 @@ class UserViewSet(viewsets.GenericViewSet):
                 if user:
                     serializer = self.get_serializer(user)
                     if not user.is_active:
-                        raise UserNotFound
+                        raise UserNotFoundException
                         # return Response({'message : 탈퇴한 회원입니다.'}, status=status.HTTP_404_NOT_FOUND)
                 else:
-                    raise UserNotFound
+                    raise UserNotFoundException
                     # return Response({'message: 해당하는 회원이 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -330,7 +318,7 @@ class UserViewSet(viewsets.GenericViewSet):
     def partial_update(self, request, pk=None):
 
         if pk != 'me':
-            raise NotPermitted
+            raise NotPermittedException
 
         user = request.user
         data = request.data
@@ -342,13 +330,13 @@ class UserViewSet(viewsets.GenericViewSet):
                 cnt += 1
 
         if cnt != len(data):
-            raise NotEditableFields
+            raise NotEditableFieldsException
 
         nickname = data.get('nickname')
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
-            raise UsedNickname
+            raise UsedNicknameException
 
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)

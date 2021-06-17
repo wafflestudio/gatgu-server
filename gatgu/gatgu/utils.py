@@ -79,66 +79,66 @@ def custom_exception_handler(exc: APIException, context):
 
 # Email Acvicate
 
-class MailActivateDone(APIException):
+class MailActivateDoneException(APIException):
     status_code = 400
     default_detail = '이미 인증된 이메일 입니다. 회원가입을 진행해 주세요.'
     default_code = 102
 
 
-class MailActivateFailed(APIException):
+class MailActivateFailedException(APIException):
     status_code = 400
     default_detail = '인증되지 않은 이메일입니다.'
     default_code = 103
 
 
-class CodeNotMatch(APIException):
+class CodeNotMatchException(APIException):
     status_code = 400
     default_detail = '인증 코드가 일치하지 않습니다.'
     default_code = 104
 
 
-class UsedNickname(APIException):
+class UsedNicknameException(APIException):
     status_code = 400
     default_detail = '이미 사용중인 닉네임 입니다.'
     default_code = 104
 
 
-class FieldsNotFilled(APIException):
+class FieldsNotFilledException(APIException):
     status_code = 400
     default_detail = '필수 입력 항목이 누락되었습니다.'
     default_code = 201
 
 
-class UserInfoNotMatch(APIException):
+class UserInfoNotMatchException(APIException):
     status_code = 400
     default_detail = '아이디나 비밀번호를 확인해 주세요.'
     default_code = 106
 
 
-class UserNotFound(APIException):
+class UserNotFoundException(APIException):
     status_code = 404
     default_detail = '해당 회원을 찾을 수 없습니다.'
     default_code = 107
 
 
-class NotPermitted(APIException):
+class NotPermittedException(APIException):
     status_code = 403
     default_detail = '권한이 없습니다.'
     default_code = 108
 
 
-class NotEditableFields(APIException):
+class NotEditableFieldsException(APIException):
     status_code = 400
     default_detail = '수정할 수 없는 항목이 포함된 요청입니다.'
     default_code = 109
 
 
-class ArticleNotFound(APIException):
+class ArticleNotFoundException(APIException):
     status_code = 404
     default_detail = '해당 게시글을 찾을 수 없습니다.'
     default_code = 121
 
-class QueryParamsNOTMATCH(APIException):
+class QueryParamsNotMatchException(APIException):
     status_code = 400
     default_detail = '검색 조건이 올바르지 않습니다.'
     default_code = 122

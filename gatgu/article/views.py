@@ -17,7 +17,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
-from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted
+from gatgu.utils import FieldsNotFilledException, QueryParamsNotMatchException, ArticleNotFoundException, \
+    NotPermittedException
 
 from chat.models import ParticipantProfile
 
@@ -37,12 +38,14 @@ class ArticleViewSet(viewsets.GenericViewSet):
     pagination_class = CursorSetPagination
 
     # Variables for query ====================
-    count_participant = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
-                                          .annotate(count=Count('participant_id')).values('count'),
-                                          output_field=IntegerField()), 0)
-    sum_wish_price = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
-                                       .annotate(sum=Sum('wish_price')).values('sum'),
-                                       output_field=IntegerField()), 0)
+    count_participant = Coalesce(
+        Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                 .annotate(count=Count('participant_id')).values('count'),
+                 output_field=IntegerField()), 0)
+    sum_wish_price = Coalesce(
+        Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                 .annotate(sum=Sum('wish_price')).values('sum'),
+                 output_field=IntegerField()), 0)
     order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
                                                                             sum_wish_price=sum_wish_price))
 
@@ -60,7 +63,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     def get_query_params(self, query_params):
 
-        # pagination 고려 => accept { cursor, page_size }
+        # pagination 고려 to be added => accept { cursor, page_size }
 
         # for key in query_params.keys():
         #     if key not in {'status', 'title'}:
@@ -84,8 +87,11 @@ class ArticleViewSet(viewsets.GenericViewSet):
         product_url = data.get('product_url')
         time_in = data.get('time_in')
 
+        if time_in < datetime.date.today():
+            return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
         if not title or not description or not trading_place or not product_url or not time_in:
-            raise FieldsNotFilled
+            raise FieldsNotFilledException
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -96,10 +102,6 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         filter_kwargs = self.get_query_params(self.request.query_params)
         articles = self.get_queryset().filter(**filter_kwargs)
-
-        # if not request.user.is_superuser:
-        #     articles = articles.filter(deleted_at=None)
-
         articles = articles.prefetch_related(self.order_chat)
 
         page = self.paginate_queryset(articles)
@@ -111,10 +113,10 @@ class ArticleViewSet(viewsets.GenericViewSet):
         try:
             article = Article.objects.prefetch_related(self.order_chat).get(id=pk)
         except ObjectDoesNotExist:
-            raise ArticleNotFound
+            raise ArticleNotFoundException
 
         if article.deleted_at:
-            raise ArticleNotFound
+            raise ArticleNotFoundException
 
         return Response(self.get_serializer(article).data)
 
@@ -140,22 +142,19 @@ class ArticleViewSet(viewsets.GenericViewSet):
         try:
             article = Article.objects.prefetch_related(self.order_chat).get(id=pk)
         except ObjectDoesNotExist:
-            raise ArticleNotFound
+            raise ArticleNotFoundException
 
         if article.deleted_at:
-            raise ArticleNotFound
+            raise ArticleNotFoundException
 
         if user != article.writer:
-            raise NotPermitted
+            raise NotPermittedException
 
         # 변경 불가 필드 에러 추가
-        # if data.get['article_status'] == 2:
-        #     if hasattr(data, '')
 
         # time_in field 변경시 오늘보다 작은 날짜 불가 하도록
         if data.get['time_in'] < datetime.date.today():
             return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
-
 
         if article.article_status == 2:
             return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
@@ -177,7 +176,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         article = get_object_or_404(Article, pk=pk)
 
         if user != article.writer:
-            raise NotPermitted
+            raise NotPermittedException
 
         article.deleted_at = timezone.now()
         article.save()
