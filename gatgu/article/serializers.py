@@ -1,6 +1,8 @@
 import datetime
-from django.db.models import Sum
-from chat.models import OrderChat
+from django.db.models import Sum, Subquery, OuterRef, Count, IntegerField, Prefetch
+from django.db.models.functions import Coalesce
+
+from chat.models import OrderChat, ParticipantProfile
 from chat.serializers import OrderChatSerializer
 from user.serializers import *
 
@@ -20,6 +22,9 @@ class ArticleSerializer(serializers.ModelSerializer):
     article_status = serializers.SerializerMethodField()
     order_chat = serializers.SerializerMethodField()
 
+    # image = serializers.SerializerMethodField(required=False)
+    # tag = serializers.SerializerMethodField(required=False)
+
     class Meta:
         model = Article
         fields = (
@@ -32,10 +37,12 @@ class ArticleSerializer(serializers.ModelSerializer):
             'time_in',
             'article_status',
 
-            'image',
             'price_min',
-            'tag',
             'order_chat',
+
+            # 'image',
+            # 'tag',
+
             'written_at',
             'updated_at',
             'deleted_at',
@@ -56,8 +63,25 @@ class ArticleSerializer(serializers.ModelSerializer):
         return data
 
 
+#     def get_image(self, article):
+#         return ArticleImageSerializer(article.images, many=True).data
+#
+#     def get_tag(self, article):
+#         return ArticleTagSerializer(article.tags, many=True).data
+#
+#
+# class ArticleImageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         fields = (
+#             'img',
+#         )
+#
+# class ArticleTagSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         fields = (
+#             'tag_name',
+#         )
 class ParticipantsSummarySerializer(serializers.Serializer):
-    count = serializers.SerializerMethodField()
     price_sum = serializers.SerializerMethodField()
 
     class Meta:

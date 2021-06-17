@@ -17,7 +17,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
-from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted
+from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted, NotEditableFields
 
 from chat.models import ParticipantProfile
 
@@ -92,10 +92,12 @@ class ArticleViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(writer=user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        article_id = Article.objects.last().id
+        article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
+        return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
 
     def list(self, request):
-
         filter_kwargs = self.get_query_params(self.request.query_params)
         articles = self.get_queryset().filter(**filter_kwargs)
 
@@ -122,17 +124,17 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['PATCH'], url_path='status')
     def article_status(self, request):
-
-        # 함수화 or not
         articles = self.get_queryset()
+
         expired_article = articles.filter(time_in__lt=datetime.date.today())
-        gathering_article = articles.filter(time_in__gte=datetime.date.today())
-        if expired_article and expired_article.get('article_statu') == 1:
+        if expired_article and expired_article.get('article_status') == 1:
             expired_article.update(article_status=4)
-        if gathering_article:
+
+        gathering_article = articles.filter(time_in__gte=datetime.date.today())
+        if gathering_article and gathering_article.get('article_status') == 4:
             gathering_article.update(article_status=1)
 
-        return Response({"message": "Successfully updated status of articles"}, status=status.HTTP_202_ACCEPTED)
+        return Response({"message": "Successfully updated the status of articles"}, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def partial_update(self, request, pk):
@@ -151,10 +153,9 @@ class ArticleViewSet(viewsets.GenericViewSet):
             raise NotPermitted
 
         # 변경 불가 필드 에러 추가
-        # if data.get['article_status'] == 2:
-        #     if hasattr(data, '')
+        if article.article_status == 2 and hasattr(data, 'article_status'):
+            raise NotEditableFields
 
-        # time_in field 변경시 오늘보다 작은 날짜 불가 하도록
         if data.get['time_in'] < datetime.date.today():
             return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
