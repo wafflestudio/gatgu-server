@@ -123,16 +123,12 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return Response(self.get_serializer(article).data)
 
     @action(detail=False, methods=['PATCH'], url_path='status')
-    def article_status(self, request):
+    def article_status_update(self, request):
         articles = self.get_queryset()
 
-        expired_article = articles.filter(time_in__lt=datetime.date.today())
-        if expired_article and expired_article.get('article_status') == 1:
+        expired_article = articles.filter(time_in__lt=datetime.date.today(), article_status=1)
+        if expired_article:
             expired_article.update(article_status=4)
-
-        gathering_article = articles.filter(time_in__gte=datetime.date.today())
-        if gathering_article and gathering_article.get('article_status') == 4:
-            gathering_article.update(article_status=1)
 
         return Response({"message": "Successfully updated the status of articles"}, status=status.HTTP_200_OK)
 
