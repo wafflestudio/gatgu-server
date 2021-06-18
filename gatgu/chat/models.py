@@ -59,9 +59,9 @@ class ParticipantProfile(models.Model):
         on_delete=models.CASCADE,
         related_name='participant_profile',
     )
-    joined_at = models.DateTimeField(auto_now=True)
     pay_status = models.BooleanField(default=False)
-    wish_price = models.IntegerField(null=True)
+    wish_price = models.IntegerField(default=0)
+    joined_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = (

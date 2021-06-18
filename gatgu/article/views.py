@@ -95,6 +95,15 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         article_id = Article.objects.last().id
         article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
+        img_list = list(data.get('image'))
+
+        if img_list:
+            for item in img_list:
+                article.images.create(img_url=item)
+
+
+        # article.tags.create(name=data.get('tag'))
+
         return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
 
     def list(self, request):

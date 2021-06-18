@@ -6,7 +6,7 @@ from chat.models import OrderChat, ParticipantProfile
 from chat.serializers import OrderChatSerializer
 from user.serializers import *
 
-from article.models import Article
+from article.models import Article, ArticleTag, Tag, ArticleImage
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -22,8 +22,8 @@ class ArticleSerializer(serializers.ModelSerializer):
     article_status = serializers.SerializerMethodField()
     order_chat = serializers.SerializerMethodField()
 
-    # image = serializers.SerializerMethodField(required=False)
-    # tag = serializers.SerializerMethodField(required=False)
+    image = serializers.SerializerMethodField(required=False)
+    tag = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = Article
@@ -32,17 +32,15 @@ class ArticleSerializer(serializers.ModelSerializer):
             'article_id',
             'title',
             'description',
+            'image',
+            'tag',
             'trading_place',
             'product_url',
             'time_in',
-            'article_status',
-
             'price_min',
+
+            'article_status',
             'order_chat',
-
-            # 'image',
-            # 'tag',
-
             'written_at',
             'updated_at',
             'deleted_at',
@@ -62,45 +60,53 @@ class ArticleSerializer(serializers.ModelSerializer):
         data['progress_status'] = article.article_status
         return data
 
+    def get_image(self, article):
+        return ArticleImageSerializer(article.images, many=True).data
 
-#     def get_image(self, article):
-#         return ArticleImageSerializer(article.images, many=True).data
-#
-#     def get_tag(self, article):
-#         return ArticleTagSerializer(article.tags, many=True).data
-#
-#
-# class ArticleImageSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         fields = (
-#             'img',
-#         )
-#
-# class ArticleTagSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         fields = (
-#             'tag_name',
-#         )
+    def get_tag(self, article):
+        return TagSerializer(article.tags, many=True).data
+
+
+class ArticleImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArticleImage
+        fields = (
+            'id',
+            'img_url',
+        )
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = (
+            'name',
+        )
+
+
 class ParticipantsSummarySerializer(serializers.Serializer):
-    price_sum = serializers.SerializerMethodField()
+    cur_price_sum = serializers.SerializerMethodField()
 
     class Meta:
         fields = (
-            'count',
-            'price_sum',
+            'cur_people_sum',
+            'cur_price_sum',
         )
 
-    def get_count(self, order_chat):
+    def get_cur_people_sum(self, order_chat):
         return order_chat.count_participant
 
-    def get_price_sum(self, order_chat):
+    def get_cur_price_sum(self, order_chat):
         return order_chat.sum_wish_price
 
 
 class SimpleArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
-    price_min = serializers.IntegerField(required=True)
+    price_min = serializers.IntegerField(default=0)
     article_status = serializers.SerializerMethodField()
+
+    image = serializers.SerializerMethodField(required=False)
+    # tag = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = Article
@@ -110,8 +116,8 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'title',
             'trading_place',
             'image',
+            # 'tag',
             'price_min',
-            'tag',
             'time_in',
             'article_status',
             'updated_at',
@@ -121,3 +127,10 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
         data = ParticipantsSummarySerializer(article.order_chat).data
         data['progress_status'] = article.article_status
         return data
+
+    def get_image(self, article):
+        #image하나만 받아올 것
+        return ArticleImageSerializer(article.images, many=True).data
+
+    # def get_tag(self, article):
+    #     return ArticleTagSerializer(article.tags, many=True).data
