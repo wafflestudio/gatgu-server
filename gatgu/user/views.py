@@ -3,7 +3,8 @@ from botocore.config import Config
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import status, viewsets
@@ -16,11 +17,12 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
+from chat.models import ParticipantProfile, OrderChat
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
-    UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields
+    UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
@@ -38,11 +40,8 @@ class UserViewSet(viewsets.GenericViewSet):
     authentication_classes = (JWTAuthentication,)
 
     def get_pagination_class(self):
-        if self.action == 'retrieve':
-            if self.request.query_params.get('activity') in ('hosted', 'participated'):
-                return UserActivityPagination
-            if self.request.query_params.get('activity') == 'chats':
-                return OrderChatPagination
+        if self.request.query_params.get('activity') in ('hosted', 'participated'):
+            return UserActivityPagination
         return CursorSetPagination
 
     pagination_class = property(fget=get_pagination_class)
@@ -208,6 +207,80 @@ class UserViewSet(viewsets.GenericViewSet):
 
         response_data = {"message": "성공적으로 인증하였습니다."}
         return Response(response_data, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=True)
+    def articles(self, request, pk):
+        """
+        v1/users/{user_id}/articles
+
+        [query_params]
+        1. activity (required)
+            'hosted' or 'participated'
+        """
+
+        if pk == 'me':
+            user = self.request.user
+        else:
+            try:
+                user = User.objects.get(id=pk)
+            except User.DoesNotExist:
+                raise UserNotFound
+
+        activity = self.request.query_params.get('activity')
+        if activity is None:
+            raise QueryParamsNOTMATCH
+
+        # 관리자모드에서만 지워진 글 확인
+        articles = Article.objects.all() if user.is_superuser else Article.objects.filter(deleted_at=None)
+
+        filter_kwargs = dict()
+        if activity == 'hosted':
+            filter_kwargs = dict(writer=user, deleted_at=None)
+        elif activity == 'participated':
+            filter_kwargs = dict(order_chat__participant_profile__participant=user)
+
+        count_participant = Coalesce(
+            Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                     .annotate(count=Count('participant_id')).values('count'),
+                     output_field=IntegerField()), 0)
+        sum_wish_price = Coalesce(
+            Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                     .annotate(sum=Sum('wish_price')).values('sum'),
+                     output_field=IntegerField()), 0)
+        order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
+                                                                                sum_wish_price=sum_wish_price))
+
+        articles = articles.filter(**filter_kwargs).prefetch_related(order_chat)
+        if not articles:
+            return Response("게시글이 없습니다.", status=status.HTTP_404_NOT_FOUND)
+
+        page = self.paginate_queryset(articles)
+        assert page is not None
+        serializer = SimpleArticleSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
+    @action(methods=['GET'], detail=True)
+    def chattings(self, request, pk):
+        """
+        GET v1/users/{user_id}/chattings/
+        """
+        # 관리자 모드인 경우에만 다른 유저의 채팅 리스트 조회 가능
+        if pk == 'me':
+            user = request.user
+        else:
+            user = self.get_object()
+            if not user.is_superuser:
+                return Response("message: 다른회원의 채팅리스트를 열람할 수 없습니다.", status=status.HTTP_403_FORBIDDEN)
+
+        chattings = OrderChat.objects.filter(Q(participant_profile__participant=user) | Q(article__writer=user))
+
+        if not chattings:
+            return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
+        paginator = OrderChatPagination()
+        paginated_chattings = paginator.paginate_queryset(queryset=chattings, request=request)
+        assert paginated_chattings is not None
+        serializer = SimpleOrderChatSerializer(paginated_chattings, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):

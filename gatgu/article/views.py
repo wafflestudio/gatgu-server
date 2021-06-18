@@ -147,6 +147,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     @transaction.atomic
     def partial_update(self, request, pk):
+        # PATCH v1/articles/{article_id}
         user = request.user
         data = request.data
 

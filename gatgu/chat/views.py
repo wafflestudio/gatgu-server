@@ -55,43 +55,56 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                         ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
         return participants
 
-    #
-    # def list(self, request):  # get: /chat/
-    #     user = request.user
-    #     if user is None or not user.is_active:
-    #         return Response('message: 탈퇴하거나 없는 회원입니다.', status=status.HTTP_403_FORBIDDEN)
-    #     queryset = User.objects.get(id=user.id).order_chat
-    #     serializer = SimpleOrderChatSerializer(queryset, many=True)
-    #     return Response(serializer.data)
-
     # get one chat
-    def retrieve(self, request, pk=None):  # get: /chat/{chat_id}/
+    def retrieve(self, request, pk):
+        """
+        GET v1/chattings/{chatting_id}/
+        """
         order_chat = get_object_or_404(OrderChat, pk=pk)
         return Response(OrderChatSerializer(order_chat).data)
 
-    # join a chat
-    @action(detail=True, methods=['PUT'])
-    def join(self, request, pk=None):
-        user_id = request.user.id
-        article = get_object_or_404(Article, pk=pk)
-        if article.writer_id == user_id:
-            return Response(status=status.HTTP_200_OK)
-        elif pk in self.chat_list(user_id):
-            return Response(status=status.HTTP_200_OK)
-        else:
-            participant = ParticipantProfile(order_chat_id=pk, participant_id=user_id)
-            participant.save()
-            return Response(status=status.HTTP_201_CREATED)
+    @action(methods=['GET', 'POST', 'DELETE'], detail=True)
+    def participants(self, request, pk):
+        """
+        join or out a chat, participant list
+        GET v1/chattings/{chatting_id}/participants/
+        POST v1/chattings/{chatting_id}/participants/
+        DELETE v1/chattings/{chatting_id}/participants/
 
-    @action(detail=True, methods=['PUT'])
-    def out(self, request, pk=None):
-        user_id = request.user.id
-        if pk in self.chat_list(user_id):
-            participant = ParticipantProfile.objects.get(order_chat_id=pk, participant_id=user_id)
-            participant.delete()
-            return Response(status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        [data params]
+        if method == POST
+            1. wish_price(required)
+        """
+        user = request.user
+        try:
+            chatting = OrderChat.objects.select_related('participant').get(id=pk)
+        except OrderChat.DoesNotExist:
+            raise Response({"없쪙"}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == "GET":
+            participant_profiles = chatting.participant_profile
+            return Response(ParticipantProfileSerializer(participant_profiles, many=True).data, status=status.HTTP_200_OK)
+
+        elif request.method == 'POST':
+            # todo: validate 해주삼
+            wish_price = request.data.get('wish_price')
+
+            if chatting.article.writer == user:
+                return Response(status=status.HTTP_200_OK)
+            else:
+                if OrderChat.objects.filter(participant_profile__participant=user).exist():
+                    return Response(status=status.HTTP_200_OK)
+                else:
+                    ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
+                    return Response(status=status.HTTP_201_CREATED)
+
+        elif request.method == 'DELETE':
+            try:
+                participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                participant.delete()
+                return Response(status=status.HTTP_200_OK)
+            except ParticipantProfile.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['GET', 'POST'], serializer_class=ChatMessageSerializer)
     def messages(self, request, pk=None):
@@ -114,11 +127,11 @@ class OrderChatViewSet(viewsets.GenericViewSet):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['GET'])
-    def participants(self, request, pk=None):
-        chat = get_object_or_404(OrderChat, pk=pk)
-        participants = chat.participant_profile
-        return Response(ParticipantProfileSerializer(participants, many=True).data, status=status.HTTP_200_OK)
+    def update(self, request, pk):
+        # todo: 남규님 또는 기덕님  아래 set_status, set_wish_price, paid, set_tracking_number 통합해주세요.
+        # PUT or PATCH v1/chattings/{chatting_id}/
+        # PATCH 로 할꺼면 함수명 partial_update로 하면 됩니다.
+        pass
 
     @action(detail=True, methods=['PUT'])
     def set_status(self, request, pk=None):
