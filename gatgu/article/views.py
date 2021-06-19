@@ -1,7 +1,10 @@
+import datetime
+
 import boto3
 from botocore.config import Config
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum
+from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -14,7 +17,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
-from gatgu.utils import FieldsNotFilled
+from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted, NotEditableFields
 
 from chat.models import ParticipantProfile
 
@@ -33,6 +36,20 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     pagination_class = CursorSetPagination
 
+    # Variables for query ====================
+    count_participant = Coalesce(
+        Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                 .annotate(count=Count('participant_id')).values('count'),
+                 output_field=IntegerField()), 0)
+    sum_wish_price = Coalesce(
+        Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id')).values('order_chat_id')
+                 .annotate(sum=Sum('wish_price')).values('sum'),
+                 output_field=IntegerField()), 0)
+    order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
+                                                                            sum_wish_price=sum_wish_price))
+
+    # ====================
+
     def get_permissions(self):
         if self.action == 'list' or 'retrieve':
             return (AllowAny(),)
@@ -43,22 +60,19 @@ class ArticleViewSet(viewsets.GenericViewSet):
             return SimpleArticleSerializer
         return ArticleSerializer
 
-
-
     def get_query_params(self, query_params):
-        for key in query_params.keys():
-            if key not in {'status', 'title'}:
-                return Response(
-                    {"message": "검색 조건이 올바르지 않습니다."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+
+        # pagination 고려 => accept { cursor, page_size }
+
+        # for key in query_params.keys():
+        #     if key not in {'status', 'title'}:
+        #         raise QueryParamsNOTMATCH
         rtn = dict()
         if 'title' in query_params:
             rtn['title__icontains'] = query_params.get('title')
         if 'status' in query_params:
             rtn['article_status'] = query_params.get('status')
         return rtn
-
 
     @transaction.atomic
     def create(self, request):
@@ -78,27 +92,28 @@ class ArticleViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(writer=user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        article_id = Article.objects.last().id
+        article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
+        img_list = list(data.get('image'))
+
+        if img_list:
+            for item in img_list:
+                article.images.create(img_url=item)
+
+
+        # article.tags.create(name=data.get('tag'))
+
+        return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
 
     def list(self, request):
-
-        # Variables for query ====================
-        count_participant = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
-                                              .annotate(count=Count('participant_id')).values('count'),
-                                              output_field=IntegerField()), 0)
-        sum_wish_price = Coalesce(Subquery(ParticipantProfile.objects.filter(order_chat_id=OuterRef('id'))
-                                           .annotate(sum=Sum('wish_price')).values('sum'),
-                                           output_field=IntegerField()), 0)
-        order_chat = Prefetch('order_chat', queryset=OrderChat.objects.annotate(count_participant=count_participant,
-                                                                                sum_wish_price=sum_wish_price))
-        # ====================
-
         filter_kwargs = self.get_query_params(self.request.query_params)
         articles = self.get_queryset().filter(**filter_kwargs)
-        if not request.user.is_superuser:
-            articles = articles.filter(deleted_at=None)
-        articles = articles.prefetch_related(order_chat)
 
+        # if not request.user.is_superuser:
+        #     articles = articles.filter(deleted_at=None)
+
+        articles = articles.prefetch_related(self.order_chat)
 
         page = self.paginate_queryset(articles)
         assert page is not None
@@ -106,34 +121,75 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return self.get_paginated_response(serializer.data)
 
     def retrieve(self, request, pk):
-        article = get_object_or_404(Article, pk=pk)
+        try:
+            article = Article.objects.prefetch_related(self.order_chat).get(id=pk)
+        except ObjectDoesNotExist:
+            raise ArticleNotFound
+
         if article.deleted_at:
-            return Response(" message : This article is deleted", status=status.HTTP_404_NOT_FOUND)
+            raise ArticleNotFound
+
         return Response(self.get_serializer(article).data)
 
+    @action(detail=False, methods=['PATCH'], url_path='status')
+    def article_status(self, request):
+        articles = self.get_queryset()
+
+        expired_article = articles.filter(time_in__lt=datetime.date.today())
+        if expired_article and expired_article.get('article_status') == 1:
+            expired_article.update(article_status=4)
+
+        gathering_article = articles.filter(time_in__gte=datetime.date.today())
+        if gathering_article and gathering_article.get('article_status') == 4:
+            gathering_article.update(article_status=1)
+
+        return Response({"message": "Successfully updated the status of articles"}, status=status.HTTP_200_OK)
+
     @transaction.atomic
-    @action(detail=True, methods=['PATCH'], url_path='edit')
-    def edit(self, request, pk):
+    def partial_update(self, request, pk):
+        # PATCH v1/articles/{article_id}
         user = request.user
-        article = get_object_or_404(Article, pk=pk)
+        data = request.data
+
+        try:
+            article = Article.objects.prefetch_related(self.order_chat).get(id=pk)
+        except ObjectDoesNotExist:
+            raise ArticleNotFound
+
+        if article.deleted_at:
+            raise ArticleNotFound
 
         if user != article.writer:
-            return Response({"error": "다른 회원의 게시물을 수정할 수 없습니다. "}, status=status.HTTP_403_FORBIDDEN)
+            raise NotPermitted
 
-        # if article.article_status >= 2:
-        #     return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
+        # 변경 불가 필드 에러 추가
+        if article.article_status == 2 and hasattr(data, 'article_status'):
+            raise NotEditableFields
+
+        if data.get['time_in'] < datetime.date.today():
+            return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if article.article_status == 2:
+            return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(article, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.update(article, serializer.validated_data)
+
+        # 상태 체크 및 업데이트 api 추가
+        if article.article_status == 4 and article.time_in >= datetime.date.today():
+            article.article_status = 1
+            serializer.save()
+
         return Response(serializer.data)
 
     @transaction.atomic
     def delete(self, request, pk):
         user = request.user
         article = get_object_or_404(Article, pk=pk)
+
         if user != article.writer:
-            return Response({"error": "Can't delete other User's article"}, status=status.HTTP_403_FORBIDDEN)
+            raise NotPermitted
 
         article.deleted_at = timezone.now()
         article.save()

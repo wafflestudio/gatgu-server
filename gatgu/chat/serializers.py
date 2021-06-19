@@ -17,7 +17,6 @@ class OrderChatSerializer(serializers.ModelSerializer):
     def get_participant_profile(self, orderchat):
         participants_profile = orderchat.participant_profile
         data = ParticipantProfileSerializer(participants_profile, many=True, context=self.context).data
-        # data = SimpleParticipantsSerializer(participants_profile, many=True, context=self.context).data
         return data
 
 
@@ -46,10 +45,10 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
         model = ParticipantProfile
         fields = (
             'id',
-            'joined_at',
             'pay_status',
             'wish_price',
-            'participant'
+            'participant',
+            'joined_at',
         )
 
     def get_participant(self, participant_profile):

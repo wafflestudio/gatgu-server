@@ -3,7 +3,7 @@ from rest_framework.routers import SimpleRouter
 from chat.views import OrderChatViewSet, ChatMessageViewSet
 
 router = SimpleRouter()
-router.register('chat', OrderChatViewSet, basename='chat')
+router.register('chattings', OrderChatViewSet, basename='chatttings')
 router.register('message', ChatMessageViewSet, basename='message')
 
 urlpatterns = [
