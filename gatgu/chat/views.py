@@ -86,17 +86,18 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             return Response(ParticipantProfileSerializer(participant_profiles, many=True).data, status=status.HTTP_200_OK)
 
         elif request.method == 'POST':
-            # todo: validate 해주삼
             wish_price = request.data.get('wish_price')
 
             if chatting.article.writer == user:
                 return Response(status=status.HTTP_200_OK)
+            elif OrderChat.objects.filter(participant_profile__participant=user).exist():
+                return Response(status=status.HTTP_200_OK)
+            elif chatting.order_status=='WAITING_MEMBERS':
+                ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
+                return Response(status=status.HTTP_201_CREATED)
             else:
-                if OrderChat.objects.filter(participant_profile__participant=user).exist():
-                    return Response(status=status.HTTP_200_OK)
-                else:
-                    ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
-                    return Response(status=status.HTTP_201_CREATED)
+                # full chatting room
+                return Response(status=status.HTTP_403_FORBIDDEN)
 
         elif request.method == 'DELETE':
             try:
