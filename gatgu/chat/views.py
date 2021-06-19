@@ -63,7 +63,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         order_chat = get_object_or_404(OrderChat, pk=pk)
         return Response(OrderChatSerializer(order_chat).data)
 
-    @action(methods=['GET', 'POST', 'DELETE'], detail=True)
+    @action(methods=['GET', 'POST', 'PATCH', 'DELETE'], detail=True)
     def participants(self, request, pk):
         """
         join or out a chat, participant list
@@ -98,6 +98,23 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             else:
                 # full chatting room
                 return Response(status=status.HTTP_403_FORBIDDEN)
+
+        elif request.method == 'PATCH':
+            user = request.user
+            data = request.data
+
+            if 'pay_status' in data and user!=chatting.article.writer:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            try:
+                participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.update(participant, serializer.validated_data)
+                serializer.save()
+                return Response(status=status.HTTP_200_OK)
+            except ParticipantProfile.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
 
         elif request.method == 'DELETE':
             try:
