@@ -134,6 +134,10 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         chat = get_object_or_404(OrderChat, pk=pk)
         if user!=chat.article.writer:
             return Response(status=status.HTTP_403_FORBIDDEN)
+        if 'order_status' in data:
+            if data['order_status']<chat.order_status:
+                print("order status should grow up")
+                return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(chat, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.update(chat, serializer.validated_data)
