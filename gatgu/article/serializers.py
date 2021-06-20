@@ -6,7 +6,7 @@ from chat.models import OrderChat, ParticipantProfile
 from chat.serializers import OrderChatSerializer
 from user.serializers import *
 
-from article.models import Article, ArticleTag, Tag, ArticleImage
+from article.models import Article, ArticleImage
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -23,7 +23,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     order_chat = serializers.SerializerMethodField()
 
     image = serializers.SerializerMethodField(required=False)
-    tag = serializers.SerializerMethodField(required=False)
+    # tag = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = Article
@@ -33,7 +33,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'image',
-            'tag',
+            # 'tag',
             'trading_place',
             'product_url',
             'time_in',
@@ -63,8 +63,8 @@ class ArticleSerializer(serializers.ModelSerializer):
     def get_image(self, article):
         return ArticleImageSerializer(article.images, many=True).data
 
-    def get_tag(self, article):
-        return TagSerializer(article.tags, many=True).data
+    # def get_tag(self, article):
+    #     return TagSerializer(article.tags, many=True).data
 
 
 class ArticleImageSerializer(serializers.ModelSerializer):
@@ -76,12 +76,12 @@ class ArticleImageSerializer(serializers.ModelSerializer):
         )
 
 
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = (
-            'name',
-        )
+# class TagSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Tag
+#         fields = (
+#             'name',
+#         )
 
 
 class ParticipantsSummarySerializer(serializers.Serializer):
