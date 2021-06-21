@@ -22,8 +22,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     article_status = serializers.SerializerMethodField()
     order_chat = serializers.SerializerMethodField()
 
-    image = serializers.SerializerMethodField(required=False)
-    # tag = serializers.SerializerMethodField(required=False)
+    images = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = Article
@@ -32,8 +31,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             'article_id',
             'title',
             'description',
-            'image',
-            # 'tag',
+            'images',
             'trading_place',
             'product_url',
             'time_in',
@@ -47,11 +45,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
         )
 
-    def create(self, validated_data):
-        article = super(ArticleSerializer, self).create(validated_data)
-        OrderChat.objects.create(article=article)
-        return article
-
     def get_order_chat(self, article):
         return OrderChatSerializer(article.order_chat).data
 
@@ -60,11 +53,13 @@ class ArticleSerializer(serializers.ModelSerializer):
         data['progress_status'] = article.article_status
         return data
 
-    def get_image(self, article):
+    def get_images(self, article):
         return ArticleImageSerializer(article.images, many=True).data
 
-    # def get_tag(self, article):
-    #     return TagSerializer(article.tags, many=True).data
+    def create(self, validated_data):
+        article = super(ArticleSerializer, self).create(validated_data)
+        OrderChat.objects.create(article=article)
+        return article
 
 
 class ArticleImageSerializer(serializers.ModelSerializer):
@@ -74,14 +69,6 @@ class ArticleImageSerializer(serializers.ModelSerializer):
             'id',
             'img_url',
         )
-
-
-# class TagSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Tag
-#         fields = (
-#             'name',
-#         )
 
 
 class ParticipantsSummarySerializer(serializers.Serializer):
@@ -105,8 +92,7 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
     price_min = serializers.IntegerField(default=0)
     article_status = serializers.SerializerMethodField()
 
-    image = serializers.SerializerMethodField(required=False)
-    # tag = serializers.SerializerMethodField(required=False)
+    images = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = Article
@@ -115,8 +101,7 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
             'article_id',
             'title',
             'trading_place',
-            'image',
-            # 'tag',
+            'images',
             'price_min',
             'time_in',
             'article_status',
@@ -128,9 +113,6 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
         data['progress_status'] = article.article_status
         return data
 
-    def get_image(self, article):
-        #image하나만 받아올 것
+    def get_images(self, article):
+        # image하나만 받아올 것 ( 대표사진 )
         return ArticleImageSerializer(article.images, many=True).data
-
-    # def get_tag(self, article):
-    #     return ArticleTagSerializer(article.tags, many=True).data

@@ -27,7 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
         max_length=20,
         required=False,
     )
-    picture = serializers.URLField(
+    picture = serializers.CharField(
         write_only=True,
         allow_null=True,
         required=False,
