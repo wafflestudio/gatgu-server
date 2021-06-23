@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: latest
+      BUILD_NUMBER: ${{ github.run_number }}
+      DOCKER_ID: noaarhk
+      DOCKER_REPOSITORY: gatgu
+
+      S3_BUCKET_NAME: elasticbeanstalk-ap-northeast-2-814473694736
+
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2
+
+    - name: Upload Dockerrun.aws.json to S3
+      run: |
+        zip -r deploy.zip Dockerrun.aws.json
+        aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
+
+    - name: Docker Login
+      uses: docker/login-action@v1.8.0
+      with:
+        username: noaarhk
+        password: ${{ secrets.DOCKER_PASSWORD}}
+
+    - name: Add public IP to AWS security group
+      uses: sohelamin/aws-security-group-add-ip-action@master
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: 'us-east-2'
+        aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID }}
+        port: '3306'
+        to-port: '3306'
+        protocol: 'tcp'
+        description: 'GitHub Action'
+
+    - name: Docker Build, tag, and push image to Dockerhub
+      id: build-image
+      run: |
+        cd gatgu
+        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
+        docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
+        
+    - name: Deploy to ElasticBeanstalk
+      run: |
+        aws elasticbeanstalk create-application-version \
+          --application-name gatgu \
+          --version-label $BUILD_NUMBER \
+          --description $BUILD_NUMBER \
+          --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key='deploy.zip'
+        aws elasticbeanstalk update-environment \
+          --environment-name gatgu-env \
+          --version-label $BUILD_NUMBER
