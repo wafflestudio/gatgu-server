@@ -247,4 +247,3 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost:3000',
 # ]
 
-AWS_SHARED_CREDENTIALS_FILE =
