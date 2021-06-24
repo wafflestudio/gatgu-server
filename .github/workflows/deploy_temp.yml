@@ -55,11 +55,14 @@ jobs:
       run: |
         cd gatgu
         echo '{"SECRET_KEY":"$SECRET_KEY"}' > secrets.json
+        echo '[default]\naws_access_key_id = $AWS_ACCESS_KEY_ID\naws_secret_access_key = $AWS_SECRET_ACCESS_KEY' > .aws/credentials
         docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         
     - name: Deploy to ElasticBeanstalk
       run: |
