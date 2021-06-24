@@ -246,4 +246,4 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost',
 #     'http://localhost:3000',
 # ]
-AWS_CONFIG_FILE = os.path.join(BASE_DIR/.aws, '.aws')
+AWS_SHARED_CREDENTIALS_FILE = os.path.join(BASW_DIR, 'credentials')
