@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from django.db import models
 
 
-def profile_avatar_path(instance, filename):
-    return 'accounts/avatar/{}/{}'.format(instance.user.username, filename)
+# def profile_avatar_path(instance, filename):
+#     return 'accounts/avatar/{}/{}'.format(instance.user.username, filename)
 
 
 class UserProfile(models.Model):
@@ -17,7 +17,7 @@ class UserProfile(models.Model):
 
     user = models.OneToOneField(
         User, related_name='userprofile', on_delete=models.CASCADE)
-    picture = models.URLField(null=True)
+    picture = models.TextField(null=True)
     nickname = models.CharField(
         max_length=20, db_index=True, null=False)
     updated_at = models.DateTimeField(auto_now=True)
