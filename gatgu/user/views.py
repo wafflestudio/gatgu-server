@@ -435,6 +435,7 @@ class UserViewSet(viewsets.GenericViewSet):
         data = request.data
         session = boto3.Session(profile_name='default')
         s3 = session.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+
         if data['method'] == 'get' or data['method'] == 'GET':
             url = s3.generate_presigned_url(
                 ClientMethod='put_object',
