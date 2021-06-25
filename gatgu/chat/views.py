@@ -16,9 +16,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from article.models import Article
 from article.serializers import ArticleSerializer
-from chat.models import OrderChat, ChatMessage, ParticipantProfile
+from chat.models import OrderChat, ChatMessage, ParticipantProfile, ChatMessageImage
 from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer, \
-    SimpleOrderChatSerializer
+    SimpleOrderChatSerializer, ChatMessageImageSerializer
 from gatgu.paginations import CursorSetPagination
 
 import boto3
@@ -142,8 +142,21 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             serializer = ChatMessageSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             serializer.save(sent_by=user, chat_id=pk)
+            message_id = ChatMessage.objects.last().id
+            message = ChatMessage.objects.get(id=message_id)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if 'image' in data and data['image'] != '':
+                message.image.create(img_url=data['image'])
+                message.save()
+
+            message = ChatMessage.objects.get(id=message_id)
+            img = message.image.all()[0]
+            ser = ChatMessageImageSerializer(img)
+            print(ser.data)
+            print(message.image.values())
+            
+
+            return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, pk):
         user = request.user

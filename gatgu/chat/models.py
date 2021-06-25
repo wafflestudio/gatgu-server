@@ -21,9 +21,11 @@ class ChatMessage(models.Model):
     sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
     sent_at = models.DateTimeField(auto_now=True)
     chat = models.ForeignKey(OrderChat, on_delete=models.CASCADE, related_name='messages')
-    media = models.URLField(null=True)
     type = models.CharField(max_length=30)
 
+class ChatMessageImage(models.Model):
+    message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='image')
+    img_url = models.URLField(blank=True)
 
 # order_chat 과 user(participant)의 관계 테이블
 class ParticipantProfile(models.Model):
