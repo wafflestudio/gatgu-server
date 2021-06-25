@@ -390,3 +390,5 @@ dump.rdb
 # Djanog settings.py SECRET_KEY file
 secrets.json
 
+# AWS files
+.aws/*
