@@ -386,3 +386,7 @@ dump.rdb
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# Djanog settings.py SECRET_KEY file
+secrets.json
+

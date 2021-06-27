@@ -433,8 +433,8 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_presigned_url(self, request):
         user = request.user
         data = request.data
+        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
         if data['method'] == 'get' or data['method'] == 'GET':
-            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
                 ClientMethod='put_object',
                 Params={
@@ -445,7 +445,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 HttpMethod='GET')
             return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
         elif data['method'] == 'put' or data['method'] == 'PUT':
-            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
             url = s3.generate_presigned_url(
                 ClientMethod='put_object',
                 Params={
