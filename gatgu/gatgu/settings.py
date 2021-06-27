@@ -163,7 +163,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # local
         'HOST': '127.0.0.1',
-        # ohio
+        # ohio deprecated
         # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
         # seoul
         'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
