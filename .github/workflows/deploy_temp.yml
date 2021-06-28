@@ -55,8 +55,11 @@ jobs:
       run: |
         cd gatgu
         echo '{"SECRET_KEY":"$SECRET_KEY","AWS_ACCESS_KEY_ID":"$TETING_AWS_ACCESS_KEY_ID","AWS_SECRET_ACCESS_KEY":"$AWS_SECRET_ACCESS_KEY"}' > secrets.json
-        echo $SECRET_KEY
-        echo $AWS_ACCESS_KEY_ID
+
+        mkdir .aws
+        echo '[default]\naws_access_key_id = $AWS_ACCESS_KEY_ID\naws_secret_access_key = $AWS_SECRET_ACCESS_KEY' > .aws/credentials
+        echo '[default]\nregion = ap-northeast-2' > .aws/config
+
         docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
