@@ -50,6 +50,9 @@ jobs:
         protocol: 'tcp'
         description: 'GitHub Action'
 
+    - name: AWS cli install action
+      uses: chrislennon/action-aws-cli@1.1
+
     - name: Docker Build, tag, and push image to Dockerhub
       id: build-image
       run: |
@@ -63,8 +66,8 @@ jobs:
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_NOAARHK }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_NOAARHK }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     - name: Deploy to ElasticBeanstalk
       run: |
