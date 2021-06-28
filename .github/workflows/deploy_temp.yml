@@ -54,7 +54,7 @@ jobs:
       id: build-image
       run: |
         cd gatgu
-        echo '{"SECRET_KEY":"$SECRET_KEY","AWS_ACCESS_KEY_ID":"$AWS_ACCESS_KEY_ID","AWS_SECRET_ACCESS_KEY":"$AWS_SECRET_ACCESS_KEY"}' > secrets.json
+        echo '{"SECRET_KEY":"$SECRET_KEY","AWS_ACCESS_KEY_ID":"$TETING_AWS_ACCESS_KEY_ID","AWS_SECRET_ACCESS_KEY":"$AWS_SECRET_ACCESS_KEY"}' > secrets.json
         echo $SECRET_KEY
         echo $AWS_ACCESS_KEY_ID
         docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
