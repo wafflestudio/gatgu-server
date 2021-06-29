@@ -23,8 +23,8 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_NOAARHK }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_NOAARHK }}
         aws-region: ap-northeast-2
 
     - name: Upload Dockerrun.aws.json to S3
@@ -42,9 +42,9 @@ jobs:
       uses: sohelamin/aws-security-group-add-ip-action@master
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_NOAARHK }}
         aws-region: 'ap-northeast-2'
-        aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID }}
+        aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID_NOAARHK }}
         port: '3306'
         to-port: '3306'
         protocol: 'tcp'
@@ -60,8 +60,8 @@ jobs:
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID}}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_NOAARHK}}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_NOAARHK}}
 
     - name: Deploy to ElasticBeanstalk
       run: |
