@@ -434,8 +434,6 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_presigned_url(self, request):
         user = request.user
         data = request.data
-#        session = boto3.Session(aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-#        s3 = session.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
 
         s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
         if data['method'] == 'get' or data['method'] == 'GET':
