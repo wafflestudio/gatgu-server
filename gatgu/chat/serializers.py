@@ -1,4 +1,4 @@
-from chat.models import OrderChat, ParticipantProfile, ChatMessage
+from chat.models import OrderChat, ParticipantProfile, ChatMessage, ChatMessageImage
 from user.serializers import *
 
 
@@ -57,16 +57,16 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
         data = SimpleParticipantsSerializer(user_profile, context=self.context).data
         return data
 
-
 class ChatMessageSerializer(serializers.ModelSerializer):
     sent_by = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = ChatMessage
         fields = (
             'id',
             'text',
-            'media',
+            'image',
             'sent_by',
             'sent_at'
         )
@@ -75,3 +75,15 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         sent_by = chatmessage.sent_by.userprofile
         data = UserProfileSerializer(sent_by, context=self.context).data
         return data
+    
+    def get_image(self, chatmessage):
+        image = chatmessage.image.all()[0]
+        return ChatMessageImageSerializer(image, many=False).data
+
+class ChatMessageImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMessageImage
+        fields = (
+            'id',
+            'img_url'
+        )
