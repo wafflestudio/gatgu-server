@@ -16,9 +16,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from article.models import Article
 from article.serializers import ArticleSerializer
-from chat.models import OrderChat, ChatMessage, ParticipantProfile
+from chat.models import OrderChat, ChatMessage, ParticipantProfile, ChatMessageImage
 from chat.serializers import OrderChatSerializer, ChatMessageSerializer, ParticipantProfileSerializer, \
-    SimpleOrderChatSerializer
+    SimpleOrderChatSerializer, ChatMessageImageSerializer
 from gatgu.paginations import CursorSetPagination
 
 import boto3
@@ -63,7 +63,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         order_chat = get_object_or_404(OrderChat, pk=pk)
         return Response(OrderChatSerializer(order_chat).data)
 
-    @action(methods=['GET', 'POST', 'DELETE'], detail=True)
+    @action(methods=['GET', 'POST', 'PATCH', 'DELETE'], detail=True)
     def participants(self, request, pk):
         """
         join or out a chat, participant list
@@ -77,7 +77,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         """
         user = request.user
         try:
-            chatting = OrderChat.objects.select_related('participant').get(id=pk)
+            chatting = OrderChat.objects.get(id=pk)
         except OrderChat.DoesNotExist:
             raise Response({"없쪙"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -86,17 +86,35 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             return Response(ParticipantProfileSerializer(participant_profiles, many=True).data, status=status.HTTP_200_OK)
 
         elif request.method == 'POST':
-            # todo: validate 해주삼
             wish_price = request.data.get('wish_price')
 
             if chatting.article.writer == user:
                 return Response(status=status.HTTP_200_OK)
+            elif OrderChat.objects.filter(participant_profile__participant=user).exists():
+                return Response(status=status.HTTP_200_OK)
+            elif chatting.order_status==1:
+                ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
+                return Response(status=status.HTTP_201_CREATED)
             else:
-                if OrderChat.objects.filter(participant_profile__participant=user).exist():
-                    return Response(status=status.HTTP_200_OK)
-                else:
-                    ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
-                    return Response(status=status.HTTP_201_CREATED)
+                # full chatting room
+                return Response(status=status.HTTP_403_FORBIDDEN)
+
+        elif request.method == 'PATCH':
+            user = request.user
+            data = request.data
+
+            if 'pay_status' in data and user!=chatting.article.writer:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            try:
+                participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.update(participant, serializer.validated_data)
+                serializer.save()
+                return Response(status=status.HTTP_200_OK)
+            except ParticipantProfile.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
 
         elif request.method == 'DELETE':
             try:
@@ -124,14 +142,40 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             serializer = ChatMessageSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             serializer.save(sent_by=user, chat_id=pk)
+            message_id = ChatMessage.objects.last().id
+            message = ChatMessage.objects.get(id=message_id)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if 'image' in data and data['image'] != '':
+                message.image.create(img_url=data['image'])
+                message.save()
 
-    def update(self, request, pk):
+            message = ChatMessage.objects.get(id=message_id)
+            img = message.image.all()[0]
+            ser = ChatMessageImageSerializer(img)
+            print(ser.data)
+            print(message.image.values())
+            
+
+            return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, pk):
+        user = request.user
+        data = request.data
+        chat = get_object_or_404(OrderChat, pk=pk)
+        if user!=chat.article.writer:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if 'order_status' in data:
+            if data['order_status']<chat.order_status:
+                print("order status should grow up")
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = self.get_serializer(chat, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(chat, serializer.validated_data)
+        serializer.save()
+        return Response(status=status.HTTP_200_OK)
         # todo: 남규님 또는 기덕님  아래 set_status, set_wish_price, paid, set_tracking_number 통합해주세요.
         # PUT or PATCH v1/chattings/{chatting_id}/
         # PATCH 로 할꺼면 함수명 partial_update로 하면 됩니다.
-        pass
 
     @action(detail=True, methods=['PUT'])
     def set_status(self, request, pk=None):
