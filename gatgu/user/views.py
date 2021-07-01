@@ -438,7 +438,7 @@ class UserViewSet(viewsets.GenericViewSet):
         s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
         if data['method'] == 'get' or data['method'] == 'GET':
             url = s3.generate_presigned_url(
-                ClientMethod='put_object',
+                ClientMethod='get_object',
                 Params={
                     'Bucket': 'gatgubucket',
                     'Key': data['file_name']
