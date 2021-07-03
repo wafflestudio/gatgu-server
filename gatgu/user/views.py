@@ -439,8 +439,9 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_presigned_url(self, request):
         user = request.user
         data = request.data
-        session = boto3.session.Session(aws_secret_access_key=AWS_SECRET_ACCESS_KEY,aws_access_key_id=AWS_ACCESS_KEY_ID)
-        s3 = session.client('s3')
+        session = boto3.session.Session(aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                                        aws_access_key_id=AWS_ACCESS_KEY_ID)
+        s3 = session.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
         # bucket_name = 'gatgubucket'
         bucket_name = 'gatgu-s3-test'
 
