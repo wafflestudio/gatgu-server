@@ -26,7 +26,7 @@ from chat.models import ParticipantProfile, OrderChat
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
-#from gatgu.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+from gatgu.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 
@@ -439,7 +439,7 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_presigned_url(self, request):
         user = request.user
         data = request.data
-        session = boto3.session.Session(profile_name='default')
+        session = boto3.session.Session(aws_secret_access_key=AWS_SECRET_ACCESS_KEY,aws_access_key_id=AWS_ACCESS_KEY_ID)
         s3 = session.client('s3')
         # bucket_name = 'gatgubucket'
         bucket_name = 'gatgu-s3-test'
