@@ -441,12 +441,14 @@ class UserViewSet(viewsets.GenericViewSet):
         data = request.data
         session = boto3.session.Session(profile_name='default')
         s3 = session.client('s3')
+        # bucket_name = 'gatgubucket'
+        bucket_name = 'gatgu-s3-test'
 
         if data['method'] == 'get' or data['method'] == 'GET':
             url = s3.generate_presigned_url(
                 ClientMethod='get_object',
                 Params={
-                    'Bucket': 'gatgu-s3-test',
+                    'Bucket': bucket_name,
                     'Key': data['file_name'],
                     "ResponseContentType": "image/jpeg",
                 },
@@ -457,14 +459,14 @@ class UserViewSet(viewsets.GenericViewSet):
         if data['method'] == 'put' or data['method'] == 'PUT':
             object_name = data['file_name']
             response = s3.generate_presigned_post(
-                'gatgu-s3-test',
+                bucket_name,
                 'user/{0}/{1}'.format(user.id, object_name),
             )
-            with open(object_name, 'rb') as f:
-                files = {'file': (object_name, f)}
-                http_response = requests.post(response['url'], data=response['fields'], files=files)
-
-                logging.info(f'File upload HTTP status code: {http_response.status_code}')
+            # with open(object_name, 'rb') as f:
+            #     files = {'file': (object_name, f)}
+            #     http_response = requests.post(response['url'], data=response['fields'], files=files)
+            #
+            #     logging.info(f'File upload HTTP status code: {http_response.status_code}')
 
             return Response(
                 {'response': response, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)},
