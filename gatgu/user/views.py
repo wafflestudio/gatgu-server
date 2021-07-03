@@ -1,5 +1,10 @@
+import logging
+
 import boto3
+import requests
+from boto3 import Session
 from botocore.config import Config
+from botocore.exceptions import ClientError
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
@@ -434,29 +439,35 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_presigned_url(self, request):
         user = request.user
         data = request.data
+        session = boto3.session.Session(profile_name='default')
+        s3 = session.client('s3')
 
-        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
         if data['method'] == 'get' or data['method'] == 'GET':
             url = s3.generate_presigned_url(
                 ClientMethod='get_object',
                 Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': data['file_name']
+                    'Bucket': 'gatgu-s3-test',
+                    'Key': data['file_name'],
+                    "ResponseContentType": "image/jpeg",
                 },
                 ExpiresIn=3600,
                 HttpMethod='GET')
             return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
-        elif data['method'] == 'put' or data['method'] == 'PUT':
-            url = s3.generate_presigned_url(
-                ClientMethod='put_object',
-                Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)
-                },
-                ExpiresIn=3600,
-                HttpMethod='PUT')
+
+        if data['method'] == 'put' or data['method'] == 'PUT':
+            object_name = data['file_name']
+            response = s3.generate_presigned_post(
+                'gatgu-s3-test',
+                'user/{0}/{1}'.format(user.id, object_name),
+            )
+            with open(object_name, 'rb') as f:
+                files = {'file': (object_name, f)}
+                http_response = requests.post(response['url'], data=response['fields'], files=files)
+
+                logging.info(f'File upload HTTP status code: {http_response.status_code}')
+
             return Response(
-                {'presigned_url': url, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)},
+                {'response': response, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)},
                 status=status.HTTP_200_OK)
         else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
