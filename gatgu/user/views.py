@@ -470,7 +470,7 @@ class UserViewSet(viewsets.GenericViewSet):
             #     logging.info(f'File upload HTTP status code: {http_response.status_code}')
 
             return Response(
-                {'response': response, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)},
+                {'response': response, 'file_name': 'user/{0}/{1}'.format(user.id, data['file_name'])},
                 status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
