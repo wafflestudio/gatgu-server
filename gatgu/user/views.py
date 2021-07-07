@@ -1,10 +1,5 @@
-import logging
-
 import boto3
-import requests
-from boto3 import Session
 from botocore.config import Config
-from botocore.exceptions import ClientError
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, transaction
@@ -14,11 +9,9 @@ from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
@@ -26,7 +19,6 @@ from chat.models import ParticipantProfile, OrderChat
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
-# from gatgu.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 
@@ -440,6 +432,7 @@ class UserViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
         s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+
         # bucket_name = 'gatgu-s3-test'
         bucket_name = 'gatgubucket'
 
