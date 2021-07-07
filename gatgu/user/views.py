@@ -439,10 +439,9 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_presigned_url(self, request):
         user = request.user
         data = request.data
-        session = boto3.session.Session(profile_name='default')
-        s3 = session.client('s3')
-        # bucket_name = 'gatgubucket'
-        bucket_name = 'gatgu-s3-test'
+        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+        #bucket_name = 'gatgu-s3-test'
+        bucket_name = 'gatgubucket'
 
         if data['method'] == 'get' or data['method'] == 'GET':
             url = s3.generate_presigned_url(

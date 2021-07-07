@@ -29,8 +29,8 @@ jobs:
 
     - name: Upload Dockerrun.aws.json to S3
       run: |
-        zip -r deploy.zip Dockerrun.aws.json
-        aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
+        zip -r deploy_$BUILD_NUMBER.zip Dockerrun.aws.json
+        aws s3 cp deploy_$BUILD_NUMBER.zip s3://$S3_BUCKET_NAME/deploy_$BUILD_NUMBER.zip
 
     - name: Docker Login
       uses: docker/login-action@v1.8.0
@@ -67,7 +67,7 @@ jobs:
           --application-name gatgu \
           --version-label $BUILD_NUMBER \
           --description $BUILD_NUMBER \
-          --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key='deploy.zip'
+          --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key='deploy_$BUILD_NUMBER.zip'
         aws elasticbeanstalk update-environment \
           --environment-name gatgu-env \
           --version-label $BUILD_NUMBER
