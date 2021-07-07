@@ -26,7 +26,7 @@ from chat.models import ParticipantProfile, OrderChat
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
-from gatgu.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+# from gatgu.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 
