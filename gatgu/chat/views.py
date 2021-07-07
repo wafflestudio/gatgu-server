@@ -79,8 +79,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         """
         user = request.user
         try:
-            chatting = OrderChat.objects.select_related('participant_profile', 'participant_profile__participant',
-                                                        'article').get(id=pk)
+            chatting = OrderChat.objects.select_related('article').get(id=pk)
         except OrderChat.DoesNotExist:
             return Response({"없쪙"}, status=status.HTTP_404_NOT_FOUND)
 
