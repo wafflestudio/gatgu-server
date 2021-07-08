@@ -251,4 +251,3 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost',
 #     'http://localhost:3000',
 # ]
-

@@ -9,11 +9,9 @@ from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
@@ -434,27 +432,36 @@ class UserViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
         s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+
+        # bucket_name = 'gatgu-s3-test'
+        bucket_name = 'gatgubucket'
+
         if data['method'] == 'get' or data['method'] == 'GET':
             url = s3.generate_presigned_url(
-                ClientMethod='put_object',
+                ClientMethod='get_object',
                 Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': data['file_name']
+                    'Bucket': bucket_name,
+                    'Key': data['file_name'],
+                    "ResponseContentType": "image/jpeg",
                 },
                 ExpiresIn=3600,
                 HttpMethod='GET')
             return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
-        elif data['method'] == 'put' or data['method'] == 'PUT':
-            url = s3.generate_presigned_url(
-                ClientMethod='put_object',
-                Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)
-                },
-                ExpiresIn=3600,
-                HttpMethod='PUT')
+
+        if data['method'] == 'put' or data['method'] == 'PUT':
+            object_name = data['file_name']
+            response = s3.generate_presigned_post(
+                bucket_name,
+                'user/{0}/{1}'.format(user.id, object_name),
+            )
+            # with open(object_name, 'rb') as f:
+            #     files = {'file': (object_name, f)}
+            #     http_response = requests.post(response['url'], data=response['fields'], files=files)
+            #
+            #     logging.info(f'File upload HTTP status code: {http_response.status_code}')
+
             return Response(
-                {'presigned_url': url, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)},
+                {'response': response, 'file_name': 'user/{0}/{1}'.format(user.id, data['file_name'])},
                 status=status.HTTP_200_OK)
         else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
