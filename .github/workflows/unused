@@ -1,0 +1,60 @@
+#name: Django CI
+#
+#on:
+#  pull_request:
+#    branches: [ develop ]
+#jobs:
+#  django-test:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      max-parallel: 4
+#      matrix:
+#        python-version:  [ 3.8.3 ]
+#        
+#    services:
+#      mysql:
+#        image: mysql:5.7
+#        env:
+#          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+#          MYSQL_DATABASE: 'gatgu_db'
+#          MYSQL_USER: 'team-gatgu'
+#          MYSQL_PASSWORD: 'gatgu'
+#          MYSQL_ROOT_PASSWORD: 1234
+#        ports:
+#            - 3306:3306
+#        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+#        
+#    steps:
+#      #      - uses: actions/checkout@v2
+#      #      - name: Verify Mysql connection
+#      #        run: |
+#      #          mysql --version
+#      #          sudo apt-get install -y mysql-client
+#      #          mysql --host 127.0.0.1 --port 3306 -u root -p1234 -e "show databases"
+#      #        #      
+#      #        #      - name: Setup MySQL
+#      #        #        # You may pin to the exact commit or the version.
+#      #        #        # uses: mirromutth/mysql-action@de1fba8b3f90ce8db80f663a7043be3cf3231248
+#      #        #        uses: mirromutth/mysql-action@v1.1
+#      #        #        with:
+#      #        #          host port: 3306
+#      #        #          container port: 3306
+#      #        #          mysql database: gatgu_db
+#      #        #          mysql user: team-gatgu
+#      #        #          mysql password: gatgu
+#      #        #          mysql root password: gatgu
+#      #        #
+#      - name: Set up Python 3.8.3
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: 3.8.3
+#      - name: Install Dependencies
+#        working-directory: ./gatgu
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -r requirements.txt
+#      - name: Run Tests
+#        working-directory: ./gatgu
+#        run: |
+#          mysql --host 127.0.0.1 --port 3306 -u root -p1234 -e "grant all privileges on test_gatgu_db.* to 'team-gatgu'@'%';"
+#          python manage.py test
