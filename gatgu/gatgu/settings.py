@@ -89,7 +89,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
-    # 'gatgu.middleware.GatguExceptionHandlingMiddleware',
+
 ]
 
 REST_FRAMEWORK = {
@@ -169,6 +169,7 @@ DATABASES = {
         'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
         # test
         'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
+
         'PORT': 3306,
         'NAME': 'gatgu_db',
         'USER': 'team-gatgu',
@@ -251,3 +252,4 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost',
 #     'http://localhost:3000',
 # ]
+

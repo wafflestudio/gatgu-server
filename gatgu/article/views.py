@@ -172,6 +172,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if article.article_status == 2:
             return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
+
         serializer = self.get_serializer(article, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.update(article, serializer.validated_data)

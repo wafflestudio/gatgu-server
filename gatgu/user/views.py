@@ -1,12 +1,13 @@
 import boto3
 from botocore.config import Config
 from django.core.cache import caches
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, _get_user_session_key
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.mail import EmailMessage
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -47,6 +48,7 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_permissions(self):
         if self.action in (
                 'create', 'login', 'confirm', 'reconfirm', 'activate', 'list') or self.request.user.is_superuser:
+
             return (AllowAny(),)
         return self.permission_classes
 
@@ -124,6 +126,7 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response(data, status=status.HTTP_201_CREATED)
 
     # PUT /user/login/  로그인
+    @csrf_exempt
     @action(detail=False, methods=['PUT'])
     def login(self, request):
         username = request.data.get('username')
@@ -131,6 +134,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         if not username or not password:
             raise FieldsNotFilled
+
 
         user = authenticate(request, username=username, password=password)
 
@@ -141,10 +145,30 @@ class UserViewSet(viewsets.GenericViewSet):
 
         raise UserInfoNotMatch
 
+
+    @csrf_exempt
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
+        user = request.user
+        try:
+            request.session['_auth_user_id']
+        except KeyError:
+            return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if request.session['_auth_user_id'] != user.pk:
+        #     return Response({"message": "not this id "}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if _get_user_session_key(request)
         logout(request)
+        # if user is None:
+        #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
+
+    @csrf_exempt
+    @action(detail=False, methods=['POST'], url_path='flush')
+    def session_flush(self, request):
+        request.session.flush()
+        return Response({"flush session"})
 
     @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
