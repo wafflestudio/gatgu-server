@@ -1,4 +1,8 @@
+import datetime
+import logging
+
 import boto3
+import requests
 from botocore.config import Config
 from django.core.cache import caches
 from django.contrib.auth import authenticate, login, logout, _get_user_session_key
@@ -48,7 +52,6 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_permissions(self):
         if self.action in (
                 'create', 'login', 'confirm', 'reconfirm', 'activate', 'list') or self.request.user.is_superuser:
-
             return (AllowAny(),)
         return self.permission_classes
 
@@ -135,7 +138,6 @@ class UserViewSet(viewsets.GenericViewSet):
         if not username or not password:
             raise FieldsNotFilled
 
-
         user = authenticate(request, username=username, password=password)
 
         if user:
@@ -144,7 +146,6 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response(TokenResponseSerializer(user).data)
 
         raise UserInfoNotMatch
-
 
     @csrf_exempt
     @action(detail=False, methods=['PUT'])  # 로그아웃
@@ -455,13 +456,18 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_presigned_url(self, request):
         user = request.user
         data = request.data
-        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket('gatgu-s3-test')
+
+        count_object = 0
+
+        s3client = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
 
         # bucket_name = 'gatgu-s3-test'
         bucket_name = 'gatgubucket'
 
         if data['method'] == 'get' or data['method'] == 'GET':
-            url = s3.generate_presigned_url(
+            url = s3client.generate_presigned_url(
                 ClientMethod='get_object',
                 Params={
                     'Bucket': bucket_name,
@@ -472,20 +478,33 @@ class UserViewSet(viewsets.GenericViewSet):
                 HttpMethod='GET')
             return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
 
-        if data['method'] == 'put' or data['method'] == 'PUT':
-            object_name = data['file_name']
-            response = s3.generate_presigned_post(
+        elif data['method'] == 'put' or data['method'] == 'PUT':
+
+            for obj in bucket.objects.all().filter(Prefix='user/{0}/icon'.format(user.id)):
+                count_object += 1
+
+            object_name = count_object + 1
+            print(object_name)
+            response = s3client.generate_presigned_post(
                 bucket_name,
-                'user/{0}/{1}'.format(user.id, object_name),
+                'user/{0}/icon/{1}.jpeg'.format(user.id, object_name),
             )
-            # with open(object_name, 'rb') as f:
-            #     files = {'file': (object_name, f)}
-            #     http_response = requests.post(response['url'], data=response['fields'], files=files)
-            #
-            #     logging.info(f'File upload HTTP status code: {http_response.status_code}')
+            # postman에서 업로드 시 사용 / manage.py 디렉토리에 이미지 파일 위치 후 실행
+
+            file_name = data['file_name']
+            try:
+                with open(file_name, 'rb') as f:
+                    files = {'file': (file_name, f)}
+                    http_response = requests.post(response['url'], data=response['fields'], files=files)
+
+                    logging.info(f'File upload HTTP status code: {http_response.status_code}')
+            except FileNotFoundError:
+                return Response({'message: FileNotFound In Working Directiory'}, status=status.HTTP_404_NOT_FOUND)
+
+            # resopnse 에 object_url 포함해서 반환
+            object_url = response['url'] + response['fields']['key']
 
             return Response(
-                {'response': response, 'file_name': 'user/{0}/{1}'.format(user.id, data['file_name'])},
-                status=status.HTTP_200_OK)
+                {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message : Method Value NotAllowed'}, status=status.HTTP_400_BAD_REQUEST)
