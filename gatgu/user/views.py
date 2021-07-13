@@ -466,31 +466,26 @@ class UserViewSet(viewsets.GenericViewSet):
         # bucket_name = 'gatgu-s3-test'
         bucket_name = 'gatgubucket'
 
-        if data['method'] == 'get' or data['method'] == 'GET':
-            url = s3client.generate_presigned_url(
-                ClientMethod='get_object',
-                Params={
-                    'Bucket': bucket_name,
-                    'Key': data['file_name'],
-                    "ResponseContentType": "image/jpeg",
-                },
-                ExpiresIn=3600,
-                HttpMethod='GET')
-            return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
+        # if data['method'] == 'get' or data['method'] == 'GET':
+        #     url = s3client.generate_presigned_url(
+        #         ClientMethod='get_object',
+        #         Params={
+        #             'Bucket': bucket_name,
+        #             'Key': data['file_name'],
+        #             "ResponseContentType": "image/jpeg",
+        #         },
+        #         ExpiresIn=3600,
+        #         HttpMethod='GET')
+        #     return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
+        if data['method'] == 'put' or data['method'] == 'PUT':
 
-        elif data['method'] == 'put' or data['method'] == 'PUT':
+            object_key = datetime.datetime.now().strftime('%H:%M:%S')
 
-            for obj in bucket.objects.all().filter(Prefix='user/{0}/icon'.format(user.id)):
-                count_object += 1
-
-            object_name = count_object + 1
-            print(object_name)
             response = s3client.generate_presigned_post(
                 bucket_name,
-                'user/{0}/icon/{1}.jpeg'.format(user.id, object_name),
-            )
-            # postman에서 업로드 시 사용 / manage.py 디렉토리에 이미지 파일 위치 후 실행
+                'user/{0}/icon/{1}.jpeg'.format(user.id, object_key))
 
+            # postman에서 업로드 시 사용 / manage.py 디렉토리에 이미지 파일 위치 후 실행
             file_name = data['file_name']
             try:
                 with open(file_name, 'rb') as f:
