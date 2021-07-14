@@ -176,6 +176,10 @@ DATABASES = {
         'PASSWORD': 'gatgu',
     }
 }
+
+BUCKET_NAME = 'gatgubucket'
+# BUCKET_NAME = 'gatgu-s3-test'
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
