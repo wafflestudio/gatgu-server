@@ -9,7 +9,6 @@ class ReportSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     target_user = serializers.SerializerMethodField()
 
-
     class Meta:
         model = Report
         fields = (
@@ -21,8 +20,8 @@ class ReportSerializer(serializers.ModelSerializer):
             'updated_at',
         )
 
-    def get_user(self,report):
+    def get_user(self, report):
         return report.user.id
 
-    def get_target_user(self,report):
+    def get_target_user(self, report):
         return report.target_user.id
