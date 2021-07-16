@@ -16,7 +16,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=True)
     trading_place = serializers.CharField(required=True)
     product_url = serializers.CharField(required=True, max_length=200)
-    time_in = serializers.DateField(default=datetime.date.today() + datetime.timedelta(days=7))
+    time_in = serializers.DateTimeField(default=datetime.date.today() + datetime.timedelta(days=7))
 
     price_min = serializers.IntegerField(required=True)
     article_status = serializers.SerializerMethodField()

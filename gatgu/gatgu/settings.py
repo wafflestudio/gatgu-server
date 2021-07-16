@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'article',
     'chat',
     'channels',
+    'report',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -101,6 +102,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler',
+    'DATETIME_FORMAT': '%s.%f',
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=1),
@@ -163,8 +165,6 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # local
         'HOST': '127.0.0.1',
-        # ohio deprecated
-        # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
         # seoul
         'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
         # test

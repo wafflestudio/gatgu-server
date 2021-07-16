@@ -15,6 +15,8 @@ urlpatterns = [
     path('v1/', include('article.urls')),
     path('v1/', include('chat.urls')),
 
+    path('v1/', include('report.urls'))
+
 
 ]
 
