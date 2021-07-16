@@ -20,13 +20,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       
-    - name: Set Timezone
-      # You may pin to the exact commit or the version.
-      # uses: szenius/set-timezone@dd47655c84241eec2ffa0a855959c16c0920c3c4
-      uses: szenius/set-timezone@v1.0
-      with:
-        timezoneLinux: Asia/Seoul
-        
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
