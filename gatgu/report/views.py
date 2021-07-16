@@ -17,10 +17,10 @@ class ReportViewSet(viewsets.GenericViewSet):
     @transaction.atomic
     def create(self, request):
         data = request.data
-        nickname = data.get('nickname')
+        target_id = data.get('target_id')
 
         try:
-            target_user = User.objects.get(userprofile__nickname=nickname)
+            target_user = User.objects.get(id=target_id)
         except User.DoesNotExist:
             raise UserNotFound()
         serializer = self.get_serializer(data=data)
