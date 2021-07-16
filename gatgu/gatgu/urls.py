@@ -16,7 +16,9 @@ urlpatterns = [
 
     path('v1/', include('user.urls')),
     path('v1/', include('article.urls')),
-    path('v1/', include('chat.urls'))
+    path('v1/', include('chat.urls')),
+
+    path('v1/', include('push_notification.urls'))
 
 ]
 

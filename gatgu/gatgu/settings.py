@@ -258,5 +258,5 @@ CORS_ORIGIN_ALLOW_ALL = True
 import firebase_admin
 from firebase_admin import credentials
 
-cred = credentials.Certificate("gatgu-61a05-firebase-adminsdk-vl2z7-99d2b59be7.json")
+cred = credentials.Certificate("firebase-admin-gatgu.json")
 firebase_admin.initialize_app(cred)

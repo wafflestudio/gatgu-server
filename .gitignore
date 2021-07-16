@@ -394,4 +394,4 @@ secrets.json
 .aws/*
 
 # FireBaseConf
-gatgu-61a05-firebase-adminsdk-vl2z7-99d2b59be7.json
+firebase-admin-gatgu.json
