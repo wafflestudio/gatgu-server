@@ -72,12 +72,16 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         )
 
     def get_sent_by(self, chatmessage):
+        print(123)
+        print(chatmessage)
         sent_by = chatmessage.sent_by.userprofile
         data = UserProfileSerializer(sent_by, context=self.context).data
         return data
     
     def get_image(self, chatmessage):
-        image = chatmessage.image.all()[0]
+        print(123)
+        print(chatmessage.image.all())
+        image = chatmessage.image.all()
         return ChatMessageImageSerializer(image, many=False).data
 
 class ChatMessageImageSerializer(serializers.ModelSerializer):

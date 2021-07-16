@@ -24,6 +24,9 @@ from gatgu.paginations import CursorSetPagination
 import boto3
 from botocore.client import Config
 
+from chat.consumers import ChatConsumer
+from asgiref.sync import async_to_sync
+
 
 class CursorSetPagination(CursorSetPagination):
     ordering = '-sent_at'
@@ -94,6 +97,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 return Response(status=status.HTTP_200_OK)
             elif chatting.order_status==1:
                 ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
+                ChatConsumer.add_group(pk)
                 return Response(status=status.HTTP_201_CREATED)
             else:
                 # full chatting room
@@ -150,10 +154,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 message.save()
 
             message = ChatMessage.objects.get(id=message_id)
-            img = message.image.all()[0]
-            ser = ChatMessageImageSerializer(img)
-            print(ser.data)
-            print(message.image.values())
             
 
             return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
