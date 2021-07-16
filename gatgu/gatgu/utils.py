@@ -1,6 +1,3 @@
-from sqlite3 import IntegrityError
-
-import rest_framework
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError, NotAuthenticated
@@ -137,6 +134,7 @@ class ArticleNotFound(APIException):
     status_code = 404
     default_detail = '해당 게시글을 찾을 수 없습니다.'
     default_code = 121
+
 
 class QueryParamsNOTMATCH(APIException):
     status_code = 400

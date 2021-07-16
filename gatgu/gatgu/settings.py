@@ -176,6 +176,10 @@ DATABASES = {
         'PASSWORD': 'gatgu',
     }
 }
+
+BUCKET_NAME = 'gatgubucket'
+# BUCKET_NAME = 'gatgu-s3-test'
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -233,13 +237,13 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'ASIA/SEOUL'
 
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
