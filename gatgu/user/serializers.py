@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
+from gatgu.utils import JSTimestampField
 from user.models import UserProfile
 
 
@@ -16,8 +17,8 @@ class UserSerializer(serializers.ModelSerializer):
     # email = serializers.EmailField(required=True)
     # first_name = serializers.CharField(required=False)
     # last_name = serializers.CharField(required=False)
-    # last_login = serializers.DateTimeField(read_only=True)
-    # date_joined = serializers.DateTimeField(read_only=True)
+    last_login = JSTimestampField(read_only=True)
+    date_joined = JSTimestampField(read_only=True)
 
     userprofile = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(default=True)
@@ -44,6 +45,9 @@ class UserSerializer(serializers.ModelSerializer):
                                      allow_null=True,
                                      required=False
                                      )
+
+
+
 
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
@@ -134,6 +138,10 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+
+    updated_at = JSTimestampField(read_only=True)
+    withdrew_at = JSTimestampField(read_only=True)
+
     class Meta:
         model = UserProfile
         fields = (

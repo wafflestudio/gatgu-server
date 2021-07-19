@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.exceptions import APIException, ValidationError, NotAuthenticated
 from rest_framework.views import exception_handler
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
@@ -140,3 +140,8 @@ class QueryParamsNOTMATCH(APIException):
     status_code = 400
     default_detail = '검색 조건이 올바르지 않습니다.'
     default_code = 122
+
+
+class JSTimestampField(serializers.Field):
+    def to_representation(self, value):
+        return round(value.timestamp() * 1000)

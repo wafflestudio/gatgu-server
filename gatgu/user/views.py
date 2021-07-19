@@ -24,6 +24,7 @@ from chat.models import ParticipantProfile, OrderChat
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
+from gatgu.settings import CLIENT, BUCKET_NAME, OBJECT_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 
@@ -104,8 +105,13 @@ class UserViewSet(viewsets.GenericViewSet):
         # if chk_email is None:
         #     raise MailActivateFailed
 
-        img_url = self.get_presigned_url(request)['object_url']
-        print(img_url)
+        # img_url = self.get_presigned_url(request)['object_url']
+        # print(img_url)
+        # picture = data.get('picture')
+        # if picture:
+        #     icon_url = self.create_presigned_post(request)
+        #     print(icon_url['response'])
+        #     # upload_s3(icon_url['response'], icon_url['object_url'])
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
@@ -448,6 +454,10 @@ class UserViewSet(viewsets.GenericViewSet):
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
             raise UsedNickname
+        icon = data.get('picture')
+        if icon:
+            response = self.create_presigned_post(request)
+            print(response)# data['picture'] = upload_s3()
 
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -458,17 +468,11 @@ class UserViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['PUT'])
     def create_presigned_post(self, request):
         user = request.user
-        s3client = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-
-        # bucket_name = 'gatgu-s3-test'
-        bucket_name = 'gatgubucket'
-        object_key = datetime.datetime.now().strftime('%H:%M:%S')
-
-        response = s3client.generate_presigned_post(
-            bucket_name,
-            'user/{0}/icon/{1}'.format(user.id, object_key))
+        key = 'user/{0}/icon/{1}'.format(user.id, OBJECT_KEY)
+        response = CLIENT.generate_presigned_post(BUCKET_NAME, key)
         # resopnse 에 object_url 포함해서 반환
         object_url = response['url'] + response['fields']['key']
+        # upload_s3(response, 'admin(1).jpeg')
 
         return Response(
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)

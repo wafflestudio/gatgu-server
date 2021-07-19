@@ -3,6 +3,8 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 
+from gatgu.utils import JSTimestampField
+
 
 class Article(models.Model):
     GATHERING = 1
@@ -25,7 +27,7 @@ class Article(models.Model):
     trading_place = models.CharField(max_length=50)
     product_url = models.CharField(max_length=200)
     price_min = models.PositiveIntegerField(default=0, help_text="글 작성자가 자신이 원하는 금액을 제외한 금액을 모집글에 작성한다.")
-    time_in = models.DateTimeField("Date", default=datetime.date.today, help_text="7일 후를 기본값으로 가진다.")
+    time_in = models.DateTimeField(default=datetime.datetime.today() + datetime.timedelta(days=7))
     written_at = models.DateTimeField(auto_now_add=True, null=False, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)
