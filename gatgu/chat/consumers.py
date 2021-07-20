@@ -1,6 +1,6 @@
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
-from chat.models import ChatMessage, ChatMessageImage, ParticipantProfile, Article
+from chat.models import ChatMessage, ChatMessageImage, ParticipantProfile, Article, OrderChat
 from chat.serializers import ChatMessageSerializer, ChatMessageImageSerializer
 import json
 
@@ -8,10 +8,6 @@ class ChatConsumer(WebsocketConsumer):
 
     def connect(self):
         self.user_id = self.scope['url_route']['kwargs']['user_id']
-        self.self_response = 'ping_'+str(user_id)
-        self.enter_group(self.self_response)
-        #self.chat_group_name = 'chat_%s' % self.chat_id
-        
         participant_profiles = [str(item['order_chat_id']) for item in ParticipantProfile.objects.filter(participant_id = self.user_id).values('order_chat_id')]
         articles = [str(item['id']) for item in Article.objects.filter(writer_id = self.user_id).values('id')]
         
@@ -39,7 +35,6 @@ class ChatConsumer(WebsocketConsumer):
         )
         self.groups.append(group_name)
         return {'type': 'ENTER_SUCCESS'}
-        #print(self.groups)
     
     def exit_group(self, group_name):
         if not group_name in self.groups:
@@ -52,85 +47,129 @@ class ChatConsumer(WebsocketConsumer):
         return {'type': 'EXIT_SUCCESS'}
 
     def receive(self, text_data):
-        print(self.groups)
         text_data_json = json.loads(text_data)
         print(text_data_json)
         type = text_data_json['type']
-        if type == 'PING': # 자신한테만 보내야함 => self.self_group을 만들자
-            print('ping')
-            async_to_sync(self.channel_layer.group_send)(
-                self.self_response,
-                {'type': 'pong'}
-            )
+        if type == 'PING':
+            self.send(text_data = json.dumps({
+                'type' : 'PONG'
+            }))
             return
         
         data = text_data_json['data']
         chatting_id = data['room_id']
         room_id = str(chatting_id)
-        user_id = data['user_id']
+        user_id = int(data['user_id'])
         if type == 'ENTER':
-            print(room_id)
-            response = self.enter_group(room_id)
-            async_to_sync(self.channel_layer.group_send){
-                self.self_response,
-                response
-            }
+            try:
+                chatting = OrderChat.objects.get(id=chatting_id)
+            except OrderChat.DoesNotExist:
+                self.response('ENTER_FAILURE', 404)
+                return
+            
+            if chatting.article.writer_id == user_id:
+                self.response('ENTER_SUCCESS', 200)
+                return
+            elif OrderChat.objects.filter(id=chatting_id, participant_profile__participant_id=user_id).exists():
+                self.response('ENTER_SUCCESS', 200)
+                return
+            elif chatting.order_status==1:
+                ParticipantProfile.objects.create(order_chat=chatting, participant_id=user_id, wish_price=0)
+                self.response('ENTER_SUCCESS', 201)
+
+                self.enter_group(room_id)
+                msg = {'type' : 'system', 'text': 'enter_room', 'img' : ''}
+                try:
+                    serializer = ChatMessageSerializer(data=msg)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save(sent_by_id=user_id, chat_id=chatting_id)
+                    message_id = ChatMessage.objects.last().id
+                    message = ChatMessage.objects.get(id=message_id)
+                    async_to_sync(self.channel_layer.group_send)( # enterance system message
+                        str(chatting_id),
+                        {
+                            'type': 'chat_message',
+                            'data': ChatMessageSerializer(message).data
+                        }
+                    )
+                except:
+                    self.response('MESSAGE_FAILURE', '')
+                    return
+                return
+            else:
+                self.response('ENTER_FAILURE', 403)
+                return
             return
         if type == 'EXIT':
-            response = self.exit_group(room_id)
-            async_to_sync(self.channel_layer.group_send){
-                self.self_response,
-                response
-            }
+            try:
+                participant = ParticipantProfile.objects.get(order_chat_id=chatting_id, participant_id=user_id)
+                participant.delete()
+            except ParticipantProfile.DoesNotExist:
+                self.response('EXIT_FAILURE', 404)
+                return 
+            self.exit_group(room_id)
+            self.response('EXIT_SUCCESS', 200)
+            msg = {'type' : 'system', 'text': 'exit_room', 'img' : ''}
+            try:
+                serializer = ChatMessageSerializer(data=msg)
+                serializer.is_valid(raise_exception=True)
+                serializer.save(sent_by_id=user_id, chat_id=chatting_id)
+                message_id = ChatMessage.objects.last().id
+                message = ChatMessage.objects.get(id=message_id)
+                async_to_sync(self.channel_layer.group_send)( # enterance system message
+                    str(chatting_id),
+                    {
+                        'type': 'chat_message',
+                        'data': ChatMessageSerializer(message).data
+                    }
+                )
+            except:
+                self.response('MESSAGE_FAILURE', '')
+                return
             return
-
         if not room_id in self.groups:
             return
 
         msg = data['message']
-        serializer = ChatMessageSerializer(data=msg)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(sent_by_id=user_id, chat_id=chatting_id)
-        print(3)
-        print(serializer.data)
-        print(5)
-        message_id = ChatMessage.objects.last().id
-        message = ChatMessage.objects.get(id=message_id)
-        print(4)
-        #print(data)
-        #print(message['text'])
-        print(msg)
-        if msg['img'] != '':
-            print(msg)
-            message.image.create(img_url=msg['img'])
-            message.save()
-        print(2)
-        print(5)
-        print(4)
-        a = ChatMessageSerializer(message).data
-        print(self.channel_layer)
-        print(chatting_id)
-        print(self.groups)
-        async_to_sync(self.channel_layer.group_send)(
-            str(chatting_id),
-            {
-                'type': 'chat_message',
-                'data': a
-            }
-        )
+        msg['type'] = "user"
+        try:
+            serializer = ChatMessageSerializer(data=msg)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(sent_by_id=user_id, chat_id=chatting_id)
+            message_id = ChatMessage.objects.last().id
+            message = ChatMessage.objects.get(id=message_id)
 
+            if msg['img'] != '':
+                message.image.create(img_url=msg['img'])
+            message.save()
+            message = ChatMessage.objects.get(id=message_id)
+            async_to_sync(self.channel_layer.group_send)(
+                str(chatting_id),
+                {
+                    'type': 'chat_message',
+                    'data': ChatMessageSerializer(message).data
+                }
+            )
+        except:
+            self.response('MESSAGE_FAILURE', '')
+            return
+    
     def chat_message(self, event):
         data = event['data']
-
         self.send(text_data=json.dumps({
-            'data' : data
+            'data' : data,
+            'type' : 'MESSAGE_SUCCESS'
+        }))
+    
+    def response(self, type, data):
+        self.send(text_data=json.dumps({
+            'type' : type,
+            'data' : data,   
         }))
     
     def pong(self, event):
-
         self.send(text_data=json.dumps({
             'data' : 'data',
             'type' : 'PONG'
         }))
     
-        
