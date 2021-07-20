@@ -48,14 +48,13 @@ class ChatConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        print(text_data_json)
         type = text_data_json['type']
         if type == 'PING':
             self.send(text_data = json.dumps({
                 'type' : 'PONG'
             }))
             return
-        
+        websocket_id = text_data_json['websocket_id']
         data = text_data_json['data']
         chatting_id = data['room_id']
         room_id = str(chatting_id)
@@ -64,18 +63,18 @@ class ChatConsumer(WebsocketConsumer):
             try:
                 chatting = OrderChat.objects.get(id=chatting_id)
             except OrderChat.DoesNotExist:
-                self.response('ENTER_FAILURE', 404)
+                self.response('ENTER_FAILURE', 404, websocket_id)
                 return
             
             if chatting.article.writer_id == user_id:
-                self.response('ENTER_SUCCESS', 200)
+                self.response('ENTER_SUCCESS', 200, websocket_id)
                 return
             elif OrderChat.objects.filter(id=chatting_id, participant_profile__participant_id=user_id).exists():
-                self.response('ENTER_SUCCESS', 200)
+                self.response('ENTER_SUCCESS', 200, websocket_id)
                 return
             elif chatting.order_status==1:
                 ParticipantProfile.objects.create(order_chat=chatting, participant_id=user_id, wish_price=0)
-                self.response('ENTER_SUCCESS', 201)
+                self.response('ENTER_SUCCESS', 201, websocket_id)
 
                 self.enter_group(room_id)
                 msg = {'type' : 'system', 'text': 'enter_room', 'img' : ''}
@@ -89,15 +88,16 @@ class ChatConsumer(WebsocketConsumer):
                         str(chatting_id),
                         {
                             'type': 'chat_message',
-                            'data': ChatMessageSerializer(message).data
+                            'data': ChatMessageSerializer(message).data,
+                            'websocket_id' : websocket_id
                         }
                     )
                 except:
-                    self.response('MESSAGE_FAILURE', '')
+                    self.response('MESSAGE_FAILURE', '', websocket_id)
                     return
                 return
             else:
-                self.response('ENTER_FAILURE', 403)
+                self.response('ENTER_FAILURE', 403, websocket_id)
                 return
             return
         if type == 'EXIT':
@@ -105,10 +105,10 @@ class ChatConsumer(WebsocketConsumer):
                 participant = ParticipantProfile.objects.get(order_chat_id=chatting_id, participant_id=user_id)
                 participant.delete()
             except ParticipantProfile.DoesNotExist:
-                self.response('EXIT_FAILURE', 404)
+                self.response('EXIT_FAILURE', 404, websocket_id)
                 return 
             self.exit_group(room_id)
-            self.response('EXIT_SUCCESS', 200)
+            self.response('EXIT_SUCCESS', 200, websocket_id)
             msg = {'type' : 'system', 'text': 'exit_room', 'img' : ''}
             try:
                 serializer = ChatMessageSerializer(data=msg)
@@ -120,11 +120,12 @@ class ChatConsumer(WebsocketConsumer):
                     str(chatting_id),
                     {
                         'type': 'chat_message',
-                        'data': ChatMessageSerializer(message).data
+                        'data': ChatMessageSerializer(message).data,
+                        'websocket_id' : websocket_id
                     }
                 )
             except:
-                self.response('MESSAGE_FAILURE', '')
+                self.response('MESSAGE_FAILURE', '', websocket_id)
                 return
             return
         if not room_id in self.groups:
@@ -147,24 +148,28 @@ class ChatConsumer(WebsocketConsumer):
                 str(chatting_id),
                 {
                     'type': 'chat_message',
-                    'data': ChatMessageSerializer(message).data
+                    'data': ChatMessageSerializer(message).data,
+                    'websocket_id' : websocket_id
                 }
             )
         except:
-            self.response('MESSAGE_FAILURE', '')
+            self.response('MESSAGE_FAILURE', '', websocket_id)
             return
     
     def chat_message(self, event):
         data = event['data']
+        websocket_id = event['websocket_id']
         self.send(text_data=json.dumps({
             'data' : data,
-            'type' : 'MESSAGE_SUCCESS'
+            'type' : 'MESSAGE_SUCCESS',
+            'websocket_id' : websocket_id
         }))
     
-    def response(self, type, data):
+    def response(self, type, data, websocket_id):
         self.send(text_data=json.dumps({
             'type' : type,
-            'data' : data,   
+            'data' : data,
+            'websocket_id' : websocket_id
         }))
     
     def pong(self, event):
