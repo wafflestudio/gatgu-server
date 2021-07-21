@@ -4,6 +4,7 @@ from django.db.models.functions import Coalesce
 
 from chat.models import OrderChat, ParticipantProfile
 from chat.serializers import OrderChatSerializer
+from gatgu.utils import JSTimestampField
 from user.serializers import *
 
 from article.models import Article, ArticleImage
@@ -11,18 +12,21 @@ from article.models import Article, ArticleImage
 
 class ArticleSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
-    deleted_at = serializers.DateTimeField(read_only=True)
     title = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
     trading_place = serializers.CharField(required=True)
     product_url = serializers.CharField(required=True, max_length=200)
-    time_in = serializers.DateField(default=datetime.date.today() + datetime.timedelta(days=7))
 
     price_min = serializers.IntegerField(required=True)
     article_status = serializers.SerializerMethodField()
     order_chat = serializers.SerializerMethodField()
 
     images = serializers.SerializerMethodField(required=False)
+
+    time_in = JSTimestampField(Article.time_in)
+    written_at = JSTimestampField(read_only=True)
+    updated_at = JSTimestampField(read_only=True)
+    deleted_at = JSTimestampField(read_only=True)
 
     class Meta:
         model = Article
