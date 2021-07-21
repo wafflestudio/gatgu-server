@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'article',
     'chat',
     'channels',
+    'report',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -89,7 +90,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
-    # 'gatgu.middleware.GatguExceptionHandlingMiddleware',
+
 ]
 
 REST_FRAMEWORK = {
@@ -101,6 +102,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler',
+    'DATETIME_FORMAT': '%s.%f',
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=1),
@@ -163,18 +165,21 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # local
         'HOST': '127.0.0.1',
-        # ohio deprecated
-        # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
         # seoul
         'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
         # test
         'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
+
         'PORT': 3306,
         'NAME': 'gatgu_db',
         'USER': 'team-gatgu',
         'PASSWORD': 'gatgu',
     }
 }
+
+BUCKET_NAME = 'gatgubucket'
+# BUCKET_NAME = 'gatgu-s3-test'
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -232,13 +237,13 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/

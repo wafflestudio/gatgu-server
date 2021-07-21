@@ -7,7 +7,7 @@ services:
       volumes:
         - .:/docker-server
         - ./gatgu/nginx:/etc/nginx/conf.d
-          #- "${EB_LOG_BASE_DIR}/nginx:/var/log/nginx"
+        - ${EB_LOG_BASE_DIR}/nginx:/var/log/nginx
       depends_on:
         - web
     web:
@@ -19,3 +19,12 @@ services:
         - .:/docker-server
       expose:
         - "8000"
+    redis:
+      image: redis:latest
+      command: redis-server --port 6379
+      labels:
+        - "name=redis"
+        - "mode=standalone"
+      ports:
+        - "6379:6379"
+      

@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models.functions import Coalesce
 from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F
 
@@ -23,6 +25,8 @@ from gatgu.paginations import CursorSetPagination
 
 import boto3
 from botocore.client import Config
+
+from gatgu.settings import BUCKET_NAME
 
 
 class CursorSetPagination(CursorSetPagination):
@@ -84,16 +88,17 @@ class OrderChatViewSet(viewsets.GenericViewSet):
 
         if request.method == "GET":
             participant_profiles = chatting.participant_profile
-            return Response(ParticipantProfileSerializer(participant_profiles, many=True).data, status=status.HTTP_200_OK)
+            return Response(ParticipantProfileSerializer(participant_profiles, many=True).data,
+                            status=status.HTTP_200_OK)
 
         elif request.method == 'POST':
             wish_price = request.data.get('wish_price')
 
             if chatting.article.writer == user:
-                return Response(status=status.HTTP_200_OK)
+                return Response({'message: 채팅방에 입장했습니다.'}, status=status.HTTP_200_OK)
             elif OrderChat.objects.filter(participant_profile__participant=user).exists():
-                return Response(status=status.HTTP_200_OK)
-            elif chatting.order_status==1:
+                return Response({'message: 이미 참가중'}, status=status.HTTP_200_OK)
+            elif chatting.order_status == 1:
                 ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
                 return Response(status=status.HTTP_201_CREATED)
             else:
@@ -104,7 +109,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             user = request.user
             data = request.data
 
-            if 'pay_status' in data and user!=chatting.article.writer:
+            if 'pay_status' in data and user != chatting.article.writer:
                 return Response(status=status.HTTP_403_FORBIDDEN)
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
@@ -151,7 +156,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 message.save()
 
             message = ChatMessage.objects.get(id=message_id)
-            
 
             return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
@@ -159,10 +163,10 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
         chat = get_object_or_404(OrderChat, pk=pk)
-        if user!=chat.article.writer:
+        if user != chat.article.writer:
             return Response(status=status.HTTP_403_FORBIDDEN)
         if 'order_status' in data:
-            if data['order_status']<chat.order_status:
+            if data['order_status'] < chat.order_status:
                 print("order status should grow up")
                 return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(chat, data=data, partial=True)
@@ -279,6 +283,22 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
+    @action(detail=True, methods=['PUT'])
+    def create_presigned_post(self, request, pk=None):
+        user = request.user
+        object_key = datetime.datetime.now().strftime('%H:%M:%S')
+        s3 = boto3.client('s3', config=Config(signature_version='s3v4',
+                                              region_name='ap-northeast-2'))
+        response = s3.generate_presigned_post(
+            BUCKET_NAME,
+            'chatting/{0}/user/{1}/{2}'.format(pk, user.id, object_key)
+        )
+        # from user.views import upload_s3
+        # upload_s3(response,'admin(1).jpeg')
+        object_url = response['url'] + response['fields']['key']
+        return Response(
+            {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
 
 
 class ChatMessageViewSet(viewsets.GenericViewSet):
