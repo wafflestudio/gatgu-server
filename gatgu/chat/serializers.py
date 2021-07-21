@@ -68,7 +68,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             'text',
             'image',
             'sent_by',
-            'sent_at'
+            'sent_at',
+            'type'
         )
 
     def get_sent_by(self, chatmessage):
@@ -77,8 +78,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         return data
     
     def get_image(self, chatmessage):
-        image = chatmessage.image.all()[0]
-        return ChatMessageImageSerializer(image, many=False).data
+        image = chatmessage.image.all()
+        return ChatMessageImageSerializer(image, many=True).data
 
 class ChatMessageImageSerializer(serializers.ModelSerializer):
     class Meta:

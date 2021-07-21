@@ -55,6 +55,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     # list of chat user is in
 
     def chat_list(self, user_id):
+        
         participants = [str(participant['order_chat_id']) for participant in
                         ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
         return participants
@@ -155,10 +156,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 message.save()
 
             message = ChatMessage.objects.get(id=message_id)
-            img = message.image.all()[0]
-            ser = ChatMessageImageSerializer(img)
-            print(ser.data)
-            print(message.image.values())
 
             return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
