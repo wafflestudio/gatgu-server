@@ -67,7 +67,7 @@ INSTALLED_APPS = [
 
     'article',
     'chat',
-    # 'channels',
+    'channels',
     'report',
 ]
 
