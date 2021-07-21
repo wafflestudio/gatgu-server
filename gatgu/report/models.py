@@ -10,7 +10,7 @@ class Report(models.Model):
     contents = models.TextField()
     is_checked = models.BooleanField(default=False, help_text="신고 상황 종료 시 True")
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.reporter}'s"

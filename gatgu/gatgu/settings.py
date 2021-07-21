@@ -15,6 +15,8 @@ from pathlib import Path
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import boto3
+from botocore.config import Config
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
@@ -177,8 +179,6 @@ DATABASES = {
     }
 }
 
-BUCKET_NAME = 'gatgubucket'
-# BUCKET_NAME = 'gatgu-s3-test'
 
 CACHES = {
     "default": {
@@ -243,7 +243,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = False
+USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
@@ -257,3 +257,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost:3000',
 # ]
 
+
+CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+BUCKET_NAME = 'gatgubucket'
+OBJECT_KEY = datetime.datetime.now().strftime('%H:%M:%S')

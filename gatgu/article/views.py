@@ -90,7 +90,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         product_url = data.get('product_url')
         time_in = data.get('time_in')
 
-        if not title or not description or not trading_place or not product_url or not time_in:
+        if not title or not description or not trading_place or not product_url:
             raise FieldsNotFilled
 
         serializer = self.get_serializer(data=data)

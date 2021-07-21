@@ -1,4 +1,5 @@
 from chat.models import OrderChat, ParticipantProfile, ChatMessage, ChatMessageImage
+from gatgu.utils import JSTimestampField
 from user.serializers import *
 
 
@@ -40,6 +41,7 @@ class SimpleOrderChatSerializer(serializers.ModelSerializer):
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):
     participant = serializers.SerializerMethodField()
+    joined_at = JSTimestampField(read_only=True)
 
     class Meta:
         model = ParticipantProfile
@@ -60,6 +62,7 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
 class ChatMessageSerializer(serializers.ModelSerializer):
     sent_by = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField(required=False)
+    sent_at = JSTimestampField()
 
     class Meta:
         model = ChatMessage
