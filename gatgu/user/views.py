@@ -28,7 +28,7 @@ from gatgu.paginations import CursorSetPagination, UserActivityPagination, Order
 from gatgu.settings import CLIENT, BUCKET_NAME, OBJECT_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
-from push_notification.models import KeyWord, UserKeyWord, FCMToken
+from push_notification.models import FCMToken
 from push_notification.views import subscription, unsubscription
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
@@ -485,16 +485,17 @@ class UserViewSet(viewsets.GenericViewSet):
     def keyword_noti(self, request, pk=None):
         user = request.user
         keyword = request.data.get('keyword')
-        token = FCMToken.objects.filter(user_fcmtoken__user=user).values_list('fcmtoken', flat=True)
+        token = FCMToken.objects.filter(user_fcmtoken__user=user)
+
         if pk == 'me':
             if request.method == 'POST':
-                KeyWord.objects.create(keyword=keyword)
-                UserKeyWord.objects.create(user=user, keywords=KeyWord.objects.last())
-                subscription(token, keyword)
+                token.update(keyword=keyword)
+                registered_tokens = token.values_list('fcmtoken', flat=True)
+                subscription(registered_tokens, keyword)
 
-            elif request.mothod == 'DELETE':
-                KeyWord.objects.get(keyword=keyword).delete()
-                unsubscription(token, keyword)
+            # elif request.mothod == 'DELETE':
+            #     KeyWord.objects.get(keyword=keyword).delete()
+            #     unsubscription(token, keyword)
 
 
 # postman에서 업로드 시 사용 / 'file_name'의 파일을 manage.py 디렉토리에 위치 후 실행
