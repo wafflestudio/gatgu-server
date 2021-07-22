@@ -18,6 +18,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+import push_notification
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
 from chat.models import ParticipantProfile, OrderChat
@@ -27,6 +28,8 @@ from gatgu.paginations import CursorSetPagination, UserActivityPagination, Order
 from gatgu.settings import CLIENT, BUCKET_NAME, OBJECT_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
+from push_notification.models import KeyWord, UserKeyWord, FCMToken
+from push_notification.views import subscription, unsubscription
 
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
@@ -457,7 +460,7 @@ class UserViewSet(viewsets.GenericViewSet):
         icon = data.get('picture')
         if icon:
             response = self.create_presigned_post(request)
-            print(response)# data['picture'] = upload_s3()
+            print(response)  # data['picture'] = upload_s3()
 
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -476,6 +479,22 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response(
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
+
+    # 본인의 토큰으로 키워드를 구독한다.
+    @action(methods=['POST', 'DELETE'], detail=True)
+    def keyword_noti(self, request, pk=None):
+        user = request.user
+        keyword = request.data.get('keyword')
+        token = FCMToken.objects.filter(user_fcmtoken__user=user).values_list('fcmtoken', flat=True)
+        if pk == 'me':
+            if request.method == 'POST':
+                KeyWord.objects.create(keyword=keyword)
+                UserKeyWord.objects.create(user=user, keywords=KeyWord.objects.last())
+                subscription(token, keyword)
+
+            elif request.mothod == 'DELETE':
+                KeyWord.objects.get(keyword=keyword).delete()
+                unsubscription(token, keyword)
 
 
 # postman에서 업로드 시 사용 / 'file_name'의 파일을 manage.py 디렉토리에 위치 후 실행
