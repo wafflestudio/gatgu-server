@@ -1,6 +1,8 @@
 import datetime
+import logging
 
 import boto3
+import requests
 from botocore.config import Config
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
@@ -17,11 +19,13 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from article.models import Article
 from article.serializers import ArticleSerializer, SimpleArticleSerializer
 from gatgu.paginations import CursorSetPagination
+from gatgu.settings import BUCKET_NAME
 from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted, NotEditableFields
 
 from chat.models import ParticipantProfile
 
 from chat.models import OrderChat
+from user.views import upload_s3
 
 
 class CursorSetPagination(CursorSetPagination):
@@ -86,7 +90,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         product_url = data.get('product_url')
         time_in = data.get('time_in')
 
-        if not title or not description or not trading_place or not product_url or not time_in:
+        if not title or not description or not trading_place or not product_url:
             raise FieldsNotFilled
 
         serializer = self.get_serializer(data=data)
@@ -196,32 +200,17 @@ class ArticleViewSet(viewsets.GenericViewSet):
         return Response({"message": "Successfully deleted this article."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['PUT'])
-    def get_presigned_url(self, request, pk=None):
+    def create_presigned_post(self, request, pk=None):
+
         user = request.user
-        data = request.data
-        if data['method'] == 'get' or data['method'] == 'GET':
-            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-            url = s3.generate_presigned_url(
-                ClientMethod='put_object',
-                Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': data['file_name']
-                },
-                ExpiresIn=3600,
-                HttpMethod='GET')
-            return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
-        elif data['method'] == 'put' or data['method'] == 'PUT':
-            s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-            url = s3.generate_presigned_url(
-                ClientMethod='put_object',
-                Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': 'article/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)
-                },
-                ExpiresIn=3600,
-                HttpMethod='PUT')
-            return Response(
-                {'presigned_url': url, 'file_name': 'article/{0}/{1}_{2}'.format(pk, data['file_name'], user.id)},
-                status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        object_key = datetime.datetime.now().strftime('%H:%M:%S')
+        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+        response = s3.generate_presigned_post(
+            BUCKET_NAME,
+            'user/{0}/article/{1}/{2}'.format(user.id, pk, object_key)
+        )
+        object_url = response['url'] + response['fields']['key']
+        # upload_s3(response,'admin(1).jpeg')
+
+        return Response(
+            {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)

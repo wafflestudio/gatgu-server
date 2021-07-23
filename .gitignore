@@ -390,3 +390,9 @@ dump.rdb
 # Djanog settings.py SECRET_KEY file
 secrets.json
 
+# AWS files
+.aws/*
+
+# Firebase
+firebase-admin-gatgu.json
+

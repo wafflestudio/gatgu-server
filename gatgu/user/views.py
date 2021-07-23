@@ -1,19 +1,22 @@
+import datetime
+import logging
+
 import boto3
+import requests
 from botocore.config import Config
 from django.core.cache import caches
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, _get_user_session_key
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.mail import EmailMessage
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
@@ -21,6 +24,7 @@ from chat.models import ParticipantProfile, OrderChat
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
 from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
+from gatgu.settings import CLIENT, BUCKET_NAME, OBJECT_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 
@@ -85,12 +89,14 @@ class UserViewSet(viewsets.GenericViewSet):
 
         data = request.data
 
+        # required fields
         username = data.get('username')
         password = data.get('password')
         email = data.get('email')
         trading_address = data.get('trading_address')
+        nickname = data.get('nickname')
 
-        if not username or not password or not email or not trading_address:
+        if not username or not password or not email or not trading_address or not nickname:
             raise FieldsNotFilled
 
         # ecache = caches["activated_email"]
@@ -99,7 +105,13 @@ class UserViewSet(viewsets.GenericViewSet):
         # if chk_email is None:
         #     raise MailActivateFailed
 
-        nickname = data.get('nickname')
+        # img_url = self.get_presigned_url(request)['object_url']
+        # print(img_url)
+        # picture = data.get('picture')
+        # if picture:
+        #     icon_url = self.create_presigned_post(request)
+        #     print(icon_url['response'])
+        #     # upload_s3(icon_url['response'], icon_url['object_url'])
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
@@ -126,6 +138,7 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response(data, status=status.HTTP_201_CREATED)
 
     # PUT /user/login/  로그인
+    @csrf_exempt
     @action(detail=False, methods=['PUT'])
     def login(self, request):
         username = request.data.get('username')
@@ -143,10 +156,29 @@ class UserViewSet(viewsets.GenericViewSet):
 
         raise UserInfoNotMatch
 
+    @csrf_exempt
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
+        user = request.user
+        try:
+            request.session['_auth_user_id']
+        except KeyError:
+            return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if request.session['_auth_user_id'] != user.pk:
+        #     return Response({"message": "not this id "}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if _get_user_session_key(request)
         logout(request)
+        # if user is None:
+        #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
+
+    @csrf_exempt
+    @action(detail=False, methods=['POST'], url_path='flush')
+    def session_flush(self, request):
+        request.session.flush()
+        return Response({"flush session"})
 
     @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
@@ -422,6 +454,10 @@ class UserViewSet(viewsets.GenericViewSet):
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
             raise UsedNickname
+        icon = data.get('picture')
+        if icon:
+            response = self.create_presigned_post(request)
+            print(response)# data['picture'] = upload_s3()
 
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -430,31 +466,25 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['PUT'])
-    def get_presigned_url(self, request):
+    def create_presigned_post(self, request):
         user = request.user
-        data = request.data
-        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-        if data['method'] == 'get' or data['method'] == 'GET':
-            url = s3.generate_presigned_url(
-                ClientMethod='put_object',
-                Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': data['file_name']
-                },
-                ExpiresIn=3600,
-                HttpMethod='GET')
-            return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
-        elif data['method'] == 'put' or data['method'] == 'PUT':
-            url = s3.generate_presigned_url(
-                ClientMethod='put_object',
-                Params={
-                    'Bucket': 'gatgubucket',
-                    'Key': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)
-                },
-                ExpiresIn=3600,
-                HttpMethod='PUT')
-            return Response(
-                {'presigned_url': url, 'file_name': 'user/{0}/{1}_{2}'.format(user.id, data['file_name'], user.id)},
-                status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        key = 'user/{0}/icon/{1}'.format(user.id, OBJECT_KEY)
+        response = CLIENT.generate_presigned_post(BUCKET_NAME, key)
+        # resopnse 에 object_url 포함해서 반환
+        object_url = response['url'] + response['fields']['key']
+        # upload_s3(response, 'admin(1).jpeg')
+
+        return Response(
+            {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
+
+
+# postman에서 업로드 시 사용 / 'file_name'의 파일을 manage.py 디렉토리에 위치 후 실행
+def upload_s3(response, file_name):
+    try:
+        with open(file_name, 'rb') as f:
+            files = {'file': (file_name, f)}
+            http_response = requests.post(response['url'], data=response['fields'], files=files)
+
+            logging.info(f'File upload HTTP status code: {http_response.status_code}')
+    except FileNotFoundError:
+        return Response({'message: FileNotFound In Working Directiory'}, status=status.HTTP_404_NOT_FOUND)

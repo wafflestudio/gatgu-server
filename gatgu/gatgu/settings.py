@@ -15,6 +15,8 @@ from pathlib import Path
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import boto3
+from botocore.config import Config
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
@@ -67,6 +69,7 @@ INSTALLED_APPS = [
     'article',
     'chat',
     'channels',
+    'report',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -90,7 +93,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
-    # 'gatgu.middleware.GatguExceptionHandlingMiddleware',
+
 ]
 
 REST_FRAMEWORK = {
@@ -102,6 +105,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler',
+    'DATETIME_FORMAT': '%s.%f',
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=1),
@@ -164,18 +168,19 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # local
         'HOST': '127.0.0.1',
-        # ohio deprecated
-        # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
         # seoul
         'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
         # test
         'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
+
         'PORT': 3306,
         'NAME': 'gatgu_db',
         'USER': 'team-gatgu',
         'PASSWORD': 'gatgu',
     }
 }
+
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -233,7 +238,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -253,3 +258,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost:3000',
 # ]
 
+
+CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+BUCKET_NAME = 'gatgubucket'
+OBJECT_KEY = datetime.datetime.now().strftime('%H:%M:%S')
