@@ -1,12 +1,8 @@
-import datetime
 import logging
-
-import boto3
 import requests
-from botocore.config import Config
 from django.core.cache import caches
-from django.contrib.auth import authenticate, login, logout, _get_user_session_key
-from django.db import IntegrityError, transaction
+from django.contrib.auth import authenticate, login, logout
+from django.db import transaction
 from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -17,8 +13,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
-import push_notification
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
 from chat.models import ParticipantProfile, OrderChat
@@ -29,8 +23,7 @@ from gatgu.settings import CLIENT, BUCKET_NAME, OBJECT_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 from push_notification.models import FCMToken
-from push_notification.views import subscription, unsubscription
-
+from push_notification.views import subscription
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
