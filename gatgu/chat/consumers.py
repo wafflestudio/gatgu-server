@@ -7,6 +7,7 @@ import json
 class ChatConsumer(WebsocketConsumer):
 
     def connect(self):
+        print(1)
         self.user_id = self.scope['url_route']['kwargs']['user_id']
         participant_profiles = [str(item['order_chat_id']) for item in ParticipantProfile.objects.filter(participant_id = self.user_id).values('order_chat_id')]
         articles = [str(item['id']) for item in Article.objects.filter(writer_id = self.user_id).values('id')]
@@ -48,6 +49,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
+        print(text_data_json)
         type = text_data_json['type']
         if type == 'PING':
             self.send(text_data = json.dumps({
@@ -135,13 +137,19 @@ class ChatConsumer(WebsocketConsumer):
         msg['type'] = "user"
         try:
             serializer = ChatMessageSerializer(data=msg)
+            print(2)
             serializer.is_valid(raise_exception=True)
+            print(3)
             serializer.save(sent_by_id=user_id, chat_id=chatting_id)
+            print(4)
             message_id = ChatMessage.objects.last().id
+            print(5)
             message = ChatMessage.objects.get(id=message_id)
+            print(6)
 
-            if msg['img'] != '':
-                message.image.create(img_url=msg['img'])
+            if 'image' in msg and msg['image'] != '':
+                message.image.create(img_url=msg['image'])
+            print(7)
             message.save()
             message = ChatMessage.objects.get(id=message_id)
             async_to_sync(self.channel_layer.group_send)(

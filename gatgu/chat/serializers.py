@@ -62,7 +62,7 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
 class ChatMessageSerializer(serializers.ModelSerializer):
     sent_by = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField(required=False)
-    sent_at = JSTimestampField()
+    sent_at = JSTimestampField(read_only=True)
 
     class Meta:
         model = ChatMessage
