@@ -457,16 +457,12 @@ class UserViewSet(viewsets.GenericViewSet):
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
             raise UsedNickname
-        icon = data.get('picture')
-        if icon:
-            response = self.create_presigned_post(request)
-            print(response)  # data['picture'] = upload_s3()
 
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['PUT'])
     def create_presigned_post(self, request):
