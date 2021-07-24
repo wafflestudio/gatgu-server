@@ -395,3 +395,4 @@ secrets.json
 
 # FireBaseConf
 gatgu-firebase-admin.json
+gatgu-firebase-admin-hs.json
