@@ -7,27 +7,31 @@ from report.models import Report
 
 
 class ReportSerializer(serializers.ModelSerializer):
-    report_id = serializers.ReadOnlyField(source='id')
-    contents = serializers.CharField(required=True)
     reporter_id = serializers.SerializerMethodField()
     target_user_id = serializers.SerializerMethodField()
+    article_id = serializers.SerializerMethodField()
     created_at = JSTimestampField(read_only=True)
-    resolved_at = JSTimestampField(read_only=True)
+    updated_at = JSTimestampField(read_only=True)
 
     class Meta:
         model = Report
         fields = (
-            'report_id',
-            'target_user_id',
             'reporter_id',
+            'target_user_id',
+            'article_id',
             'contents',
             'is_checked',
             'created_at',
-            'resolved_at',
+            'updated_at',
         )
 
     def get_reporter_id(self, report):
         return report.reporter.id
 
     def get_target_user_id(self, report):
-        return report.target_user.id
+        if report.target_user:
+            return report.target_user.id
+
+    def get_article_id(self, report):
+        if report.article:
+            return report.article.id

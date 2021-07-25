@@ -142,6 +142,14 @@ class QueryParamsNOTMATCH(APIException):
     default_code = 122
 
 
+class BadRequestException(APIException):
+    def __init__(self, string):
+        self.default_detail = f'{string}'
+        super(BadRequestException, self).__init__()
+
+    status_code = 400
+    default_code = 'badrequest'
+
 class JSTimestampField(serializers.Field):
     def to_representation(self, value):
         return round(value.timestamp() * 1000)

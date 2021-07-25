@@ -4,7 +4,8 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from gatgu.utils import UserNotFound
+from article.models import Article
+from gatgu.utils import UserNotFound, BadRequestException, ArticleNotFound
 from report.models import Report
 from report.serializers import ReportSerializer
 
@@ -17,13 +18,24 @@ class ReportViewSet(viewsets.GenericViewSet):
     @transaction.atomic
     def create(self, request):
         data = request.data
-        target_id = data.get('target_id')
+        target_user_id = data.get('target_user_id')
+        article_id = data.get('article_id')
+        contents = data.get('contents')
 
-        try:
-            target_user = User.objects.get(id=target_id)
-        except User.DoesNotExist:
-            raise UserNotFound()
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(reporter_id=request.user.id, target_user_id=target_user.id)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if (target_user_id and article_id) or (not target_user_id and not article_id):
+            raise BadRequestException('(target_user_id) or (article_id) only one permitted')
+
+        if target_user_id:
+            try:
+                target_user = User.objects.get(id=target_user_id)
+                report = Report.objects.create(reporter=self.request.user, target_user=target_user, contents=contents)
+            except User.DoesNotExist:
+                raise UserNotFound()
+        elif article_id:
+            try:
+                article = Article.objects.get(id=article_id)
+                report = Report.objects.create(reporter=self.request.user, article=article, contents=contents)
+            except Article.DoesNotExist:
+                raise ArticleNotFound()
+
+        return Response(ReportSerializer(report).data, status=status.HTTP_201_CREATED)
