@@ -4,7 +4,7 @@ import logging
 import boto3
 import requests
 from botocore.config import Config
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F
 from django.db.models.functions import Coalesce
@@ -89,6 +89,10 @@ class ArticleViewSet(viewsets.GenericViewSet):
         trading_place = data.get('trading_place')
         product_url = data.get('product_url')
         time_in = data.get('time_in')
+        try:
+            time_in = datetime.datetime.fromtimestamp(float(time_in))
+        except:
+            raise ValidationError()
 
         if not title or not description or not trading_place or not product_url:
             raise FieldsNotFilled
