@@ -29,9 +29,14 @@ class ChatMessageImage(models.Model):
 
 # order_chat 과 user(participant)의 관계 테이블
 class ParticipantProfile(models.Model):
+    PAY_STATUS = (
+        (1, '입금 전 '),
+        (2, '입금 확인요청'),
+        (3, '입금 완료'),
+    )
     order_chat = models.ForeignKey(OrderChat, on_delete=models.CASCADE, related_name='participant_profile')
     participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='participant_profile')
-    pay_status = models.BooleanField(default=False)
+    pay_status = models.IntegerField(choices=PAY_STATUS, default=1)
     wish_price = models.IntegerField(default=0)
     joined_at = models.DateTimeField(auto_now_add=True)
 
