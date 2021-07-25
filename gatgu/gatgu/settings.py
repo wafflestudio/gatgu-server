@@ -68,6 +68,8 @@ INSTALLED_APPS = [
     'article',
     'chat',
     'channels',
+    'push_notification',
+
     'report',
 ]
 
@@ -257,6 +259,11 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost:3000',
 # ]
 
+import firebase_admin
+from firebase_admin import credentials
+
+cred = credentials.Certificate("gatgu-firebase-admin-hs.json")
+firebase_admin.initialize_app(cred)
 
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
 BUCKET_NAME = 'gatgubucket'
