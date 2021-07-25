@@ -10,6 +10,8 @@ class ReportSerializer(serializers.ModelSerializer):
     reporter_id = serializers.SerializerMethodField()
     target_user_id = serializers.SerializerMethodField()
     article_id = serializers.SerializerMethodField()
+    created_at = JSTimestampField(read_only=True)
+    updated_at = JSTimestampField(read_only=True)
 
     class Meta:
         model = Report
