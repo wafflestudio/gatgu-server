@@ -1,12 +1,8 @@
-import datetime
 import logging
-
-import boto3
 import requests
-from botocore.config import Config
 from django.core.cache import caches
-from django.contrib.auth import authenticate, login, logout, _get_user_session_key
-from django.db import IntegrityError, transaction
+from django.contrib.auth import authenticate, login, logout
+from django.db import transaction
 from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -17,7 +13,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
 from chat.models import ParticipantProfile, OrderChat
@@ -27,7 +22,8 @@ from gatgu.paginations import CursorSetPagination, UserActivityPagination, Order
 from gatgu.settings import CLIENT, BUCKET_NAME, OBJECT_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
-
+from push_notification.models import FCMToken
+from push_notification.views import subscription
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
@@ -454,16 +450,12 @@ class UserViewSet(viewsets.GenericViewSet):
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exclude(user_id=user.id).exists():
             raise UsedNickname
-        icon = data.get('picture')
-        if icon:
-            response = self.create_presigned_post(request)
-            print(response)# data['picture'] = upload_s3()
 
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['PUT'])
     def create_presigned_post(self, request):
@@ -476,6 +468,23 @@ class UserViewSet(viewsets.GenericViewSet):
 
         return Response(
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
+
+    # 본인의 토큰으로 키워드를 구독한다.
+    @action(methods=['POST', 'DELETE'], detail=True)
+    def keyword_noti(self, request, pk=None):
+        user = request.user
+        keyword = request.data.get('keyword')
+        token = FCMToken.objects.filter(user_fcmtoken__user=user)
+
+        if pk == 'me':
+            if request.method == 'POST':
+                token.update(keyword=keyword)
+                registered_tokens = token.values_list('fcmtoken', flat=True)
+                subscription(registered_tokens, keyword)
+
+            # elif request.mothod == 'DELETE':
+            #     KeyWord.objects.get(keyword=keyword).delete()
+            #     unsubscription(token, keyword)
 
 
 # postman에서 업로드 시 사용 / 'file_name'의 파일을 manage.py 디렉토리에 위치 후 실행
