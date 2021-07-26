@@ -94,15 +94,16 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                             status=status.HTTP_200_OK)
 
         elif request.method == 'POST':
-            # article 의 status 가 모집중 이 아니면 입장 불가.
-            if chatting.article.article_status != Article.GATHERING:
-                return Response({"Could not participate"}, status=status.HTTP_404_NOT_FOUND)
+            wish_price = request.data.get('wish_price') if request.data.get('wish_price') else 0
 
             if chatting.article.writer == user:
                 return Response({'message: 채팅방에 입장했습니다.'}, status=status.HTTP_200_OK)
-            elif OrderChat.objects.filter(participant_profile__participant=user).exists():
-
+            elif OrderChat.objects.filter(id=pk, participant_profile__participant=user).exists():
                 return Response({'message: 이미 참가중'}, status=status.HTTP_200_OK)
+            # article 의 status 가 모집중 이 아니면 입장 불가.
+            if chatting.article.article_status != Article.GATHERING:
+                return Response({"Could not participate"}, status=status.HTTP_404_NOT_FOUND)
+                
             elif chatting.order_status == 1:
                 ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
                 return Response(status=status.HTTP_201_CREATED)
@@ -115,20 +116,22 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             user = request.user
             data = request.data
 
-            if 'pay_status' in data and user != chatting.article.writer:
-                return Response(status=status.HTTP_403_FORBIDDEN)
-              
+
             try:
-                participant_profile = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+
             except ParticipantProfile.DoesNotExist:
                 return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            wish_price = request.data.get('wish_price')
-            if type(wish_price) != int:
-                return Response({'invalid wish_price'}, status=status.HTTP_400_BAD_REQUEST)
 
-            participant_profile.wish_price = wish_price
-            participant_profile.save()
+            if 'pay_status' in data.keys():
+                if (data['pay_status'] == 3) and user != chatting.article.writer:
+                    return Response(status=status.HTTP_403_FORBIDDEN)
+
+            serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.update(participant, serializer.validated_data)
+            serializer.save()
             return Response(status=status.HTTP_200_OK)
 
         elif request.method == 'DELETE':
