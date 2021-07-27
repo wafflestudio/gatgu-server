@@ -99,7 +99,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(writer=user)
+        serializer.save(writer=user, time_in=time_in)
 
         article_id = Article.objects.last().id
         article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
