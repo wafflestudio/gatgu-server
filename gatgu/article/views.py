@@ -90,7 +90,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         product_url = data.get('product_url')
         time_in = data.get('time_in')
         try:
-            time_in = datetime.datetime.fromtimestamp(float(time_in))
+            time_in = datetime.datetime.fromtimestamp(float(time_in / 1000))
         except:
             raise ValidationError()
 
