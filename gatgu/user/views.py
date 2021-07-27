@@ -23,7 +23,6 @@ from gatgu.settings import CLIENT, BUCKET_NAME, OBJECT_KEY
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 from push_notification.models import FCMToken
-from push_notification.views import subscription
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
 from .models import User, UserProfile
 from .makecode import generate_code
