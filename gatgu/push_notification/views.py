@@ -49,8 +49,8 @@ class FCMViewSet(viewsets.GenericViewSet):
 
         message = messaging.Message(
             notification=messaging.Notification(
-                title='안녕하세요 타이틀 입니다',
-                body='안녕하세요 메세지 입니다',
+                title='안녕하세요 메세지 잘 도착했습니까???',
+                body='그렇다면 소리질러..',
             ),
             data={
                 'link': "gatgu://chatting/:room_id",
@@ -66,12 +66,22 @@ class FCMViewSet(viewsets.GenericViewSet):
 
         return Response({'Successfully sent message:', response}, status=status.HTTP_200_OK)
 
+    @action(methods=['POST'], detail=False, url_path='topic')
+    def topic(self, request):
+        data = request.data
+        target_user_id = data.get('user_id')
+        tokens = list(FCMToken.objects.filter(user_fcmtoken__user_id=target_user_id).values_list('fcmtoken', flat=True))
+        topic = data.get('topic')
+        response = messaging.subscribe_to_topic(tokens, topic)
+        return Response({'Sucessfully subscribed this topic with token',
+                         response.success_count}, status=status.HTTP_201_CREATED)
+
     # @action(methods=['PUT'], detail=False, url_path='bulk_messaging')
     # def bulk_messaging(self, request):
     #     # Create a list containing up to 500 registration tokens.
     #     # These registration tokens come from the client FCM SDKs.
-    #     registration_tokens = FCMToken.objects.filter(user_fcmtoken__user=request.user).values_list('fcmtoken',
-    #                                                                                                 flat=True)
+    #     registration_tokens = list(FCMToken.objects.filter(user_fcmtoken__user=request.user).values_list('fcmtoken',
+    #                                                                                                 flat=True))
     #     print(registration_tokens)
     #
     #     message = messaging.MulticastMessage(
@@ -93,13 +103,18 @@ class FCMViewSet(viewsets.GenericViewSet):
     #                 failed_tokens.append(registration_tokens[idx])
     #         print('List of tokens that caused failures: {0}'.format(failed_tokens))
 
-    @action(methods=['PUT'], detail=False, url_path='messaging')
-    def subscribers_messaging(self, request):
+    @action(methods=['PUT'], detail=False, url_path='subscribers_message')
+    def subscribers_message(self, request):
         # The topic name can be optionally prefixed with "/topics/".
-        topic = 'shit'
+        data = request.data
+        topic = data.get('topic')
 
         # See documentation on defining a message payload.
         message = messaging.Message(
+            notification=messaging.Notification(
+                title='안녕하세요 이 메세지를 본다면',
+                body='{0}을/를 구독한 닝긴이십니다.'.format(topic),
+            ),
             data={
                 'score': '850',
                 'time': '2:45',
@@ -108,29 +123,20 @@ class FCMViewSet(viewsets.GenericViewSet):
         )
 
         # Send a message to the devices subscribed to the provided topic.
+        ret = {}
         response = messaging.send(message)
         # Response is a message ID string.
-        print('Successfully sent message:', response)
+        ret['message'] = "Successfully sent message"
+        ret['response'] = response
+        return Response(ret, status=status.HTTP_200_OK)
 
 
-def subscription(tokens, topic):
-    # These registration tokens come from the client FCM SDKs.
-    # registration_tokens = [
-    #     'YOUR_REGISTRATION_TOKEN_1',
-    #     # ...
-    #     'YOUR_REGISTRATION_TOKEN_n',
-    # ]
-    # topic = 'shit'
-    # Subscribe the devices corresponding to the registration tokens to the
-    # topic.
-    response = messaging.subscribe_to_topic(tokens, topic)
-    # See the TopicManagementResponse reference documentation
-    # for the contents of response.
-    print(response.success_count, 'tokens were subscribed successfully')
-
-
-def unsubscription(tokens, topic):
-    response = messaging.unsubscribe_from_topic(tokens, topic)
-    # See the TopicManagementResponse reference documentation
-    # for the contents of response.
-    print(response.success_count, 'tokens were unsubscribed successfully')
+# 주제 구독하기
+# def subscription(tokens, topic):
+#     response = messaging.subscribe_to_topic(tokens, topic)
+#     print(response.success_count, 'tokens were subscribed successfully')
+#
+#
+# def unsubscription(tokens, topic):
+#     response = messaging.unsubscribe_from_topic(tokens, topic)
+#     print(response.success_count, 'tokens were unsubscribed successfully')
