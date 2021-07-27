@@ -91,8 +91,8 @@ class ArticleViewSet(viewsets.GenericViewSet):
         time_in = data.get('time_in')
         try:
             time_in = datetime.datetime.fromtimestamp(float(time_in / 1000))
-        except:
-            raise ValidationError()
+        except ValidationError:
+            raise Exception
 
         if not title or not description or not trading_place or not product_url:
             raise FieldsNotFilled
