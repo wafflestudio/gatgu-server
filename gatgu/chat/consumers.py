@@ -59,6 +59,7 @@ class ChatConsumer(WebsocketConsumer):
         chatting_id = data['room_id']
         room_id = str(chatting_id)
         user_id = int(data['user_id'])
+
         if type == 'ENTER':
             try:
                 chatting = OrderChat.objects.get(id=chatting_id)
@@ -109,7 +110,7 @@ class ChatConsumer(WebsocketConsumer):
                 return 
             self.exit_group(room_id)
             self.response('EXIT_SUCCESS', 200, websocket_id)
-            msg = {'type' : 'system', 'text': 'exit_room', 'img' : ''}
+            msg = {'type' : 'system', 'text': 'exit_room', 'image' : ''}
             try:
                 serializer = ChatMessageSerializer(data=msg)
                 serializer.is_valid(raise_exception=True)
@@ -139,9 +140,8 @@ class ChatConsumer(WebsocketConsumer):
             serializer.save(sent_by_id=user_id, chat_id=chatting_id)
             message_id = ChatMessage.objects.last().id
             message = ChatMessage.objects.get(id=message_id)
-
-            if msg['img'] != '':
-                message.image.create(img_url=msg['img'])
+            if 'image' in msg and msg['image'] != '':
+                message.image.create(img_url=msg['image'])
             message.save()
             message = ChatMessage.objects.get(id=message_id)
             async_to_sync(self.channel_layer.group_send)(
@@ -163,6 +163,13 @@ class ChatConsumer(WebsocketConsumer):
             'data' : data,
             'type' : 'MESSAGE_SUCCESS',
             'websocket_id' : websocket_id
+        }))
+    
+    def change_status(self, event):
+        data = event['data']
+        self.send(text_data=json.dumps({
+            'data' : data,
+            'type' : 'UPDATE_STATUS'
         }))
     
     def response(self, type, data, websocket_id):

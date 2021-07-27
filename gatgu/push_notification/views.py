@@ -46,7 +46,6 @@ class FCMViewSet(viewsets.GenericViewSet):
             }
         }
         jspayload = json.dumps(payload, separators=(',', ':'))
-
         message = messaging.Message(
             notification=messaging.Notification(
                 title='안녕하세요 타이틀 입니다',
@@ -57,9 +56,23 @@ class FCMViewSet(viewsets.GenericViewSet):
                 'path': "ChattingRoomStack/ChattingRoom",
                 'type': 'chatting',
                 'payload': jspayload
-
             },
             token=token,
+        )
+        response = messaging.send(message)
+        return Response({'Successfully sent message:%s', response}, status=status.HTTP_200_OK)
+
+    #@action(methods=['PUT'], detail=False, url_path='messaging')
+    #def bulk_messaging(self, request):
+        # Create a list containing up to 500 registration tokens.
+        # These registration tokens come from the client FCM SDKs.
+        registration_tokens = FCMToken.objects.filter(user_fcmtoken__user=request.user).values_list('fcmtoken',
+                                                                                                    flat=True)
+        print(registration_tokens)
+
+        message = messaging.MulticastMessage(
+            data={'score': '850', 'time': '2:45'},
+            tokens=registration_tokens,
         )
 
         response = messaging.send(message)

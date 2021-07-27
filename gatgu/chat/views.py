@@ -28,6 +28,9 @@ from botocore.client import Config
 
 from gatgu.settings import BUCKET_NAME
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 
 class CursorSetPagination(CursorSetPagination):
     ordering = '-sent_at'
@@ -116,10 +119,21 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             user = request.user
             data = request.data
 
-
+            if 'pay_status' in data:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+              
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
-
+                serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.update(participant, serializer.validated_data)
+                serializer.save()
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    str(pk),
+                    {'type': 'change_status', 'data': serializer.data}
+                )
+                return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:
                 return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -201,6 +215,11 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.update(chat, serializer.validated_data)
         serializer.save()
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            str(pk),
+            {'type': 'change_status', 'data': serializer.data}
+        )
         return Response(status=status.HTTP_200_OK)
 
         # could update only writer
