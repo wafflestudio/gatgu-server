@@ -66,18 +66,18 @@ class FCMViewSet(viewsets.GenericViewSet):
     #def bulk_messaging(self, request):
         # Create a list containing up to 500 registration tokens.
         # These registration tokens come from the client FCM SDKs.
-        registration_tokens = FCMToken.objects.filter(user_fcmtoken__user=request.user).values_list('fcmtoken',
-                                                                                                    flat=True)
-        print(registration_tokens)
-
-        message = messaging.MulticastMessage(
-            data={'score': '850', 'time': '2:45'},
-            tokens=registration_tokens,
-        )
-
-        response = messaging.send(message)
-
-        return Response({'Successfully sent message:', response}, status=status.HTTP_200_OK)
+        # registration_tokens = FCMToken.objects.filter(user_fcmtoken__user=request.user).values_list('fcmtoken',
+        #                                                                                             flat=True)
+        # print(registration_tokens)
+        #
+        # message = messaging.MulticastMessage(
+        #     data={'score': '850', 'time': '2:45'},
+        #     tokens=registration_tokens,
+        # )
+        #
+        # response = messaging.send(message)
+        #
+        # return Response({'Successfully sent message:', response}, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, url_path='topic')
     def topic(self, request):

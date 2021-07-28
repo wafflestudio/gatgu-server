@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'push_notification',
 
     'report',
+
+    'django_crontab',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -181,7 +183,6 @@ DATABASES = {
     }
 }
 
-
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -217,6 +218,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+# crontab
+# 모두 * 인 경우 매 분마다 실행
+CRONJOBS = [
+    ('*/2 * * * *', '/home/git_repo/gatgu-server/gatgu/gatgu/tasks.sh', '>> /var/log/gatgu_cron.log'),
 ]
 
 # Email
