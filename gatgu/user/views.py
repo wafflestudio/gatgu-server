@@ -95,11 +95,11 @@ class UserViewSet(viewsets.GenericViewSet):
         if not username or not password or not email or not trading_address or not nickname:
             raise FieldsNotFilled
 
-        # ecache = caches["activated_email"]
-        # chk_email = ecache.get(email)
-        #
-        # if chk_email is None:
-        #     raise MailActivateFailed
+        ecache = caches["activated_email"]
+        chk_email = ecache.get(email)
+
+        if chk_email is None:
+            raise MailActivateFailed
 
         # img_url = self.get_presigned_url(request)['object_url']
         # print(img_url)
@@ -126,7 +126,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         login(request, user)
 
-        # ecache.set(email, 0, timeout=0)
+        ecache.set(email, 0, timeout=0)
 
         data = TokenResponseSerializer(user).data
         data["message"] = "성공적으로 회원가입 되었습니다."
