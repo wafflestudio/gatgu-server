@@ -98,6 +98,9 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
 
     images = serializers.SerializerMethodField(required=False)
 
+    time_in = JSTimestampField(Article.time_in)
+    updated_at = JSTimestampField(read_only=True)
+
     class Meta:
         model = Article
         fields = (
