@@ -37,4 +37,4 @@ class Article(models.Model):
 
 class ArticleImage(models.Model):
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='images')
-    img_url = models.URLField(default="www.naver.com")
+    img_url = models.TextField(default="dafault")

@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from article.models import Article
-from article.serializers import ArticleSerializer, SimpleArticleSerializer
+from article.serializers import ArticleSerializer, SimpleArticleSerializer, ArticleImageSerializer
 from gatgu.paginations import CursorSetPagination
 from gatgu.settings import BUCKET_NAME
 from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted, NotEditableFields
@@ -99,18 +99,11 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(writer=user, time_in=time_in)
+
+        serializer.save(writer=user, time_in=time_in, images=data.get('images'))
 
         article_id = Article.objects.last().id
         article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
-
-        if 'image' in data:
-            img_list = list(data.get('image'))
-            for item in img_list:
-                article.images.create(img_url=item)
-        # default image
-        else:
-            article.images.create(img_url="api.gatgu.site")
 
         return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
 
@@ -174,15 +167,22 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if article.article_status == 2 and hasattr(data, 'article_status'):
             raise NotEditableFields
 
-        if data.get['time_in'] < datetime.date.today():
-            return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        # if time_in < datetime.date.today():
+        #     return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         if article.article_status == 2:
             return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(article, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.update(article, serializer.validated_data)
+
+        if 'time_in' in data:
+            time_in = datetime.datetime.fromtimestamp(float(data.get('time_in') / 1000))
+            serializer.save(time_in=time_in)
+        elif 'images' in data:
+            serializer.save(images=data.get('images'))
+        else:
+            serializer.save()
 
         # 상태 체크 및 업데이트 api 추가
         if article.article_status == 4 and article.time_in >= datetime.date.today():

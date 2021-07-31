@@ -60,10 +60,39 @@ class ArticleSerializer(serializers.ModelSerializer):
     def get_images(self, article):
         return ArticleImageSerializer(article.images, many=True).data
 
+    def validate(self, data):
+        return data
+
+    @transaction.atomic
     def create(self, validated_data):
+        images = validated_data.pop('images', '')
+
         article = super(ArticleSerializer, self).create(validated_data)
+
+        if images:
+            for item in images:
+                ArticleImage.objects.create(article_id=article.id,
+                                            img_url=item)
+        # default image
+        else:
+            ArticleImage.objects.create(article_id=article.id,
+                                        img_url="http://placekitten.com/200/300")
+
         OrderChat.objects.create(article=article)
         return article
+
+    @transaction.atomic
+    def update(self, article, validated_data):
+        images = validated_data.get('images')
+
+        article_image = ArticleImage.objects.filter(article_id=article.id)
+        if images:
+            for item in article_image:
+                item.delete()
+            for new_img in images:
+                ArticleImage.objects.create(article_id=article.id, img_url=new_img)
+
+        return super(ArticleSerializer, self).update(article, validated_data)
 
 
 class ArticleImageSerializer(serializers.ModelSerializer):
