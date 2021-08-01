@@ -4,15 +4,15 @@ from article.models import Article
 
 
 class OrderChat(models.Model):
-    ORDER_STATUS = (
-        (1, 'WAITING_MEMBERS'),
-        (2, 'WAITING_PAY'),
-        (3, 'WAITING_PARCELS'),
-        (4, 'GATGU_COMPLETE'),
-    )
+    # ORDER_STATUS = (
+    #     (1, 'WAITING_MEMBERS'),
+    #     (2, 'WAITING_PAY'),
+    #     (3, 'WAITING_PARCELS'),
+    #     (4, 'GATGU_COMPLETE'),
+    # )
 
     article = models.OneToOneField(Article, on_delete=models.CASCADE, related_name='order_chat')
-    order_status = models.PositiveSmallIntegerField(choices=ORDER_STATUS, default=1, null=True)
+    # order_status = models.PositiveSmallIntegerField(choices=ORDER_STATUS, default=1, null=True)
     tracking_number = models.CharField(max_length=30, null=True)
 
 
