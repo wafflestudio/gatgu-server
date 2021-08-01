@@ -31,6 +31,8 @@ from gatgu.settings import BUCKET_NAME
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from gatgu.utils import BadRequestException
+
 
 class CursorSetPagination(CursorSetPagination):
     ordering = '-sent_at'
@@ -309,6 +311,19 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         object_url = response['url'] + response['fields']['key']
         return Response(
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=True)
+    def images(self, request, pk):
+        try:
+            chatting = OrderChat.objects.get(id=pk)
+        except OrderChat.DoesNotExist:
+            raise BadRequestException('chatting id does not exist')
+
+        images = ChatMessageImage.objects.filter(message__chat_id=pk)
+
+        rtn = ChatMessageImageSerializer(images, many=True).data
+
+        return Response(rtn, status=status.HTTP_200_OK)
 
 
 class ChatMessageViewSet(viewsets.GenericViewSet):
