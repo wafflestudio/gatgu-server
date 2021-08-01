@@ -243,7 +243,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         #     else:
         #         chatting.order_status = order_status
 
-        elif tracking_number is not None:
+        if tracking_number is not None:
             chatting.tracking_number = tracking_number
 
         chatting.save()
