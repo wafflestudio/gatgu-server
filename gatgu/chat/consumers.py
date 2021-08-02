@@ -155,7 +155,7 @@ class ChatConsumer(WebsocketConsumer):
                 }
             )
 
-            sandbox = True
+            sandbox = False
 
             # 희수 안드 에뮬
             token = 'cgcEjP3DRaaLakdcasEh5l:APA91bExlss0NmSZMBaiKuZDUVrNHROYba6o92fj8C8G10Phs2dPLji-AWK30uI6pbS1n5q7IoAdfi3FOM9ISShhtHWQTZWwE42WKWAG7XY4fQjsG_HdgH35ApRgSQF0hu1V2bBAaz9u'
@@ -172,13 +172,13 @@ class ChatConsumer(WebsocketConsumer):
             tokens = [token['fcmtoken'] for token in FCMToken.objects.filter(id__in = tokens_id).values('fcmtoken')]
             # 3. 해당 token들로 알림 Push
             for token in tokens:
-                send_notification(room_id, token)
+                self.send_notification(msg, room_id, token)
             return
         except:
             self.response('MESSAGE_FAILURE', '', websocket_id)
             return
 
-    def send_notification(self, room_id, token):
+    def send_notification(self, msg, room_id, token):
         payload = {
             'params': {
                 'room_id': room_id
