@@ -153,6 +153,7 @@ class BadRequestException(APIException):
     status_code = 400
     default_code = 'badrequest'
 
+
 class JSTimestampField(serializers.Field):
     def to_representation(self, value):
-        return round(value.timestamp() * 1000)
+        return floor(value.timestamp() * 1000)

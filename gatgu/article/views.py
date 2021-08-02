@@ -16,7 +16,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from article.models import Article
+from article.models import Article, ArticleImage
 from article.serializers import ArticleSerializer, SimpleArticleSerializer, ArticleImageSerializer
 from gatgu.paginations import CursorSetPagination
 from gatgu.settings import BUCKET_NAME
@@ -88,11 +88,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         description = data.get('description')
         trading_place = data.get('trading_place')
         product_url = data.get('product_url')
-        time_in = data.get('time_in')
-        try:
-            time_in = datetime.datetime.fromtimestamp(float(time_in / 1000))
-        except ValidationError:
-            raise Exception
+        time_in = datetime.datetime.fromtimestamp(float(data.get('time_in') / 1000))
 
         if not title or not description or not trading_place or not product_url:
             raise FieldsNotFilled
@@ -173,14 +169,18 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if article.article_status == 2:
             return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.get_serializer(article, data=request.data, partial=True)
+        serializer = self.get_serializer(article, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
 
         if 'time_in' in data:
             time_in = datetime.datetime.fromtimestamp(float(data.get('time_in') / 1000))
             serializer.save(time_in=time_in)
-        elif 'images' in data:
-            serializer.save(images=data.get('images'))
+        if 'images' in data:
+            # image = ArticleImage.objects.filter(article_id=pk)
+            # imageserializer = ArticleImageSerializer(image, data=data, many=True)
+            # imageserializer.is_valid(raise_exception=True)
+
+            serializer.update(article, data)
         else:
             serializer.save()
 

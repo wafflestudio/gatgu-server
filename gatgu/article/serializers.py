@@ -22,6 +22,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     order_chat = serializers.SerializerMethodField()
 
     images = serializers.SerializerMethodField(required=False)
+    img_url = serializers.CharField(write_only=True, required=False, allow_null=True)
 
     time_in = JSTimestampField(Article.time_in)
     written_at = JSTimestampField(read_only=True)
@@ -36,6 +37,8 @@ class ArticleSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'images',
+            'img_url',
+
             'trading_place',
             'product_url',
             'time_in',
@@ -83,6 +86,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, article, validated_data):
+        print(validated_data)
         images = validated_data.get('images')
 
         article_image = ArticleImage.objects.filter(article_id=article.id)
@@ -91,7 +95,7 @@ class ArticleSerializer(serializers.ModelSerializer):
                 item.delete()
             for new_img in images:
                 ArticleImage.objects.create(article_id=article.id, img_url=new_img)
-
+                # article.images.save()
         return super(ArticleSerializer, self).update(article, validated_data)
 
 
