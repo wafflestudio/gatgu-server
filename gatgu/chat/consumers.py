@@ -2,6 +2,9 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from chat.models import ChatMessage, ChatMessageImage, ParticipantProfile, Article, OrderChat
 from chat.serializers import ChatMessageSerializer, ChatMessageImageSerializer
+from firebase_admin import messaging
+from push_notification.models import UserFCMToken, FCMToken
+
 import json
 
 class ChatConsumer(WebsocketConsumer):
@@ -48,6 +51,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
+        print(text_data_json)
         type = text_data_json['type']
         if type == 'PING':
             self.send(text_data = json.dumps({
@@ -78,7 +82,7 @@ class ChatConsumer(WebsocketConsumer):
                 self.response('ENTER_SUCCESS', 201, websocket_id)
 
                 self.enter_group(room_id)
-                msg = {'type' : 'system', 'text': 'enter_room', 'img' : ''}
+                msg = {'type' : 'system', 'text': 'enter_room', 'image' : ''}
                 try:
                     serializer = ChatMessageSerializer(data=msg)
                     serializer.is_valid(raise_exception=True)
@@ -131,19 +135,25 @@ class ChatConsumer(WebsocketConsumer):
             return
         if not room_id in self.groups:
             return
-
+        print(data)
         msg = data['message']
         msg['type'] = "user"
+        print(1)
         try:
             serializer = ChatMessageSerializer(data=msg)
+            print(2)
             serializer.is_valid(raise_exception=True)
+            print(3)
             serializer.save(sent_by_id=user_id, chat_id=chatting_id)
             message_id = ChatMessage.objects.last().id
             message = ChatMessage.objects.get(id=message_id)
+            print(4)
             if 'image' in msg and msg['image'] != '':
                 message.image.create(img_url=msg['image'])
+            print(5)
             message.save()
             message = ChatMessage.objects.get(id=message_id)
+            print(6)
             async_to_sync(self.channel_layer.group_send)(
                 str(chatting_id),
                 {
@@ -152,6 +162,42 @@ class ChatConsumer(WebsocketConsumer):
                     'websocket_id' : websocket_id
                 }
             )
+            # 희수 안드 에뮬
+            token = 'cgcEjP3DRaaLakdcasEh5l:APA91bExlss0NmSZMBaiKuZDUVrNHROYba6o92fj8C8G10Phs2dPLji-AWK30uI6pbS1n5q7IoAdfi3FOM9ISShhtHWQTZWwE42WKWAG7XY4fQjsG_HdgH35ApRgSQF0hu1V2bBAaz9u'
+            # token = UserFCMToken.objects.filter(user=request.user, is_active=True)
+            # See documentation on defining a message payload.
+
+            # 1. 해당 채팅방 user id 다 가져옴 
+            chatting = OrderChat.objects.get(id=chatting_id)
+            participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chatting_id).values('participant_id')]
+            print(participants)
+            participants.append(chatting.article.writer_id)
+            print(participants)
+            # 2. user id에 해당하는 token 전부 가져옴
+            tokens_id = [user_token['token_id'] for user_token in UserFCMToken.objects.filter(user_id__in = participants, is_active=True).values('token_id')]
+            tokens = [token['fcmtoken'] for token in FCMToken.objects.filter(id__in = tokens_id).values('fcmtoken')]
+            # 3. 해당 token들로 알림 Push
+            payload = {
+                'params': {
+                    'room_id': room_id
+                }
+            }
+            jspayload = json.dumps(payload, separators=(',', ':'))
+            for token in tokens:
+                message = messaging.Message(
+                    notification=messaging.Notification(
+                        title=msg['text'],
+                        body=msg['image'],
+                    ),
+                    data={
+                        'link': "gatgu://chatting/"+room_id,
+                        #'path': "ChattingRoomStack/ChattingRoom",
+                        'type': 'chatting',
+                        'payload': jspayload
+                    },
+                    token=token,
+                )
+                response = messaging.send(message)
         except:
             self.response('MESSAGE_FAILURE', '', websocket_id)
             return
