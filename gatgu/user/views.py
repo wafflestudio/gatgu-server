@@ -470,6 +470,7 @@ class UserViewSet(viewsets.GenericViewSet):
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
 
     # 본인의 토큰으로 키워드를 구독한다.
+    # 미완
     @action(methods=['POST', 'DELETE'], detail=True)
     def keyword_noti(self, request, pk=None):
         user = request.user
