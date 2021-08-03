@@ -36,7 +36,7 @@ class FCMViewSet(viewsets.GenericViewSet):
         user = request.user
 
         # 희수 안드 에뮬
-        token = 'caMbD4PIQC66pKoUiY-SAL:APA91bHxykMPrDy4wP2sbYvzAIIJBR5yrGsoYQsU-T7KFayyvqgvBdop7aD8W3oz00EyWdCWQ3otsu6-IDnoBUMo5pMYfzvFgJbDM0aE5juL0Ep4kkK_SINfqJa0zbsYIXJMsxKCrIor'
+        token = 'cgcEjP3DRaaLakdcasEh5l:APA91bExlss0NmSZMBaiKuZDUVrNHROYba6o92fj8C8G10Phs2dPLji-AWK30uI6pbS1n5q7IoAdfi3FOM9ISShhtHWQTZWwE42WKWAG7XY4fQjsG_HdgH35ApRgSQF0hu1V2bBAaz9u'
         # token = UserFCMToken.objects.filter(user=request.user, is_active=True)
         # See documentation on defining a message payload.
 
