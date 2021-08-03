@@ -96,7 +96,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
-        serializer.save(writer=user, time_in=time_in, images=data.get('images'))
+        serializer.save(writer=user, time_in=time_in)
 
         article_id = Article.objects.last().id
         article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
@@ -175,14 +175,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if 'time_in' in data:
             time_in = datetime.datetime.fromtimestamp(float(data.get('time_in') / 1000))
             serializer.save(time_in=time_in)
-        if 'images' in data:
-            # image = ArticleImage.objects.filter(article_id=pk)
-            # imageserializer = ArticleImageSerializer(image, data=data, many=True)
-            # imageserializer.is_valid(raise_exception=True)
-
-            serializer.update(article, data)
-        else:
-            serializer.save()
+        serializer.save()
 
         # 상태 체크 및 업데이트 api 추가
         if article.article_status == 4 and article.time_in >= datetime.date.today():
