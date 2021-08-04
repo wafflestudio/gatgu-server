@@ -34,9 +34,9 @@ class UserSerializer(serializers.ModelSerializer):
         required=False,
     )
     trading_address = serializers.CharField(write_only=True,
-                                          allow_null=True,
-                                          required=False,
-                                          )
+                                            allow_null=True,
+                                            required=False,
+                                            )
     grade = serializers.IntegerField(write_only=True,
                                      allow_null=True,
                                      required=False
@@ -45,9 +45,6 @@ class UserSerializer(serializers.ModelSerializer):
                                      allow_null=True,
                                      required=False
                                      )
-
-
-
 
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
@@ -138,7 +135,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-
     updated_at = JSTimestampField(read_only=True)
     withdrew_at = JSTimestampField(read_only=True)
 
@@ -157,7 +153,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class SimpleParticipantsSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserProfile
         fields = (

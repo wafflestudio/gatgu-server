@@ -173,7 +173,7 @@ DATABASES = {
         'HOST': '127.0.0.1',
         # seoul
         'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
-        # test
+        # # test
         'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
 
         'PORT': 3306,

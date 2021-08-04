@@ -10,7 +10,7 @@ class OrderChatSerializer(serializers.ModelSerializer):
         model = OrderChat
         fields = (
             'id',
-            'order_status',
+            # 'order_status',
             'tracking_number',
             'participant_profile',
         )
@@ -28,7 +28,7 @@ class SimpleOrderChatSerializer(serializers.ModelSerializer):
         model = OrderChat
         fields = (
             'id',
-            'order_status',
+            # 'order_status',
             'tracking_number',
             'recent_message'
         )

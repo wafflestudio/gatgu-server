@@ -2,6 +2,9 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from chat.models import ChatMessage, ChatMessageImage, ParticipantProfile, Article, OrderChat
 from chat.serializers import ChatMessageSerializer, ChatMessageImageSerializer
+from firebase_admin import messaging
+from push_notification.models import UserFCMToken, FCMToken
+
 import json
 
 class ChatConsumer(WebsocketConsumer):
@@ -78,7 +81,7 @@ class ChatConsumer(WebsocketConsumer):
                 self.response('ENTER_SUCCESS', 201, websocket_id)
 
                 self.enter_group(room_id)
-                msg = {'type' : 'system', 'text': 'enter_room', 'img' : ''}
+                msg = {'type' : 'system', 'text': 'enter_room', 'image' : ''}
                 try:
                     serializer = ChatMessageSerializer(data=msg)
                     serializer.is_valid(raise_exception=True)
@@ -131,7 +134,6 @@ class ChatConsumer(WebsocketConsumer):
             return
         if not room_id in self.groups:
             return
-
         msg = data['message']
         msg['type'] = "user"
         try:
@@ -152,9 +154,52 @@ class ChatConsumer(WebsocketConsumer):
                     'websocket_id' : websocket_id
                 }
             )
+
+            sandbox = False
+
+            # 희수 안드 에뮬
+            token = 'cgcEjP3DRaaLakdcasEh5l:APA91bExlss0NmSZMBaiKuZDUVrNHROYba6o92fj8C8G10Phs2dPLji-AWK30uI6pbS1n5q7IoAdfi3FOM9ISShhtHWQTZWwE42WKWAG7XY4fQjsG_HdgH35ApRgSQF0hu1V2bBAaz9u'
+            
+            if sandbox:
+                send_notification(room_id, token)
+                return
+            # 1. 해당 채팅방 user id 다 가져옴 
+            chatting = OrderChat.objects.get(id=chatting_id)
+            participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chatting_id).values('participant_id')]
+            participants.append(chatting.article.writer_id)
+            # 2. user id에 해당하는 token 전부 가져옴
+            tokens_id = [user_token['token_id'] for user_token in UserFCMToken.objects.filter(user_id__in = participants, is_active=True).values('token_id')]
+            tokens = [token['fcmtoken'] for token in FCMToken.objects.filter(id__in = tokens_id).values('fcmtoken')]
+            # 3. 해당 token들로 알림 Push
+            for token in tokens:
+                self.send_notification(msg, room_id, token)
+            return
         except:
             self.response('MESSAGE_FAILURE', '', websocket_id)
             return
+
+    def send_notification(self, msg, room_id, token):
+        payload = {
+            'params': {
+                'room_id': room_id
+            }
+        }
+        jspayload = json.dumps(payload, separators=(',', ':'))
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=msg['text'],
+                body=msg['image'],
+            ),
+            data={
+                'link': "gatgu://chatting/"+room_id,
+                #'path': "ChattingRoomStack/ChattingRoom",
+                'type': 'chatting',
+                'payload': jspayload
+            },
+            token=token,
+        )
+        response = messaging.send(message)
+        return response
     
     def chat_message(self, event):
         data = event['data']
