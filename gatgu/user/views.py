@@ -1,3 +1,4 @@
+import datetime
 import logging
 import requests
 from django.core.cache import caches
@@ -460,7 +461,7 @@ class UserViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['PUT'])
     def create_presigned_post(self, request):
         user = request.user
-        key = 'user/{0}/icon/{1}'.format(user.id, OBJECT_KEY)
+        key = 'user/{0}/icon/{1}'.format(user.id, datetime.datetime.now().strftime('%H:%M:%S'))
         response = CLIENT.generate_presigned_post(BUCKET_NAME, key)
         # resopnse 에 object_url 포함해서 반환
         object_url = response['url'] + response['fields']['key']
