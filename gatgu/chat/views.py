@@ -122,7 +122,18 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             data = request.data
 
             if 'pay_status' in data:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+                if 'user_id' in data: # writer's action
+                    if user == chatting.article.writer and data['pay_status'] == 3:
+                        user = User.objects.get(id=data['user_id'])
+                    else:
+                        return Response(status=status.HTTP_403_FORBIDDEN)
+                else: # participant's action
+                    try:
+                        participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                    except ParticipantProfile.DoesNotExist:
+                        return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                    if data['pay_status'] != 2 or  participant.pay_status != 1:
+                        return Response(status=status.HTTP_403_FORBIDDEN)
               
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
@@ -138,17 +149,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:
                 return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-            if 'pay_status' in data.keys():
-                if (data['pay_status'] == 3) and user != chatting.article.writer:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
-
-            serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.update(participant, serializer.validated_data)
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
 
         elif request.method == 'DELETE':
             # 참가자의 요청시 나가기 처리
@@ -211,10 +211,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         chat = get_object_or_404(OrderChat, pk=pk)
         if user != chat.article.writer:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        # if 'order_status' in data:
-        #     if data['order_status'] < chat.order_status:
-        #         print("order status should grow up")
-        #         return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(chat, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.update(chat, serializer.validated_data)
