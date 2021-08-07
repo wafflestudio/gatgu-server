@@ -4,7 +4,7 @@ on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ feature/#203 ]
+    branches: [ develop ]
 
 jobs:
   deploy:
