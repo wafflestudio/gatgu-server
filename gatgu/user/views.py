@@ -463,7 +463,7 @@ class UserViewSet(viewsets.GenericViewSet):
         response = CLIENT.generate_presigned_post(BUCKET_NAME, key)
         # resopnse 에 object_url 포함해서 반환
         object_url = response['url'] + response['fields']['key']
-        # upload_s3(response, 'admin(1).jpeg')
+        # upload_s3(response, request.data.get('file_name'))
 
         return Response(
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
