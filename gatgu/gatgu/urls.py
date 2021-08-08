@@ -11,6 +11,7 @@ urlpatterns = [
     path('v1/token/', jwt_views.token_obtain_pair),
     path('v1/token/refresh/', jwt_views.token_refresh),
 
+
     path('v1/', include('user.urls')),
     path('v1/', include('article.urls')),
     path('v1/', include('chat.urls')),
