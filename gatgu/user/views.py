@@ -13,6 +13,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.views import TokenViewBase
+
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
 from chat.models import ParticipantProfile, OrderChat
@@ -24,6 +26,7 @@ from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, Fiel
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 from push_notification.models import FCMToken
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
+from . import serializers
 from .models import User, UserProfile
 from .makecode import generate_code
 
@@ -497,3 +500,10 @@ def upload_s3(response, file_name):
             logging.info(f'File upload HTTP status code: {http_response.status_code}')
     except FileNotFoundError:
         return Response({'message: FileNotFound In Working Directiory'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class TokenRefreshView(TokenViewBase):
+    serializer_class = serializers.CustomTokenRefreshSerializer
+
+
+token_refresh = TokenRefreshView.as_view()
