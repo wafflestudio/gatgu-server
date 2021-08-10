@@ -69,7 +69,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        print(validated_data)
         img_urls = validated_data.pop('img_urls', '')
         article = super(ArticleSerializer, self).create(validated_data)
 
@@ -87,7 +86,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, article, validated_data):
-        print(validated_data)
         img_urls = validated_data.get('img_urls')
 
         article_image = ArticleImage.objects.filter(article_id=article.id)

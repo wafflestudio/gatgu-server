@@ -463,7 +463,7 @@ class UserViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['PUT'])
     def create_presigned_post(self, request):
         user = request.user
-        object_key = datetime.datetime.now().strftime('%H:%M:%S')
+        object_key = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
         key = 'user/{0}/icon/{1}'.format(user.id, object_key)
         response = CLIENT.generate_presigned_post(BUCKET_NAME, key)
         # resopnse 에 object_url 포함해서 반환
