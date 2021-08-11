@@ -18,7 +18,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from article.models import Article, ArticleImage
-from article.serializers import ArticleSerializer, SimpleArticleSerializer, ArticleImageSerializer
+from article.serializers import ArticleSerializer, SimpleArticleSerializer, ArticleImageSerializer, \
+    ArticleRetrieveSerializer
 from gatgu.paginations import CursorSetPagination
 from gatgu.settings import BUCKET_NAME
 from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted, NotEditableFields
@@ -127,7 +128,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if article.deleted_at:
             raise ArticleNotFound
 
-        return Response(self.get_serializer(article).data)
+        return Response(ArticleRetrieveSerializer(article).data)
 
     @action(detail=False, methods=['PATCH'], url_path='status')
     def article_status(self, request):
