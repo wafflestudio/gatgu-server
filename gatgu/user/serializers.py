@@ -6,6 +6,8 @@ from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from gatgu.utils import JSTimestampField
 from user.models import UserProfile
@@ -34,9 +36,9 @@ class UserSerializer(serializers.ModelSerializer):
         required=False,
     )
     trading_address = serializers.CharField(write_only=True,
-                                          allow_null=True,
-                                          required=False,
-                                          )
+                                            allow_null=True,
+                                            required=False,
+                                            )
     grade = serializers.IntegerField(write_only=True,
                                      allow_null=True,
                                      required=False
@@ -45,9 +47,6 @@ class UserSerializer(serializers.ModelSerializer):
                                      allow_null=True,
                                      required=False
                                      )
-
-
-
 
     participated_count = serializers.SerializerMethodField()
     hosted_count = serializers.SerializerMethodField()
@@ -138,7 +137,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-
     updated_at = JSTimestampField(read_only=True)
     withdrew_at = JSTimestampField(read_only=True)
 
@@ -157,7 +155,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class SimpleParticipantsSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserProfile
         fields = (
@@ -217,4 +214,30 @@ class TokenResponseSerializer(serializers.Serializer):
         data = dict()
         data['refresh'] = str(refresh)
         data['access'] = str(refresh.access_token)
+        return data
+
+
+class CustomTokenRefreshSerializer(TokenRefreshSerializer):
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        refresh = RefreshToken(attrs['refresh'])
+
+        data = {'access': str(refresh.access_token)}
+
+        if api_settings.ROTATE_REFRESH_TOKENS:
+            if api_settings.BLACKLIST_AFTER_ROTATION:
+                try:
+                    # Attempt to blacklist the given refresh token
+                    refresh.blacklist()
+                except AttributeError:
+                    # If blacklist app not installed, `blacklist` method will
+                    # not be present
+                    pass
+
+            refresh.set_jti()
+            refresh.set_exp()
+
+        data['refresh'] = str(refresh)
+
         return data

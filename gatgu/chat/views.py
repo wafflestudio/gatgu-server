@@ -31,6 +31,8 @@ from gatgu.settings import BUCKET_NAME
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from gatgu.utils import BadRequestException
+
 
 class CursorSetPagination(CursorSetPagination):
     ordering = '-sent_at'
@@ -107,7 +109,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             if chatting.article.article_status != Article.GATHERING:
                 return Response({"Could not participate"}, status=status.HTTP_404_NOT_FOUND)
                 
-            elif chatting.order_status == 1:
+            elif chatting.article.article_status == Article.GATHERING:
                 ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
                 return Response(status=status.HTTP_201_CREATED)
             else:
@@ -120,7 +122,18 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             data = request.data
 
             if 'pay_status' in data:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+                if 'user_id' in data: # writer's action
+                    if user == chatting.article.writer and data['pay_status'] == 3:
+                        user = User.objects.get(id=data['user_id'])
+                    else:
+                        return Response(status=status.HTTP_403_FORBIDDEN)
+                else: # participant's action
+                    try:
+                        participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                    except ParticipantProfile.DoesNotExist:
+                        return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                    if data['pay_status'] != 2 or  participant.pay_status != 1:
+                        return Response(status=status.HTTP_403_FORBIDDEN)
               
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
@@ -137,17 +150,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             except ParticipantProfile.DoesNotExist:
                 return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-
-            if 'pay_status' in data.keys():
-                if (data['pay_status'] == 3) and user != chatting.article.writer:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
-
-            serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.update(participant, serializer.validated_data)
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
-
         elif request.method == 'DELETE':
             # 참가자의 요청시 나가기 처리
             # 방장의 요청시
@@ -162,6 +164,8 @@ class OrderChatViewSet(viewsets.GenericViewSet):
 
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant_id=exile_id)
+                if participant.pay_status >= 2:
+                    return Response('입금대기중인 유저만 강퇴가능합니다.', status=status.HTTP_400_BAD_REQUEST)
                 participant.delete()
                 return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:
@@ -207,10 +211,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         chat = get_object_or_404(OrderChat, pk=pk)
         if user != chat.article.writer:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        if 'order_status' in data:
-            if data['order_status'] < chat.order_status:
-                print("order status should grow up")
-                return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(chat, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.update(chat, serializer.validated_data)
@@ -226,22 +226,22 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         if chatting.article.writer != request.user:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        order_status = request.data.get('order_status')
+        # order_status = request.data.get('order_status')
         tracking_number = request.data.get('tracking_number')
 
-        # could not update (both at once or nothing)
-        if (order_status is not None and tracking_number is not None) or (
-                order_status is None and tracking_number is None):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        # # could not update (both at once or nothing)
+        # if (order_status is not None and tracking_number is not None) or (
+        #         order_status is None and tracking_number is None):
+        #     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        if order_status is not None:
-            # validate (order_status's range 1 ~ 4)
-            if order_status not in [i for i, s in OrderChat.ORDER_STATUS]:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            else:
-                chatting.order_status = order_status
+        # if order_status is not None:
+        #     # validate (order_status's range 1 ~ 4)
+        #     if order_status not in [i for i, s in OrderChat.ORDER_STATUS]:
+        #         return Response(status=status.HTTP_400_BAD_REQUEST)
+        #     else:
+        #         chatting.order_status = order_status
 
-        elif tracking_number is not None:
+        if tracking_number is not None:
             chatting.tracking_number = tracking_number
 
         chatting.save()
@@ -295,7 +295,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=['PUT'])
     def create_presigned_post(self, request, pk=None):
         user = request.user
-        object_key = datetime.datetime.now().strftime('%H:%M:%S')
+        object_key = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
         s3 = boto3.client('s3', config=Config(signature_version='s3v4',
                                               region_name='ap-northeast-2'))
         response = s3.generate_presigned_post(
@@ -307,6 +307,19 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         object_url = response['url'] + response['fields']['key']
         return Response(
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=True)
+    def images(self, request, pk):
+        try:
+            chatting = OrderChat.objects.get(id=pk)
+        except OrderChat.DoesNotExist:
+            raise BadRequestException('chatting id does not exist')
+
+        images = ChatMessageImage.objects.filter(message__chat_id=pk)
+
+        rtn = ChatMessageImageSerializer(images, many=True).data
+
+        return Response(rtn, status=status.HTTP_200_OK)
 
 
 class ChatMessageViewSet(viewsets.GenericViewSet):

@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'push_notification',
 
     'report',
+
+    'django_crontab',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -171,7 +173,7 @@ DATABASES = {
         'HOST': '127.0.0.1',
         # seoul
         'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
-        # test
+        # # test
         'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
 
         'PORT': 3306,
@@ -180,7 +182,6 @@ DATABASES = {
         'PASSWORD': 'gatgu',
     }
 }
-
 
 CACHES = {
     "default": {
@@ -219,6 +220,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# crontab
+# 모두 * 인 경우 매 분마다 실행
+CRONJOBS = [
+    ('*/2 * * * *', '/home/git_repo/gatgu-server/gatgu/gatgu/tasks.sh', '>> /var/log/gatgu_cron.log'),
+]
+
 # Email
 
 EMAIL_HOST = 'smtp.gmail.com'
@@ -251,7 +258,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+#STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = 'static'
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = [
@@ -267,4 +275,3 @@ firebase_admin.initialize_app(cred)
 
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
 BUCKET_NAME = 'gatgubucket'
-OBJECT_KEY = datetime.datetime.now().strftime('%H:%M:%S')

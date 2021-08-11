@@ -1,3 +1,6 @@
+import datetime
+from math import floor
+
 from django.http import JsonResponse
 from rest_framework import status, serializers
 from rest_framework.exceptions import APIException, ValidationError, NotAuthenticated
@@ -150,6 +153,7 @@ class BadRequestException(APIException):
     status_code = 400
     default_code = 'badrequest'
 
+
 class JSTimestampField(serializers.Field):
     def to_representation(self, value):
-        return round(value.timestamp() * 1000)
+        return floor(value.timestamp() * 1000)
