@@ -17,7 +17,7 @@ class OrderChat(models.Model):
 
 
 class ChatMessage(models.Model):
-    text = models.TextField(null=True)
+    text = models.TextField(null=True, blank=True)
     sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
     sent_at = models.DateTimeField(auto_now=True)
     chat = models.ForeignKey(OrderChat, on_delete=models.CASCADE, related_name='messages')
