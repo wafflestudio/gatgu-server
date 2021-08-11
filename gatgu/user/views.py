@@ -14,6 +14,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.views import TokenViewBase
+
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
 from chat.models import ParticipantProfile, OrderChat
@@ -24,8 +26,8 @@ from gatgu.settings import CLIENT, BUCKET_NAME
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
 from push_notification.models import FCMToken
-from push_notification.views import subscription
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
+from . import serializers
 from .models import User, UserProfile
 from .makecode import generate_code
 
@@ -461,12 +463,12 @@ class UserViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['PUT'])
     def create_presigned_post(self, request):
         user = request.user
-        object_key = datetime.datetime.now().strftime('%H:%M:%S')
+        object_key = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
         key = 'user/{0}/icon/{1}'.format(user.id, object_key)
         response = CLIENT.generate_presigned_post(BUCKET_NAME, key)
         # resopnse 에 object_url 포함해서 반환
         object_url = response['url'] + response['fields']['key']
-        # upload_s3(response, 'admin(1).jpeg')
+        # upload_s3(response, request.data.get('file_name'))
 
         return Response(
             {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
@@ -500,3 +502,10 @@ def upload_s3(response, file_name):
             logging.info(f'File upload HTTP status code: {http_response.status_code}')
     except FileNotFoundError:
         return Response({'message: FileNotFound In Working Directiory'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class TokenRefreshView(TokenViewBase):
+    serializer_class = serializers.CustomTokenRefreshSerializer
+
+
+token_refresh = TokenRefreshView.as_view()

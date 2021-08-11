@@ -2,6 +2,7 @@ import datetime
 import logging
 
 import boto3
+import pytz
 import requests
 from botocore.config import Config
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -95,13 +96,13 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-
         serializer.save(writer=user, time_in=time_in)
 
-        article_id = Article.objects.last().id
-        article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
+        # article_id = Article.objects.last().id
+        # article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
 
-        return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
+        # return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
+        return Response({"message: Article successfully posted."}, status=status.HTTP_201_CREATED)
 
     def list(self, request):
         filter_kwargs = self.get_query_params(self.request.query_params)
@@ -133,11 +134,11 @@ class ArticleViewSet(viewsets.GenericViewSet):
         articles = self.get_queryset()
 
         expired_article = articles.filter(time_in__lt=datetime.date.today())
-        if expired_article and expired_article.get('article_status') == 1:
+        if expired_article:
             expired_article.update(article_status=4)
 
         gathering_article = articles.filter(time_in__gte=datetime.date.today())
-        if gathering_article and gathering_article.get('article_status') == 4:
+        if gathering_article:
             gathering_article.update(article_status=1)
 
         return Response({"message": "Successfully updated the status of articles"}, status=status.HTTP_200_OK)
@@ -178,9 +179,9 @@ class ArticleViewSet(viewsets.GenericViewSet):
         serializer.save()
 
         # 상태 체크 및 업데이트 api 추가
-        if article.article_status == 4 and article.time_in >= datetime.date.today():
-            article.article_status = 1
-            serializer.save()
+        # if article.article_status == 4 and article.time_in >= datetime.date.today():
+        #     article.article_status = 1
+        #     serializer.save()
 
         return Response(serializer.data)
 
@@ -200,7 +201,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
     def create_presigned_post(self, request, pk=None):
 
         user = request.user
-        object_key = datetime.datetime.now().strftime('%H:%M:%S')
+        object_key = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
         s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
         response = s3.generate_presigned_post(
             BUCKET_NAME,
