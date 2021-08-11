@@ -299,7 +299,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=['PUT'])
     def create_presigned_post(self, request, pk=None):
         user = request.user
-        object_key = datetime.datetime.now().strftime('%H:%M:%S')
+        object_key = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
         s3 = boto3.client('s3', config=Config(signature_version='s3v4',
                                               region_name='ap-northeast-2'))
         response = s3.generate_presigned_post(
