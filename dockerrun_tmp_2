@@ -1,0 +1,26 @@
+{
+  "AWSEBDockerrunVersion": "2",
+  "volumes": [
+    {
+        "name" : "noaarhk/gatgu",
+        "host" : {
+          "sourcePath" : "./gatgu"
+        }
+    },
+    {
+        "name": "nginx-proxy-conf",
+        "host": {
+          "sourcePath" : "./gatgu/proxy/conf.d"
+        }
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "name": "gatgu",
+      "image":"nooarhk/gatgu:latest",
+      "environment": {
+          [
+              "name": "Container",
+              "value": ":q!
+  ]
+}

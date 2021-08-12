@@ -7,5 +7,16 @@ services:
       command: gunicorn gatgu.wsgi:application --bind 0.0.0.0:8000
       ports:
         - "8000:8000"
+    nginx:
+      image: nginx:latest
+      container_name : nginx_service
+      ports:
+        - "80:80"
+      volumes:
+        - ./gatgu/nginx:/etc/nginx/conf.d
+        - ./gatgu/.static_root/:/static
+        - ${EB_LOG_BASE_DIR}/nginx:/var/log/nginx
+      links:
+        - web
     redis:
       image: redis:latest
