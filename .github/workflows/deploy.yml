@@ -30,7 +30,7 @@ jobs:
 
     - name: Upload Dockerrun.aws.json to S3
       run: |
-        zip -r deploy.zip Dockerrun.aws.json gatgu/.ebextensions
+        zip -r deploy.zip gatgu/dockerfile gatgu/docker-compose.yml gatgu/.ebextensions
         aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
 
     - name: Docker Login
