@@ -7,7 +7,7 @@ import requests
 from botocore.config import Config
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
-from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F
+from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F, Exists
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -22,7 +22,8 @@ from article.serializers import ArticleSerializer, SimpleArticleSerializer, Arti
     ArticleRetrieveSerializer
 from gatgu.paginations import CursorSetPagination
 from gatgu.settings import BUCKET_NAME
-from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted, NotEditableFields
+from gatgu.utils import FieldsNotFilled, QueryParamsNOTMATCH, ArticleNotFound, NotPermitted, NotEditableFields, \
+    TimeManager
 
 from chat.models import ParticipantProfile
 
@@ -132,15 +133,41 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['PATCH'], url_path='status')
     def article_status(self, request):
-        articles = self.get_queryset()
+        have_activated_participant = Exists(
+            ParticipantProfile.objects.filter(
+                order_chat__article_id=OuterRef('id'), pay_status__gte=2)
+        )
+        articles = self.get_queryset()\
+            .annotate(have_activated_participant=have_activated_participant)
 
-        expired_article = articles.filter(time_in__lt=datetime.date.today())
-        if expired_article:
-            expired_article.update(article_status=4)
+        # 거래 진행중인 유저 있고 & 상태 모집중 -> 상태 거래중
+        articles_update_to_IN_PROCESS1 = articles\
+            .filter(have_activated_participant=True, article_status=Article.GATHERING) \
+            .update(article_status=Article.IN_PROCESS)
+        # 거래 진행중인 유저 없고 & 상태 거래중 -> 상태 모집중
+        articles_update_to_GATHERING1 = articles \
+            .filter(have_activated_participant=True, article_status=Article.IN_PROCESS) \
+            .update(article_status=Article.GATHERING)
+        # 상태 모집중 & 기간 만료된 -> 상태 만료
+        articles_update_to_EXPIRED = articles \
+            .filter(article_status=Article.GATHERING, time_in__lte=TimeManager.now()) \
+            .update(article_status=Article.EXPIRED)
+        # 거래 진행중인 유저 없고 & 기간 만료 안됬고 & 상태 만료 -> 상태 모집중
+        articles_update_to_GATHERING2 = articles \
+            .filter(have_activated_participant=False, time_in__gte=TimeManager.now(), article_status=Article.EXPIRED) \
+            .update(article_status=Article.GATHERING)
+        # 거래 진행중인 유저 있고 & 기간 만료 안됬고 & 상태 만료 -> 상태 거래중
+        articles_update_to_IN_PROCESS2 = articles \
+            .filter(have_activated_participant=True, time_in__gte=TimeManager.now(), article_status=Article.EXPIRED) \
+            .update(article_status=Article.IN_PROCESS)
 
-        gathering_article = articles.filter(time_in__gte=datetime.date.today())
-        if gathering_article:
-            gathering_article.update(article_status=1)
+        # expired_article = articles.filter(time_in__lt=datetime.date.today())
+        # if expired_article:
+        #     expired_article.update(article_status=4)
+        #
+        # gathering_article = articles.filter(time_in__gte=datetime.date.today())
+        # if gathering_article:
+        #     gathering_article.update(article_status=1)
 
         return Response({"message": "Successfully updated the status of articles"}, status=status.HTTP_200_OK)
 
