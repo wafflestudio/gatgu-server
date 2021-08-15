@@ -78,7 +78,7 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if 'title' in query_params:
             rtn['title__icontains'] = query_params.get('title')
         if 'status' in query_params:
-            rtn['article_status'] = query_params.get('status')
+            rtn['article_status__in'] = query_params.getlist('status')
         return rtn
 
     @transaction.atomic
@@ -110,8 +110,8 @@ class ArticleViewSet(viewsets.GenericViewSet):
         filter_kwargs = self.get_query_params(self.request.query_params)
         articles = self.get_queryset().filter(**filter_kwargs)
 
-        # if not request.user.is_superuser:
-        #     articles = articles.filter(deleted_at=None)
+        if not request.user.is_superuser:
+            articles = articles.filter(deleted_at=None)
 
         articles = articles.prefetch_related(self.order_chat)
 
