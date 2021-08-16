@@ -17,7 +17,7 @@ class Article(models.Model):
 
     ARTICLE_STATUS = (
         (GATHERING, "모집중"),
-        (IN_PROCESS, "모집완료"),
+        (IN_PROCESS, "거래중"),
         (COMPLETED, "거래완료"),
         (EXPIRED, "기간만료"),
     )

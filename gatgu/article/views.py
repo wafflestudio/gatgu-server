@@ -188,23 +188,18 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if user != article.writer:
             raise NotPermitted
 
-        # 변경 불가 필드 에러 추가
-        if article.article_status == 2 and hasattr(data, 'article_status'):
-            raise NotEditableFields
 
-        # if time_in < datetime.date.today():
-        #     return Response({"message": "마감일 설정이 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if article.article_status == 2:
-            return Response({"message": "모집완료상태의 글은 수정할 수 없습니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(article, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
+        if 'article_status' in data:
+            article_status = data.get('article_status')
+            serializer.save(article_status=article_status)
 
         if 'time_in' in data:
             time_in = datetime.datetime.fromtimestamp(float(data.get('time_in') / 1000))
             serializer.save(time_in=time_in)
-        serializer.save()
+
 
         # 상태 체크 및 업데이트 api 추가
         # if article.article_status == 4 and article.time_in >= datetime.date.today():
