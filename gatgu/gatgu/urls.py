@@ -5,6 +5,7 @@ from django.urls import path, include
 
 from rest_framework_simplejwt import views as jwt_views
 
+from gatgu import cron
 from user import views as user_views
 
 urlpatterns = [
@@ -12,7 +13,6 @@ urlpatterns = [
     path('v1/token/', jwt_views.token_obtain_pair),
     # path('v1/token/refresh/', jwt_views.token_refresh),
     path('v1/token/refresh/', user_views.token_refresh),
-
 
     path('v1/', include('user.urls')),
     path('v1/', include('article.urls')),

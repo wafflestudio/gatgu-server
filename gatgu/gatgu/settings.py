@@ -44,8 +44,7 @@ SECRET_KEY = get_secret("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-DEBUG_TOOLBAR = True
-# DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
+DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
 ALLOWED_HOSTS = ['*']
 
@@ -73,6 +72,7 @@ INSTALLED_APPS = [
     'report',
 
     'django_crontab',
+    'django_redis',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -171,8 +171,6 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # local
         'HOST': '127.0.0.1',
-        # seoul
-        'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
         # # test
         'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
 
@@ -182,23 +180,57 @@ DATABASES = {
         'PASSWORD': 'gatgu',
     }
 }
+REDIS_LOCATION_PRIMARY = "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+REDIS_LOCATION_REPLICA = "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/3",
+        # "LOCATION": "redis://127.0.0.1:6379/3",
+        "LOCATION": [
+            # os.environ["REDIS_LOCATION_PRIMARY"],
+            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
+            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+            # os.environ["REDIS_LOCATION_REPLICA"],
+        ],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+        }
     },
+
     "email": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": [
+            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
+            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+        ],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+        }
     },
     "number_of_confirm": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/2",
+        "LOCATION": [
+            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
+            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+        ],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+        }
     },
     "activated_email": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/4",
+        "LOCATION": [
+            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
+            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+        ],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+        }
     }
 }
 
@@ -220,11 +252,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# crontab
-# 모두 * 인 경우 매 분마다 실행
-CRONJOBS = [
-    ('*/2 * * * *', '/home/git_repo/gatgu-server/gatgu/gatgu/tasks.sh', '>> /var/log/gatgu_cron.log'),
-]
 
 # Email
 
@@ -258,7 +285,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-#STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_ROOT = 'static'
 
 CORS_ORIGIN_ALLOW_ALL = True
