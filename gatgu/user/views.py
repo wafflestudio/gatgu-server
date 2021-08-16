@@ -1,7 +1,7 @@
 import datetime
 import logging
 import requests
-from django.core.cache import caches
+from django.core.cache import caches, cache
 from django.contrib.auth import authenticate, login, logout
 from django.db import transaction
 from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
@@ -98,19 +98,17 @@ class UserViewSet(viewsets.GenericViewSet):
         if not username or not password or not email or not trading_address or not nickname:
             raise FieldsNotFilled
 
-        # ecache = caches["activated_email"]
-        # chk_email = ecache.get(email)
-        #
-        # if chk_email is None:
-        #     raise MailActivateFailed
+        ecache = caches["activated_email"]
+        chk_email = ecache.get(email)
 
-        # img_url = self.get_presigned_url(request)['object_url']
-        # print(img_url)
+        if chk_email is None:
+            raise MailActivateFailed
+
         # picture = data.get('picture')
         # if picture:
         #     icon_url = self.create_presigned_post(request)
         #     print(icon_url['response'])
-        #     # upload_s3(icon_url['response'], icon_url['object_url'])
+        # upload_s3(icon_url['response'], icon_url['object_url'])
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
@@ -175,9 +173,9 @@ class UserViewSet(viewsets.GenericViewSet):
 
     @csrf_exempt
     @action(detail=False, methods=['POST'], url_path='flush')
-    def session_flush(self, request):
-        request.session.flush()
-        return Response({"flush session"})
+    def clear_cache(self, request):
+        cache.clear()
+        return Response({"cache clear"})
 
     @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
@@ -234,7 +232,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         cache.set(email, code, timeout=0)  # erase from cache
         ncache.set(email, 0, timeout=0)
-        ecache.set(email, 1, timeout=10800)
+        ecache.set(email, 1, timeout=180)
 
         response_data = {"message": "성공적으로 인증하였습니다."}
         return Response(response_data, status=status.HTTP_200_OK)

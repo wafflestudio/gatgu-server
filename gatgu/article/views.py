@@ -5,6 +5,7 @@ import boto3
 import pytz
 import requests
 from botocore.config import Config
+from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F
@@ -112,6 +113,17 @@ class ArticleViewSet(viewsets.GenericViewSet):
         #     articles = articles.filter(deleted_at=None)
 
         articles = articles.prefetch_related(self.order_chat)
+
+        ## cache test
+        # cache_key = 'article_list'
+        # c_data = cache.get('article_list')
+        # if c_data is None:
+        #
+        #     c_data = self.get_serializer(articles, many=True).data
+        #     cache.set(cache_key, c_data, timeout=10)
+        #     return Response({"cache miss"}, status=status.HTTP_400_BAD_REQUEST)
+        # else:
+        #     return Response({"cache hit"}, status=status.HTTP_200_OK)
 
         page = self.paginate_queryset(articles)
         assert page is not None
