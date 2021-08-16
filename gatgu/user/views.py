@@ -98,11 +98,12 @@ class UserViewSet(viewsets.GenericViewSet):
         if not username or not password or not email or not trading_address or not nickname:
             raise FieldsNotFilled
 
-        ecache = caches["activated_email"]
-        chk_email = ecache.get(email)
-
-        if chk_email is None:
-            raise MailActivateFailed
+        # 이메일 인증 우선 생략
+        # ecache = caches["activated_email"]
+        # chk_email = ecache.get(email)
+        #
+        # if chk_email is None:
+        #     raise MailActivateFailed
 
         # picture = data.get('picture')
         # if picture:
