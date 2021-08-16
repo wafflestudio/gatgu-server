@@ -302,3 +302,4 @@ firebase_admin.initialize_app(cred)
 
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
 BUCKET_NAME = 'gatgubucket'
+MEDIA_URL = "https://%s/" % "gatgu-s3-test.s3.ap-northeast-2.amazonaws.com"
