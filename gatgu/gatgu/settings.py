@@ -180,58 +180,19 @@ DATABASES = {
         'PASSWORD': 'gatgu',
     }
 }
-REDIS_LOCATION_PRIMARY = "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-REDIS_LOCATION_REPLICA = "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        # "LOCATION": "redis://127.0.0.1:6379/3",
         "LOCATION": [
-            # os.environ["REDIS_LOCATION_PRIMARY"],
-            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
-            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-            # os.environ["REDIS_LOCATION_REPLICA"],
+            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3",
+            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
         ],
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
+            "MASTER_CACHE": "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
         }
     },
-
-    "email": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": [
-            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
-            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-        ],
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-        }
-    },
-    "number_of_confirm": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": [
-            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
-            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-        ],
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-        }
-    },
-    "activated_email": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": [
-            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/",
-            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-        ],
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "MASTER_CACHE": "redis://test-redasdfis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/"
-        }
-    }
 }
 
 # Password validation

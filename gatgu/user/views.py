@@ -99,11 +99,9 @@ class UserViewSet(viewsets.GenericViewSet):
             raise FieldsNotFilled
 
         # 이메일 인증 우선 생략
-        # ecache = caches["activated_email"]
-        # chk_email = ecache.get(email)
-        #
-        # if chk_email is None:
-        #     raise MailActivateFailed
+        chk_email = cache.get("is_confirmed_{}".format(email))
+        if chk_email is None:
+            raise MailActivateFailed
 
         # picture = data.get('picture')
         # if picture:
@@ -128,7 +126,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         login(request, user)
 
-        # ecache.set(email, 0, timeout=0)
+        cache.set("is_confirmed_{}".format(email), 0, timeout=0)
 
         data = TokenResponseSerializer(user).data
         data["message"] = "성공적으로 회원가입 되었습니다."
@@ -180,33 +178,34 @@ class UserViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
-
+        '''
+        {email}: code(str)
+        num_{email}: (int)
+        is_confirmed_{email}: (int)
+        '''
         email = request.data.get("email")
+        is_confirmed_email = "is_confirmed_{}".format(email)
+        num_email = "num_{}".format(email)
 
-        ecache = caches["activated_email"]
-        chk_email = ecache.get(email)
+        chk_email = cache.get(is_confirmed_email)
 
         if chk_email is not None:
             raise MailActivateDone
 
-        ncache = caches["number_of_confirm"]
+        # ncache = caches["number_of_confirm"]
 
-        confirm_number = ncache.get(email)
+        confirm_number = cache.get(num_email)
 
         if confirm_number is None:
             confirm_number = 0
 
         if confirm_number >= 10:
-            response_data = {"error": "너무 많이 인증요청을 하셨습니다. 2시간 후에 다시 시도해주십시오."}
+            response_data = {"error": "10회이상 인증요청을 하셨습니다. 5분 후에 다시 시도해주십시오."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         code = generate_code()
-
-        cache = caches["email"]
-
         cache.set(email, code, timeout=300)
-
-        ncache.set(email, confirm_number + 1, timeout=1200)
+        cache.set(num_email, confirm_number + 1, timeout=300)
 
         self.send_mail(email, code)
 
@@ -216,11 +215,12 @@ class UserViewSet(viewsets.GenericViewSet):
     def activate(self, request):
 
         email = request.data.get("email")
+        is_confirmed_email = "is_confirmed_{}".format(email)
+        num_email = "num_{}".format(email)
+
         code = request.data.get("code")
 
-        cache = caches["email"]
-        ncache = caches["number_of_confirm"]
-
+        # key:email, value:code, time 5min
         email_code = cache.get(email)
 
         if email_code is None:
@@ -229,11 +229,9 @@ class UserViewSet(viewsets.GenericViewSet):
         if email_code != code:
             raise CodeNotMatch
 
-        ecache = caches["activated_email"]
-
         cache.set(email, code, timeout=0)  # erase from cache
-        ncache.set(email, 0, timeout=0)
-        ecache.set(email, 1, timeout=180)
+        cache.set(num_email, 0, timeout=0)
+        cache.set(is_confirmed_email, 1, timeout=300)
 
         response_data = {"message": "성공적으로 인증하였습니다."}
         return Response(response_data, status=status.HTTP_200_OK)
