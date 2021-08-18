@@ -171,13 +171,14 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # local
         'HOST': '127.0.0.1',
-        # # test
-        'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
+        # waffle
+        'HOST': 'wafflestudio-mysql-202107.caxwrw8c4qqq.ap-northeast-2.rds.amazonaws.com',
 
         'PORT': 3306,
-        'NAME': 'gatgu_db',
-        'USER': 'team-gatgu',
-        'PASSWORD': 'gatgu',
+
+        'NAME': 'gatgu',
+        'USER': 'gatgu',
+        'PASSWORD': 'team-gatgu',
     }
 }
 
@@ -185,12 +186,11 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": [
-            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3",
-            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
+            "siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3",
         ],
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "MASTER_CACHE": "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
+            "MASTER_CACHE": "siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3"
         }
     },
 }
@@ -262,5 +262,5 @@ cred = credentials.Certificate("gatgu-firebase-admin-hs.json")
 firebase_admin.initialize_app(cred)
 
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-BUCKET_NAME = 'gatgubucket'
-MEDIA_URL = "https://%s/" % "gatgu-s3-test.s3.ap-northeast-2.amazonaws.com"
+BUCKET_NAME = 'gatgu'
+MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"

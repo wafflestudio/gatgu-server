@@ -2,7 +2,7 @@
     "AWSEBDockerrunVersion": "1",
     "Logging": "/tmp/gatgu-server",
     "Image": {
-        "Name": "noaarhk/gatgu",
+        "Name": "noaarhk/gatgu-waffle",
         "Update": "true"
     },
     "Ports": [
