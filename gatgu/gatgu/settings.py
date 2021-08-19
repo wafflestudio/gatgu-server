@@ -186,11 +186,11 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": [
-            "siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3",
+            "redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3",
         ],
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "MASTER_CACHE": "siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3"
+            "MASTER_CACHE": "redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3"
         }
     },
 }
