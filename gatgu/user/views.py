@@ -4,13 +4,14 @@ import requests
 from django.core.cache import caches, cache
 from django.contrib.auth import authenticate, login, logout
 from django.db import transaction
-from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
+from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -18,10 +19,11 @@ from rest_framework_simplejwt.views import TokenViewBase
 
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
-from chat.models import ParticipantProfile, OrderChat
+from chat.models import ParticipantProfile, OrderChat, ChatMessage
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
-from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
+from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination, \
+    GatguPageNumberPagination, GatguLimitOffsetPagination
 from gatgu.settings import CLIENT, BUCKET_NAME
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
@@ -295,22 +297,26 @@ class UserViewSet(viewsets.GenericViewSet):
         GET v1/users/{user_id}/chattings/
         """
         # 관리자 모드인 경우에만 다른 유저의 채팅 리스트 조회 가능
+        offset = request.query_params.get('offset') if request.query_params.get('offset') is not None else '1'
+        limit = request.query_params.get('limit') if request.query_params.get('limit') is not None else '10'
         if pk == 'me':
             user = request.user
         else:
             user = self.get_object()
             if not user.is_superuser:
                 return Response("message: 다른회원의 채팅리스트를 열람할 수 없습니다.", status=status.HTTP_403_FORBIDDEN)
+        recent_sent_at = Subquery(ChatMessage.objects.filter(chat_id=OuterRef('id')).order_by('-sent_at')[:1].values('sent_at'))
 
-        chattings = OrderChat.objects.filter(Q(participant_profile__participant=user) | Q(article__writer=user))
+        chattings = OrderChat.objects.filter(Q(participant_profile__participant=user) | Q(article__writer=user))\
+            .annotate(recent_sent_at=recent_sent_at)\
+            .prefetch_related('article__images','messages__image').order_by('-recent_sent_at').distinct()
 
         if not chattings:
             return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
-        paginator = OrderChatPagination()
-        paginated_chattings = paginator.paginate_queryset(queryset=chattings, request=request)
-        assert paginated_chattings is not None
-        serializer = SimpleOrderChatSerializer(paginated_chattings, many=True)
-        return paginator.get_paginated_response(serializer.data)
+
+        paginator = GatguLimitOffsetPagination(offset, limit)
+        paginated_chattings = paginator.paginate_queryset(chattings, request)
+        return paginator.get_paginated_response(SimpleOrderChatSerializer(paginated_chattings, many=True).data)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
