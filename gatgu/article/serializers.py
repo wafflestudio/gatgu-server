@@ -4,6 +4,7 @@ from django.db.models.functions import Coalesce
 
 from chat.models import OrderChat, ParticipantProfile
 from chat.serializers import OrderChatSerializer
+from gatgu.settings import MEDIA_URL
 from gatgu.utils import JSTimestampField
 from user.serializers import *
 
@@ -156,3 +157,68 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
     def get_images(self, article):
         # image하나만 받아올 것 ( 대표사진 )
         return ArticleImageSerializer(article.images, many=True).data
+
+
+class ArticleRetrieveSerializer(serializers.ModelSerializer):
+    article_id = serializers.ReadOnlyField(source='id')
+    title = serializers.CharField(required=True)
+    description = serializers.CharField(required=True)
+    trading_place = serializers.CharField(required=True)
+    product_url = serializers.CharField(required=True, max_length=200)
+
+    price_min = serializers.IntegerField(required=True)
+    article_status = serializers.SerializerMethodField()
+    order_chat = serializers.SerializerMethodField()
+
+    images = serializers.SerializerMethodField(required=False)
+    img_urls = serializers.ListField(child=serializers.CharField(required=False, write_only=True, allow_null=True),
+                                     write_only=True, required=False, allow_null=True)
+
+    time_in = JSTimestampField(Article.time_in)
+    written_at = JSTimestampField(read_only=True)
+    updated_at = JSTimestampField(read_only=True)
+    deleted_at = JSTimestampField(read_only=True)
+    writer = serializers.SerializerMethodField()
+    class Meta:
+        model = Article
+        fields = (
+            'writer',
+            'article_id',
+            'title',
+            'description',
+            'images',
+            'img_urls',
+
+            'trading_place',
+            'product_url',
+            'time_in',
+            'price_min',
+
+            'article_status',
+            'order_chat',
+            'written_at',
+            'updated_at',
+            'deleted_at',
+
+        )
+
+    def get_order_chat(self, article):
+        return OrderChatSerializer(article.order_chat).data
+
+    def get_article_status(self, article):
+        data = ParticipantsSummarySerializer(article.order_chat).data
+        data['progress_status'] = article.article_status
+        return data
+
+    def get_images(self, article):
+        return ArticleImageSerializer(article.images, many=True).data
+
+    def get_writer(self, article):
+        writer = article.writer
+        writer_profile = writer.userprofile
+
+        if writer_profile.picture is None:
+            profile_img = None
+        else:
+            profile_img = MEDIA_URL + f'{writer_profile.picture}'
+        return dict(id=writer.id, nickname=writer_profile.nickname, profile_img=profile_img)
