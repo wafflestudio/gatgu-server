@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'django_redis',
 ]
 
+WSGI_APPLICATION = 'gatgu.wsgi.application'
 ASGI_APPLICATION = 'gatgu.routing.application'
 
 CHANNEL_LAYERS = {
@@ -84,6 +85,20 @@ CHANNEL_LAYERS = {
             "hosts": [("redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com/3", 6379)],
         }
     }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": [
+            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3",
+            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
+        ],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MASTER_CACHE": "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
+        }
+    },
 }
 
 MIDDLEWARE = [
@@ -161,7 +176,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'gatgu.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
@@ -179,20 +193,6 @@ DATABASES = {
         'USER': 'team-gatgu',
         'PASSWORD': 'gatgu',
     }
-}
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": [
-            "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3",
-            "redis://test-redis-002.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
-        ],
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "MASTER_CACHE": "redis://test-redis-001.ltzcxl.0001.apn2.cache.amazonaws.com:6379/3"
-        }
-    },
 }
 
 # Password validation
