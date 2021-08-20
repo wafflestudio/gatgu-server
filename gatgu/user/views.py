@@ -159,11 +159,11 @@ class UserViewSet(viewsets.GenericViewSet):
     @csrf_exempt
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
-        user = request.user
-        try:
-            request.session['_auth_user_id']
-        except KeyError:
-            return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
+        # user = request.user
+        # try:
+        #     request.session['_auth_user_id']
+        # except KeyError:
+        #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
         # if request.session['_auth_user_id'] != user.pk:
         #     return Response({"message": "not this id "}, status=status.HTTP_400_BAD_REQUEST)
