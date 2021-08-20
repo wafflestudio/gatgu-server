@@ -101,11 +101,11 @@ class ArticleViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(writer=user, time_in=time_in)
 
-        # article_id = Article.objects.last().id
-        # article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
+        article_id = Article.objects.last().id
+        article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
 
-        # return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
-        return Response({"message: Article successfully posted."}, status=status.HTTP_201_CREATED)
+        return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
+        # return Response({"message: Article successfully posted."}, status=status.HTTP_201_CREATED)
 
     def list(self, request):
         filter_kwargs = self.get_query_params(self.request.query_params)
