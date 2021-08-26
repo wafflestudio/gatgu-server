@@ -217,4 +217,8 @@ class ArticleRetrieveSerializer(serializers.ModelSerializer):
         writer = article.writer
         writer_profile = writer.userprofile
 
-        return dict(id=writer.id, nickname=writer_profile.nickname, profile_img=MEDIA_URL + f'{writer_profile.picture}')
+        if writer_profile.picture is None:
+            profile_img = None
+        else:
+            profile_img = MEDIA_URL + f'{writer_profile.picture}'
+        return dict(id=writer.id, nickname=writer_profile.nickname, profile_img=profile_img)

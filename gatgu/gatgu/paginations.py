@@ -1,7 +1,7 @@
 from base64 import b64encode
 from urllib import parse
 
-from rest_framework.pagination import CursorPagination
+from rest_framework.pagination import CursorPagination, PageNumberPagination, LimitOffsetPagination
 from rest_framework.utils.urls import replace_query_param
 
 
@@ -65,3 +65,17 @@ class OrderChatPagination(CursorPagination):
         return replace_query_param('', self.cursor_query_param, encoded)
 
 
+class GatguPageNumberPagination(PageNumberPagination):
+    page_size_query_param = 'page_size'
+
+    def __init__(self, page, page_size):
+        self.page = str(page)
+        self.page_size = str(page_size)
+        super().__init__()
+
+
+class GatguLimitOffsetPagination(LimitOffsetPagination):
+    def __init__(self, offset, limit):
+        self.offset = int(offset)
+        self.default_limit = int(limit)
+        super().__init__()

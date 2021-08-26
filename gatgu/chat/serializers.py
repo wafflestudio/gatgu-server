@@ -1,3 +1,4 @@
+from article.models import Article
 from chat.models import OrderChat, ParticipantProfile, ChatMessage, ChatMessageImage
 from gatgu.utils import JSTimestampField
 from user.serializers import *
@@ -23,20 +24,39 @@ class OrderChatSerializer(serializers.ModelSerializer):
 
 class SimpleOrderChatSerializer(serializers.ModelSerializer):
     recent_message = serializers.SerializerMethodField()
+    article = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderChat
         fields = (
             'id',
-            # 'order_status',
             'tracking_number',
-            'recent_message'
+            'recent_message',
+            'article',
         )
 
     def get_recent_message(self, orderchat):
         message = orderchat.messages.last()
         data = ChatMessageSerializer(message, context=self.context).data
         return data
+
+    def get_article(self, orderchat):
+        return ChattingArticleSerializer(orderchat.article).data
+
+class ChattingArticleSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = (
+            'id',
+            'title',
+            'image',
+        )
+
+    def get_image(self, article):
+        return article.images.first().img_url
+
 
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):
