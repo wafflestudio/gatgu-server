@@ -1,29 +1,35 @@
-import boto3
-from botocore.config import Config
-from django.core.cache import caches
-from django.contrib.auth import authenticate, login, logout, _get_user_session_key
-from django.db import IntegrityError, transaction
-from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch
+import datetime
+import logging
+import requests
+from django.core.cache import caches, cache
+from django.contrib.auth import authenticate, login, logout
+from django.db import transaction
+from django.db.models import Q, Subquery, Count, IntegerField, OuterRef, Sum, Prefetch, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.views import TokenViewBase
 
 from article.models import Article
 from article.serializers import SimpleArticleSerializer
-from chat.models import ParticipantProfile, OrderChat
+from chat.models import ParticipantProfile, OrderChat, ChatMessage
 from chat.serializers import SimpleOrderChatSerializer
 from chat.views import OrderChatViewSet
-from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination
+from gatgu.paginations import CursorSetPagination, UserActivityPagination, OrderChatPagination, \
+    GatguPageNumberPagination, GatguLimitOffsetPagination
+from gatgu.settings import CLIENT, BUCKET_NAME
 from gatgu.utils import MailActivateFailed, MailActivateDone, CodeNotMatch, FieldsNotFilled, UsedNickname, \
     UserInfoNotMatch, UserNotFound, NotPermitted, NotEditableFields, QueryParamsNOTMATCH
-
+from push_notification.models import FCMToken
 from user.serializers import UserSerializer, UserProfileSerializer, SimpleUserSerializer, TokenResponseSerializer
+from . import serializers
 from .models import User, UserProfile
 from .makecode import generate_code
 
@@ -48,7 +54,6 @@ class UserViewSet(viewsets.GenericViewSet):
     def get_permissions(self):
         if self.action in (
                 'create', 'login', 'confirm', 'reconfirm', 'activate', 'list') or self.request.user.is_superuser:
-
             return (AllowAny(),)
         return self.permission_classes
 
@@ -85,21 +90,26 @@ class UserViewSet(viewsets.GenericViewSet):
 
         data = request.data
 
+        # required fields
         username = data.get('username')
         password = data.get('password')
         email = data.get('email')
         trading_address = data.get('trading_address')
+        nickname = data.get('nickname')
 
-        if not username or not password or not email or not trading_address:
+        if not username or not password or not email or not trading_address or not nickname:
             raise FieldsNotFilled
 
-        # ecache = caches["activated_email"]
-        # chk_email = ecache.get(email)
-        #
-        # if chk_email is None:
-        #     raise MailActivateFailed
+        # 이메일 인증 우선 생략
+        chk_email = cache.get("is_confirmed_{}".format(email))
+        if chk_email is None:
+            raise MailActivateFailed
 
-        nickname = data.get('nickname')
+        # picture = data.get('picture')
+        # if picture:
+        #     icon_url = self.create_presigned_post(request)
+        #     print(icon_url['response'])
+        # upload_s3(icon_url['response'], icon_url['object_url'])
 
         if UserProfile.objects.filter(nickname__iexact=nickname,
                                       withdrew_at__isnull=True).exists():  # only active user couldn't conflict.
@@ -118,7 +128,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
         login(request, user)
 
-        # ecache.set(email, 0, timeout=0)
+        cache.set("is_confirmed_{}".format(email), 0, timeout=0)
 
         data = TokenResponseSerializer(user).data
         data["message"] = "성공적으로 회원가입 되었습니다."
@@ -135,7 +145,6 @@ class UserViewSet(viewsets.GenericViewSet):
         if not username or not password:
             raise FieldsNotFilled
 
-
         user = authenticate(request, username=username, password=password)
 
         if user:
@@ -145,60 +154,58 @@ class UserViewSet(viewsets.GenericViewSet):
 
         raise UserInfoNotMatch
 
-
     @csrf_exempt
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
-        user = request.user
-        try:
-            request.session['_auth_user_id']
-        except KeyError:
-            return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
+        # user = request.user
+        # try:
+        #     request.session['_auth_user_id']
+        # except KeyError:
+        #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
 
         # if request.session['_auth_user_id'] != user.pk:
         #     return Response({"message": "not this id "}, status=status.HTTP_400_BAD_REQUEST)
 
         # if _get_user_session_key(request)
         logout(request)
-        # if user is None:
-        #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
 
     @csrf_exempt
     @action(detail=False, methods=['POST'], url_path='flush')
-    def session_flush(self, request):
-        request.session.flush()
-        return Response({"flush session"})
+    def clear_cache(self, request):
+        cache.clear()
+        return Response({"cache clear"})
 
     @action(detail=False, methods=['PUT'], url_path='confirm', url_name='confirm')
     def confirm(self, request):
-
+        '''
+        {email}: code(str)
+        num_{email}: (int)
+        is_confirmed_{email}: (int)
+        '''
         email = request.data.get("email")
+        is_confirmed_email = "is_confirmed_{}".format(email)
+        num_email = "num_{}".format(email)
 
-        ecache = caches["activated_email"]
-        chk_email = ecache.get(email)
+        chk_email = cache.get(is_confirmed_email)
 
         if chk_email is not None:
             raise MailActivateDone
 
-        ncache = caches["number_of_confirm"]
+        # ncache = caches["number_of_confirm"]
 
-        confirm_number = ncache.get(email)
+        confirm_number = cache.get(num_email)
 
         if confirm_number is None:
             confirm_number = 0
 
         if confirm_number >= 10:
-            response_data = {"error": "너무 많이 인증요청을 하셨습니다. 2시간 후에 다시 시도해주십시오."}
+            response_data = {"error": "10회이상 인증요청을 하셨습니다. 5분 후에 다시 시도해주십시오."}
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         code = generate_code()
-
-        cache = caches["email"]
-
         cache.set(email, code, timeout=300)
-
-        ncache.set(email, confirm_number + 1, timeout=1200)
+        cache.set(num_email, confirm_number + 1, timeout=300)
 
         self.send_mail(email, code)
 
@@ -208,11 +215,12 @@ class UserViewSet(viewsets.GenericViewSet):
     def activate(self, request):
 
         email = request.data.get("email")
+        is_confirmed_email = "is_confirmed_{}".format(email)
+        num_email = "num_{}".format(email)
+
         code = request.data.get("code")
 
-        cache = caches["email"]
-        ncache = caches["number_of_confirm"]
-
+        # key:email, value:code, time 5min
         email_code = cache.get(email)
 
         if email_code is None:
@@ -221,11 +229,9 @@ class UserViewSet(viewsets.GenericViewSet):
         if email_code != code:
             raise CodeNotMatch
 
-        ecache = caches["activated_email"]
-
         cache.set(email, code, timeout=0)  # erase from cache
-        ncache.set(email, 0, timeout=0)
-        ecache.set(email, 1, timeout=10800)
+        cache.set(num_email, 0, timeout=0)
+        cache.set(is_confirmed_email, 1, timeout=300)
 
         response_data = {"message": "성공적으로 인증하였습니다."}
         return Response(response_data, status=status.HTTP_200_OK)
@@ -287,22 +293,26 @@ class UserViewSet(viewsets.GenericViewSet):
         GET v1/users/{user_id}/chattings/
         """
         # 관리자 모드인 경우에만 다른 유저의 채팅 리스트 조회 가능
+        offset = request.query_params.get('offset') if request.query_params.get('offset') is not None else '1'
+        limit = request.query_params.get('limit') if request.query_params.get('limit') is not None else '10'
         if pk == 'me':
             user = request.user
         else:
             user = self.get_object()
             if not user.is_superuser:
                 return Response("message: 다른회원의 채팅리스트를 열람할 수 없습니다.", status=status.HTTP_403_FORBIDDEN)
+        recent_sent_at = Subquery(ChatMessage.objects.filter(chat_id=OuterRef('id')).order_by('-sent_at')[:1].values('sent_at'))
 
-        chattings = OrderChat.objects.filter(Q(participant_profile__participant=user) | Q(article__writer=user))
+        chattings = OrderChat.objects.filter(Q(participant_profile__participant=user) | Q(article__writer=user))\
+            .annotate(recent_sent_at=recent_sent_at)\
+            .prefetch_related('article__images','messages__image').order_by('-recent_sent_at').distinct()
 
         if not chattings:
             return Response("참여중인 채팅이 없습니다.", status=status.HTTP_404_NOT_FOUND)
-        paginator = OrderChatPagination()
-        paginated_chattings = paginator.paginate_queryset(queryset=chattings, request=request)
-        assert paginated_chattings is not None
-        serializer = SimpleOrderChatSerializer(paginated_chattings, many=True)
-        return paginator.get_paginated_response(serializer.data)
+
+        paginator = GatguLimitOffsetPagination(offset, limit)
+        paginated_chattings = paginator.paginate_queryset(chattings, request)
+        return paginator.get_paginated_response(SimpleOrderChatSerializer(paginated_chattings, many=True).data)
 
     # Get /user/{user_id} # 유저 정보 가져오기(나 & 남)
     def retrieve(self, request, pk=None):
@@ -449,43 +459,54 @@ class UserViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['PUT'])
-    def get_presigned_url(self, request):
+    def create_presigned_post(self, request):
         user = request.user
-        data = request.data
-        s3 = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+        object_key = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
+        key = 'user/{0}/icon/{1}'.format(user.id, object_key)
+        response = CLIENT.generate_presigned_post(BUCKET_NAME, key)
+        # resopnse 에 object_url 포함해서 반환
+        object_url = response['url'] + response['fields']['key']
+        # upload_s3(response, request.data.get('file_name'))
 
-        # bucket_name = 'gatgu-s3-test'
-        bucket_name = 'gatgubucket'
+        return Response(
+            {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
 
-        if data['method'] == 'get' or data['method'] == 'GET':
-            url = s3.generate_presigned_url(
-                ClientMethod='get_object',
-                Params={
-                    'Bucket': bucket_name,
-                    'Key': data['file_name'],
-                    "ResponseContentType": "image/jpeg",
-                },
-                ExpiresIn=3600,
-                HttpMethod='GET')
-            return Response({'presigned_url': url, 'file_name': data['file_name']}, status=status.HTTP_200_OK)
+    # 본인의 토큰으로 키워드를 구독한다.
+    # 미완
+    @action(methods=['POST', 'DELETE'], detail=True)
+    def keyword_noti(self, request, pk=None):
+        user = request.user
+        keyword = request.data.get('keyword')
+        token = FCMToken.objects.filter(user_fcmtoken__user=user)
 
-        if data['method'] == 'put' or data['method'] == 'PUT':
-            object_name = data['file_name']
-            response = s3.generate_presigned_post(
-                bucket_name,
-                'user/{0}/{1}'.format(user.id, object_name),
-            )
-            # with open(object_name, 'rb') as f:
-            #     files = {'file': (object_name, f)}
-            #     http_response = requests.post(response['url'], data=response['fields'], files=files)
-            #
-            #     logging.info(f'File upload HTTP status code: {http_response.status_code}')
+        if pk == 'me':
+            if request.method == 'POST':
+                token.update(keyword=keyword)
+                registered_tokens = token.values_list('fcmtoken', flat=True)
+                subscription(registered_tokens, keyword)
 
-            return Response(
-                {'response': response, 'file_name': 'user/{0}/{1}'.format(user.id, data['file_name'])},
-                status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            # elif request.mothod == 'DELETE':
+            #     KeyWord.objects.get(keyword=keyword).delete()
+            #     unsubscription(token, keyword)
+
+
+# postman에서 업로드 시 사용 / 'file_name'의 파일을 manage.py 디렉토리에 위치 후 실행
+def upload_s3(response, file_name):
+    try:
+        with open(file_name, 'rb') as f:
+            files = {'file': (file_name, f)}
+            http_response = requests.post(response['url'], data=response['fields'], files=files)
+
+            logging.info(f'File upload HTTP status code: {http_response.status_code}')
+    except FileNotFoundError:
+        return Response({'message: FileNotFound In Working Directiory'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class TokenRefreshView(TokenViewBase):
+    serializer_class = serializers.CustomTokenRefreshSerializer
+
+
+token_refresh = TokenRefreshView.as_view()

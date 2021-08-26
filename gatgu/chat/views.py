@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models.functions import Coalesce
 from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F
 
@@ -23,6 +25,13 @@ from gatgu.paginations import CursorSetPagination
 
 import boto3
 from botocore.client import Config
+
+from gatgu.settings import BUCKET_NAME
+
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+from gatgu.utils import BadRequestException
 
 
 class CursorSetPagination(CursorSetPagination):
@@ -51,6 +60,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     # list of chat user is in
 
     def chat_list(self, user_id):
+        
         participants = [str(participant['order_chat_id']) for participant in
                         ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
         return participants
@@ -69,30 +79,37 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         join or out a chat, participant list
         GET v1/chattings/{chatting_id}/participants/
         POST v1/chattings/{chatting_id}/participants/
+        PATCH v1/chattings/{chatting_id}/participants/
         DELETE v1/chattings/{chatting_id}/participants/
 
         [data params]
-        if method == POST
-            1. wish_price(required)
+        if method == PATCH
+            wish_price
+
         """
         user = request.user
         try:
-            chatting = OrderChat.objects.get(id=pk)
+            chatting = OrderChat.objects.select_related('article').get(id=pk)
         except OrderChat.DoesNotExist:
-            raise Response({"없쪙"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"없쪙"}, status=status.HTTP_404_NOT_FOUND)
 
         if request.method == "GET":
             participant_profiles = chatting.participant_profile
-            return Response(ParticipantProfileSerializer(participant_profiles, many=True).data, status=status.HTTP_200_OK)
+            return Response(ParticipantProfileSerializer(participant_profiles, many=True).data,
+                            status=status.HTTP_200_OK)
 
         elif request.method == 'POST':
-            wish_price = request.data.get('wish_price')
+            wish_price = request.data.get('wish_price') if request.data.get('wish_price') else 0
 
             if chatting.article.writer == user:
-                return Response(status=status.HTTP_200_OK)
-            elif OrderChat.objects.filter(participant_profile__participant=user).exists():
-                return Response(status=status.HTTP_200_OK)
-            elif chatting.order_status==1:
+                return Response({'message: 채팅방에 입장했습니다.'}, status=status.HTTP_200_OK)
+            elif OrderChat.objects.filter(id=pk, participant_profile__participant=user).exists():
+                return Response({'message: 이미 참가중'}, status=status.HTTP_200_OK)
+            # article 의 status 가 모집중 이 아니면 입장 불가.
+            if chatting.article.article_status != Article.GATHERING:
+                return Response({"Could not participate"}, status=status.HTTP_404_NOT_FOUND)
+                
+            elif chatting.article.article_status == Article.GATHERING:
                 ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
                 return Response(status=status.HTTP_201_CREATED)
             else:
@@ -100,25 +117,55 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
 
         elif request.method == 'PATCH':
+
             user = request.user
             data = request.data
 
-            if 'pay_status' in data and user!=chatting.article.writer:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+            if 'pay_status' in data:
+                if 'user_id' in data: # writer's action
+                    if user == chatting.article.writer and data['pay_status'] == 3:
+                        user = User.objects.get(id=data['user_id'])
+                    else:
+                        return Response(status=status.HTTP_403_FORBIDDEN)
+                else: # participant's action
+                    try:
+                        participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                    except ParticipantProfile.DoesNotExist:
+                        return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                    if data['pay_status'] != 2 or  participant.pay_status != 1:
+                        return Response(status=status.HTTP_403_FORBIDDEN)
+              
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
                 serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
                 serializer.is_valid(raise_exception=True)
                 serializer.update(participant, serializer.validated_data)
                 serializer.save()
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    str(pk),
+                    {'type': 'change_status', 'data': serializer.data}
+                )
                 return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
+                return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         elif request.method == 'DELETE':
+            # 참가자의 요청시 나가기 처리
+            # 방장의 요청시
+            #   1. 본인 나가기 불가
+            #   2. data param 있을때(추방가능한 유저의 아이디 인지 validate)
+            if chatting.article.writer == user:
+                exile_id = request.data.get('user_id')
+                if exile_id not in chatting.participant_profile.participant.id:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+            else:
+                exile_id = user.id
+
             try:
-                participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
+                participant = ParticipantProfile.objects.get(order_chat=chatting, participant_id=exile_id)
+                if participant.pay_status >= 2:
+                    return Response('입금대기중인 유저만 강퇴가능합니다.', status=status.HTTP_400_BAD_REQUEST)
                 participant.delete()
                 return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:
@@ -150,79 +197,54 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 message.save()
 
             message = ChatMessage.objects.get(id=message_id)
-            img = message.image.all()[0]
-            ser = ChatMessageImageSerializer(img)
-            print(ser.data)
-            print(message.image.values())
-            
 
             return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, pk):
+        """
+        writer 가 채팅방의 order_status, tracking_number 를 수정
+        동시에 수정 불가.
+        """
+
         user = request.user
         data = request.data
         chat = get_object_or_404(OrderChat, pk=pk)
-        if user!=chat.article.writer:
+        if user != chat.article.writer:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        if 'order_status' in data:
-            if data['order_status']<chat.order_status:
-                print("order status should grow up")
-                return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(chat, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.update(chat, serializer.validated_data)
         serializer.save()
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            str(pk),
+            {'type': 'change_status', 'data': serializer.data}
+        )
         return Response(status=status.HTTP_200_OK)
-        # todo: 남규님 또는 기덕님  아래 set_status, set_wish_price, paid, set_tracking_number 통합해주세요.
-        # PUT or PATCH v1/chattings/{chatting_id}/
-        # PATCH 로 할꺼면 함수명 partial_update로 하면 됩니다.
 
-    @action(detail=True, methods=['PUT'])
-    def set_status(self, request, pk=None):
-        user = request.user
-        data = request.data
-        new_status = data['order_status']
-        chat = get_object_or_404(OrderChat, pk=pk)
-        if chat.article.writer_id == user.id:
-            chat.order_status = new_status
-            chat.save()
-            return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
-        else:
+        # could update only writer
+        if chatting.article.writer != request.user:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-    @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
-    def set_wish_price(self, request, pk=None):
-        user = request.user
-        data = request.data
-        new_price = data['wish_price']
-        # chat = get_object_or_404(OrderChat, pk=pk)
+        # order_status = request.data.get('order_status')
+        tracking_number = request.data.get('tracking_number')
 
-        if pk in self.chat_list(user.id):
-            participant = get_object_or_404(ParticipantProfile, participant_id=user.id, order_chat_id=pk)
-            participant.wish_price = new_price
-            participant.save()
+        # # could not update (both at once or nothing)
+        # if (order_status is not None and tracking_number is not None) or (
+        #         order_status is None and tracking_number is None):
+        #     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            # sum_wish_price = Coalesce(Subquery(
-            #     ParticipantProfile.objects.filter(order_chat_id=pk).annotate(
-            #         sum=Sum('wish_price')).values('sum'), output_field=IntegerField()), 0)
-            chat = OrderChat.objects.annotate(sum_wish_price=Sum('participant_profile__wish_price')).get(id=pk)
+        # if order_status is not None:
+        #     # validate (order_status's range 1 ~ 4)
+        #     if order_status not in [i for i, s in OrderChat.ORDER_STATUS]:
+        #         return Response(status=status.HTTP_400_BAD_REQUEST)
+        #     else:
+        #         chatting.order_status = order_status
 
-            serializer = self.get_serializer(chat, data=data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.update(chat, serializer.validated_data)
+        if tracking_number is not None:
+            chatting.tracking_number = tracking_number
 
-            if chat.sum_wish_price >= chat.article.price_min:
-                chat.article.article_status = 2
-
-            else:
-                chat.article.article_status = 1
-
-            serializer.save()
-
-            data = ParticipantProfileSerializer(participant).data
-            data['article_status'] = chat.article.article_status
-
-            return Response(data, status=status.HTTP_200_OK)
+        chatting.save()
         return Response(status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
@@ -236,19 +258,6 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             participant.pay_status = True
             participant.save()
             return Response(status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-    @action(detail=True, methods=['PUT'])
-    def set_tracking_number(self, request, pk=None):
-        user = request.user
-        data = request.data
-        new_tracking_number = data['tracking_number']
-        chat = get_object_or_404(OrderChat, pk=pk)
-        if chat.article.writer_id == user.id:
-            chat.tracking_number = new_tracking_number
-            chat.save()
-            return Response(self.get_serializer(chat).data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -282,6 +291,35 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
+    @action(detail=True, methods=['PUT'])
+    def create_presigned_post(self, request, pk=None):
+        user = request.user
+        object_key = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]
+        s3 = boto3.client('s3', config=Config(signature_version='s3v4',
+                                              region_name='ap-northeast-2'))
+        response = s3.generate_presigned_post(
+            BUCKET_NAME,
+            'chatting/{0}/user/{1}/{2}'.format(pk, user.id, object_key)
+        )
+        # from user.views import upload_s3
+        # upload_s3(response,'admin(1).jpeg')
+        object_url = response['url'] + response['fields']['key']
+        return Response(
+            {'response': response, 'object_url': object_url}, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=True)
+    def images(self, request, pk):
+        try:
+            chatting = OrderChat.objects.get(id=pk)
+        except OrderChat.DoesNotExist:
+            raise BadRequestException('chatting id does not exist')
+
+        images = ChatMessageImage.objects.filter(message__chat_id=pk)
+
+        rtn = ChatMessageImageSerializer(images, many=True).data
+
+        return Response(rtn, status=status.HTTP_200_OK)
 
 
 class ChatMessageViewSet(viewsets.GenericViewSet):

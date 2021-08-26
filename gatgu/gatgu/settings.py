@@ -15,6 +15,8 @@ from pathlib import Path
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import boto3
+from botocore.config import Config
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
@@ -42,8 +44,7 @@ SECRET_KEY = get_secret("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-DEBUG_TOOLBAR = True
-# DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
+DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
 ALLOWED_HOSTS = ['*']
 
@@ -66,6 +67,12 @@ INSTALLED_APPS = [
     'article',
     'chat',
     'channels',
+    'push_notification',
+
+    'report',
+
+    'django_crontab',
+    'django_redis',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -101,6 +108,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'EXCEPTION_HANDLER': 'gatgu.utils.custom_exception_handler',
+    'DATETIME_FORMAT': '%s.%f',
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=1),
@@ -163,36 +171,28 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # local
         'HOST': '127.0.0.1',
-        # ohio deprecated
-        # 'HOST': 'gatgu-database.c8rxsbbexj0l.us-east-2.rds.amazonaws.com',
-        # seoul
-        'HOST': 'gatgu-rds.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
-        # test
-        'HOST': 'gatgu-rds-test.cmdozwbtes0r.ap-northeast-2.rds.amazonaws.com',
+        # waffle
+        'HOST': 'wafflestudio-mysql-202107.caxwrw8c4qqq.ap-northeast-2.rds.amazonaws.com',
 
         'PORT': 3306,
-        'NAME': 'gatgu_db',
-        'USER': 'team-gatgu',
-        'PASSWORD': 'gatgu',
+
+        'NAME': 'gatgu',
+        'USER': 'gatgu',
+        'PASSWORD': 'team-gatgu',
     }
 }
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/3",
+        "LOCATION": [
+            "redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3",
+        ],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MASTER_CACHE": "redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3"
+        }
     },
-    "email": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-    },
-    "number_of_confirm": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/2",
-    },
-    "activated_email": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/4",
-    }
 }
 
 # Password validation
@@ -212,6 +212,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
 
 # Email
 
@@ -233,7 +234,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -245,7 +246,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = 'static'
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = [
@@ -253,3 +255,12 @@ CORS_ORIGIN_ALLOW_ALL = True
 #     'http://localhost:3000',
 # ]
 
+import firebase_admin
+from firebase_admin import credentials
+
+cred = credentials.Certificate("gatgu-firebase-admin-hs.json")
+firebase_admin.initialize_app(cred)
+
+CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+BUCKET_NAME = 'gatgu'
+MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"

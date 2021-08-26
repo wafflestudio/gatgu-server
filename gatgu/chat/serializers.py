@@ -1,4 +1,6 @@
+from article.models import Article
 from chat.models import OrderChat, ParticipantProfile, ChatMessage, ChatMessageImage
+from gatgu.utils import JSTimestampField
 from user.serializers import *
 
 
@@ -9,7 +11,7 @@ class OrderChatSerializer(serializers.ModelSerializer):
         model = OrderChat
         fields = (
             'id',
-            'order_status',
+            # 'order_status',
             'tracking_number',
             'participant_profile',
         )
@@ -22,14 +24,15 @@ class OrderChatSerializer(serializers.ModelSerializer):
 
 class SimpleOrderChatSerializer(serializers.ModelSerializer):
     recent_message = serializers.SerializerMethodField()
+    article = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderChat
         fields = (
             'id',
-            'order_status',
             'tracking_number',
-            'recent_message'
+            'recent_message',
+            'article',
         )
 
     def get_recent_message(self, orderchat):
@@ -37,9 +40,28 @@ class SimpleOrderChatSerializer(serializers.ModelSerializer):
         data = ChatMessageSerializer(message, context=self.context).data
         return data
 
+    def get_article(self, orderchat):
+        return ChattingArticleSerializer(orderchat.article).data
+
+class ChattingArticleSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = (
+            'id',
+            'title',
+            'image',
+        )
+
+    def get_image(self, article):
+        return article.images.first().img_url
+
+
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):
     participant = serializers.SerializerMethodField()
+    joined_at = JSTimestampField(read_only=True)
 
     class Meta:
         model = ParticipantProfile
@@ -60,6 +82,7 @@ class ParticipantProfileSerializer(serializers.ModelSerializer):
 class ChatMessageSerializer(serializers.ModelSerializer):
     sent_by = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField(required=False)
+    sent_at = JSTimestampField(read_only=True)
 
     class Meta:
         model = ChatMessage
@@ -68,7 +91,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             'text',
             'image',
             'sent_by',
-            'sent_at'
+            'sent_at',
+            'type'
         )
 
     def get_sent_by(self, chatmessage):
@@ -77,8 +101,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         return data
     
     def get_image(self, chatmessage):
-        image = chatmessage.image.all()[0]
-        return ChatMessageImageSerializer(image, many=False).data
+        image = chatmessage.image.all()
+        return ChatMessageImageSerializer(image, many=True).data
 
 class ChatMessageImageSerializer(serializers.ModelSerializer):
     class Meta:

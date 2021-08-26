@@ -2,8 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [ main ]
-
+    branches: [ develop ]
 jobs:
   deploy:
     name: Deploy
@@ -16,21 +15,20 @@ jobs:
 
       S3_BUCKET_NAME: elasticbeanstalk-ap-northeast-2-814473694736
 
-
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-
+      
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_NOOARHK }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_NOAARHK }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_NOAARHK }}
         aws-region: ap-northeast-2
 
     - name: Upload Dockerrun.aws.json to S3
       run: |
-        zip -r deploy.zip Dockerrun.aws.json
+        zip -r deploy.zip Dockerrun.aws.json gatgu/.ebextensions gatgu/.platform
         aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
 
     - name: Docker Login
@@ -56,11 +54,13 @@ jobs:
       run: |
         cd gatgu
         echo '{"SECRET_KEY":"$SECRET_KEY"}' > secrets.json
+        echo $FIREBASE_ADMIN_CERT > gatgu-firebase-admin-hs.json
         docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        FIREBASE_ADMIN_CERT: ${{ secrets.FIREBASE_ADMIN_CERT }}
         
     - name: Deploy to ElasticBeanstalk
       run: |
