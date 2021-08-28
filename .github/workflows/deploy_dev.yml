@@ -23,8 +23,8 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE_NOAARHK }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE_NOAARHK }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE }}
         aws-region: ap-northeast-2
 
     - name: Upload Dockerrun.aws.json to S3
@@ -41,8 +41,8 @@ jobs:
     - name: Add public IP to AWS security group
       uses: sohelamin/aws-security-group-add-ip-action@master
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE_NOAARHK }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE_NOAARHK }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE }}
         aws-region: 'ap-northeast-2'
         aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID_WAFFLE }}
         port: '3306'
