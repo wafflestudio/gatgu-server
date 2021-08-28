@@ -66,10 +66,10 @@ jobs:
     - name: Deploy to ElasticBeanstalk
       run: |
         aws elasticbeanstalk create-application-version \
-          --application-name gatgu \
+          --application-name gatgu-server \
           --version-label $BUILD_NUMBER \
           --description $BUILD_NUMBER \
           --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key='deploy.zip'
         aws elasticbeanstalk update-environment \
-          --environment-name gatgu-env \
+          --environment-name gatgu-server-prod \
           --version-label $BUILD_NUMBER
