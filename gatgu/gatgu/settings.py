@@ -81,7 +81,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('localhost', 6379)],
+            "hosts": [("redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3", 6379)],
         }
     }
 }
