@@ -266,8 +266,8 @@ BUCKET_NAME = 'gatgu'
 MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"
 
 # aws settings
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID_WAFFLE')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY_WAFFLE')
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = BUCKET_NAME
 AWS_DEFAULT_ACL = 'public-read'
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
