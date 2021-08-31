@@ -262,12 +262,14 @@ cred = credentials.Certificate("gatgu-firebase-admin-hs.json")
 firebase_admin.initialize_app(cred)
 
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-BUCKET_NAME = 'gatgu'
+BUCKET_NAME = "gatgu"
 MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"
 
 # aws settings
+AWS_DEFAULT_ACL = 'public-read'
 AWS_S3_CUSTOM_DOMAIN = f'gatgu.s3.amazonaws.com'
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+AWS_STORAGE_BUCKET_NAME = "gatgu"
 # s3 static settings
 AWS_LOCATION = 'STATIC'
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
