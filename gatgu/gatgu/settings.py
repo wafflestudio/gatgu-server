@@ -245,10 +245,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = '/static/'
+# STATIC_URL = '/static/'
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATIC_ROOT = 'static'
 
+STATIC_URL = f'https://gatgu.s3.ap-northeast-2.amazonaws.com/STATIC/'
+STATICFILES_STORAGE = 'storage.backends.s3boto3.S3Boto3Storage'
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = [
 #     'http://localhost',
