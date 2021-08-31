@@ -73,6 +73,7 @@ INSTALLED_APPS = [
 
     'django_crontab',
     'django_redis',
+    'storages',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -248,8 +249,6 @@ USE_TZ = True
 # STATIC_URL = '/static/'
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-STATIC_URL = f'https://gatgu.s3.ap-northeast-2.amazonaws.com/STATIC/'
-STATICFILES_STORAGE = 'storage.backends.s3boto3.S3Boto3Storage'
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = [
 #     'http://localhost',
@@ -265,3 +264,18 @@ firebase_admin.initialize_app(cred)
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
 BUCKET_NAME = 'gatgu'
 MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"
+
+# aws settings
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID_WAFFLE')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY_WAFFLE')
+AWS_STORAGE_BUCKET_NAME = BUCKET_NAME
+AWS_DEFAULT_ACL = 'public-read'
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+# s3 static settings
+AWS_LOCATION = 'STATIC'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# STATIC_URL = f'https://gatgu.s3.ap-northeast-2.amazonaws.com/STATIC/'
+# STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
