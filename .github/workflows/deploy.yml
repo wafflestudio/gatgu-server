@@ -62,6 +62,11 @@ jobs:
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         FIREBASE_ADMIN_CERT: ${{ secrets.FIREBASE_ADMIN_CERT }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE }}
+        aws-region: ap-northeast-2
+
+
         
     - name: Deploy to ElasticBeanstalk
       run: |
