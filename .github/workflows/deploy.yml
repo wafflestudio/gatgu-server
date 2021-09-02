@@ -56,15 +56,14 @@ jobs:
         cd gatgu
         echo '{"SECRET_KEY":"$SECRET_KEY"}' > secrets.json
         echo $FIREBASE_ADMIN_CERT > gatgu-firebase-admin-hs.json
-        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
+        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         FIREBASE_ADMIN_CERT: ${{ secrets.FIREBASE_ADMIN_CERT }}
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE }}
-        aws-region: ap-northeast-2
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE }}
 
 
         
