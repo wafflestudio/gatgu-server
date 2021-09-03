@@ -56,6 +56,8 @@ jobs:
         cd gatgu
         echo '{"SECRET_KEY":"$SECRET_KEY"}' > secrets.json
         echo $FIREBASE_ADMIN_CERT > gatgu-firebase-admin-hs.json
+        mkdir .aws
+        echo [default]\naws_access_key_id=$AWS_ACCESS_KEY_ID\naws_secret_access_key=$AWS_SECURITY_GROUP_ID > .aws/credentials
         docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
