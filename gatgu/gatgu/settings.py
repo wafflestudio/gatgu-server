@@ -13,7 +13,6 @@ import datetime
 import json
 from pathlib import Path
 import os
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import boto3
 from botocore.config import Config
@@ -73,7 +72,6 @@ INSTALLED_APPS = [
 
     'django_crontab',
     'django_redis',
-    'storages',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
@@ -214,7 +212,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Email
 
 EMAIL_HOST = 'smtp.gmail.com'
@@ -261,11 +258,27 @@ from firebase_admin import credentials
 cred = credentials.Certificate("gatgu-firebase-admin-hs.json")
 firebase_admin.initialize_app(cred)
 
+
+# env = environ.Env()
+# # print(env('BUCKET_NAME'))
+# environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
+#
+# def get_env_value(env_variable):
+#     try:
+#         return os.environ[env_variable]
+#     except KeyError:
+#         error_msg = 'Set the {} environment varialble'.format(env_variable)
+#         raise ImproperlyConfigured(error_msg)
+
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
+# credentials = boto3.Session().get_credentials()
+# CLIENT = boto3.client('s3',
+#                       aws_access_key_id=credentials.access_key,
+#                       aws_secret_access_key=credentials.secret_key,
+#                       config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
 BUCKET_NAME = "gatgu"
 MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"
 
-# aws settings
 AWS_DEFAULT_ACL = 'public-read'
 AWS_S3_CUSTOM_DOMAIN = f'gatgu.s3.amazonaws.com'
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
@@ -274,7 +287,6 @@ AWS_STORAGE_BUCKET_NAME = "gatgu"
 AWS_LOCATION = 'STATIC'
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
 
 # STATIC_URL = f'https://gatgu.s3.ap-northeast-2.amazonaws.com/STATIC/'
 # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
