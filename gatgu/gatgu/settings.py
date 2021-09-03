@@ -72,6 +72,8 @@ INSTALLED_APPS = [
 
     'django_crontab',
     'django_redis',
+
+    'storages',
 ]
 
 ASGI_APPLICATION = 'gatgu.routing.application'
