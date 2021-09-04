@@ -28,10 +28,11 @@ class ChatConsumer(WebsocketConsumer):
         self.accept()
 
     def disconnect(self, close_code):
-        async_to_sync(self.channel_layer.group_discard)(
-            self.chat_group_name,
-            self.channel_name
-        )
+        for group_name in self.groups:
+            async_to_sync(self.channel_layer.group_discard)(
+                group_name,
+                self.channel_name
+            )
 
     def enter_group(self, group_name):
         if group_name in self.groups:
@@ -55,7 +56,6 @@ class ChatConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        print(text_data_json)
         type = text_data_json['type']
         if type == 'PING':
             self.send(text_data = json.dumps({
@@ -140,13 +140,12 @@ class ChatConsumer(WebsocketConsumer):
                 return
             return
         if not room_id in self.groups:
+            self.response('MESSAGE_FAILURE', {}, websocket_id)
             return
         msg = data['message']
         msg['type'] = "user"
         try:
-            serializer = ChatMessageSerializer(data=msg)
-            serializer.is_valid(raise_exception=True)
-            prev_message_time = ChatMessage.objects.last().sent_at
+            prev_message_time = ChatMessage.objects.filter(chat_id=chatting_id).last().sent_at
             revised_time = prev_message_time+timedelta(hours=9)
             date_msg = revised_time.date()
             date_now = datetime.now().date()
@@ -155,7 +154,7 @@ class ChatConsumer(WebsocketConsumer):
                 new_day_serializer = ChatMessageSerializer(data=new_day_msg)
                 new_day_serializer.is_valid(raise_exception=True)
                 new_day_serializer.save(sent_by_id=user_id, chat_id=chatting_id)
-                async_to_sync(self.channel_layer.group_send)( # enterance system message
+                async_to_sync(self.channel_layer.group_send)(
                     str(chatting_id),
                     {
                         'type': 'chat_message',
@@ -163,6 +162,12 @@ class ChatConsumer(WebsocketConsumer):
                         'websocket_id' : websocket_id
                     }
                 )
+        except:
+            pass
+
+        try:
+            serializer = ChatMessageSerializer(data=msg)
+            serializer.is_valid(raise_exception=True)
             serializer.save(sent_by_id=user_id, chat_id=chatting_id)
             message_id = ChatMessage.objects.last().id
             message = ChatMessage.objects.get(id=message_id)
