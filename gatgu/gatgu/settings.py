@@ -42,7 +42,7 @@ def get_secret(setting, secrets=secrets):
 SECRET_KEY = get_secret("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
 ALLOWED_HOSTS = ['*']
@@ -77,7 +77,8 @@ INSTALLED_APPS = [
     'storages',
 ]
 
-ASGI_APPLICATION = 'gatgu.routing.application'
+ASGI_APPLICATION = 'gatgu.asgi.application'
+# ASGI_APPLICATION = 'gatgu.routing.application'
 
 CHANNEL_LAYERS = {
     'default': {
@@ -164,7 +165,7 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'gatgu.wsgi.application'
+WSGI_APPLICATION = 'gatgu.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
