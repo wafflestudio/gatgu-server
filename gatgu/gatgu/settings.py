@@ -13,7 +13,6 @@ import datetime
 import json
 from pathlib import Path
 import os
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import boto3
 from botocore.config import Config
@@ -43,7 +42,7 @@ def get_secret(setting, secrets=secrets):
 SECRET_KEY = get_secret("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
 ALLOWED_HOSTS = ['*']
@@ -51,6 +50,9 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'chat',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -65,23 +67,25 @@ INSTALLED_APPS = [
     'corsheaders',
 
     'article',
-    'chat',
-    'channels',
     'push_notification',
 
     'report',
 
     'django_crontab',
     'django_redis',
+
+    'storages',
 ]
 
-ASGI_APPLICATION = 'gatgu.routing.application'
+ASGI_APPLICATION = 'gatgu.asgi.application'
+# ASGI_APPLICATION = 'gatgu.routing.application'
 
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [("redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com/3", 6379)],
+            # "hosts": [("siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com", 6379)],
+            "hosts": ["redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com:6379/3?encoding=utf-8"],
         }
     }
 }
@@ -213,7 +217,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Email
 
 EMAIL_HOST = 'smtp.gmail.com'
@@ -245,9 +248,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = '/static/'
+# STATIC_URL = '/static/'
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATIC_ROOT = 'static'
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = [
@@ -262,5 +264,14 @@ cred = credentials.Certificate("gatgu-firebase-admin-hs.json")
 firebase_admin.initialize_app(cred)
 
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-BUCKET_NAME = 'gatgu'
-MEDIA_URL = "https://%s/" % "gatgu-s3-test.s3.ap-northeast-2.amazonaws.com"
+BUCKET_NAME = "gatgu"
+MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"
+
+AWS_DEFAULT_ACL = 'public-read'
+AWS_S3_CUSTOM_DOMAIN = f'gatgu.s3.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+AWS_STORAGE_BUCKET_NAME = "gatgu"
+# s3 static settings
+AWS_LOCATION = 'STATIC'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

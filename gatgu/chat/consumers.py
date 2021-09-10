@@ -11,13 +11,15 @@ import time
 
 import json
 
+
 class ChatConsumer(WebsocketConsumer):
 
     def connect(self):
         self.user_id = self.scope['url_route']['kwargs']['user_id']
-        participant_profiles = [str(item['order_chat_id']) for item in ParticipantProfile.objects.filter(participant_id = self.user_id).values('order_chat_id')]
-        articles = [str(item['id']) for item in Article.objects.filter(writer_id = self.user_id).values('id')]
-        
+        participant_profiles = [str(item['order_chat_id']) for item in
+                                ParticipantProfile.objects.filter(participant_id=self.user_id).values('order_chat_id')]
+        articles = [str(item['id']) for item in Article.objects.filter(writer_id=self.user_id).values('id')]
+
         groups = []
         groups.extend(participant_profiles)
         groups.extend(articles)
@@ -42,7 +44,7 @@ class ChatConsumer(WebsocketConsumer):
         )
         self.groups.append(group_name)
         return {'type': 'ENTER_SUCCESS'}
-    
+
     def exit_group(self, group_name):
         if not group_name in self.groups:
             return {'type': 'EXIT_FAILURE'}
@@ -58,8 +60,8 @@ class ChatConsumer(WebsocketConsumer):
         print(text_data_json)
         type = text_data_json['type']
         if type == 'PING':
-            self.send(text_data = json.dumps({
-                'type' : 'PONG'
+            self.send(text_data=json.dumps({
+                'type': 'PONG'
             }))
             return
         websocket_id = text_data_json['websocket_id']
@@ -80,25 +82,25 @@ class ChatConsumer(WebsocketConsumer):
             elif OrderChat.objects.filter(id=chatting_id, participant_profile__participant_id=user_id).exists():
                 self.response('ENTER_SUCCESS', {'status': 200}, websocket_id)
                 return
-            elif chatting.article.article_status==1:
+            elif chatting.article.article_status == 1:
                 ParticipantProfile.objects.create(order_chat=chatting, participant_id=user_id, wish_price=0)
                 self.enter_group(room_id)
                 self.response('ENTER_SUCCESS', {'status': 201, 'user_id': user_id}, websocket_id)
                 user = User.objects.get(id=user_id)
                 user_profile = UserProfile.objects.get(user=user)
-                msg = {'type' : 'system', 'text': user_profile.nickname+' entered the room', 'image' : ''}
+                msg = {'type': 'system', 'text': user_profile.nickname + ' entered the room', 'image': ''}
                 try:
                     serializer = ChatMessageSerializer(data=msg)
                     serializer.is_valid(raise_exception=True)
                     serializer.save(sent_by_id=user_id, chat_id=chatting_id)
                     message_id = ChatMessage.objects.last().id
                     message = ChatMessage.objects.get(id=message_id)
-                    async_to_sync(self.channel_layer.group_send)( # enterance system message
+                    async_to_sync(self.channel_layer.group_send)(  # enterance system message
                         str(chatting_id),
                         {
                             'type': 'chat_message',
                             'data': ChatMessageSerializer(message).data,
-                            'websocket_id' : websocket_id
+                            'websocket_id': websocket_id
                         }
                     )
                 except:
@@ -115,24 +117,24 @@ class ChatConsumer(WebsocketConsumer):
                 participant.delete()
             except ParticipantProfile.DoesNotExist:
                 self.response('EXIT_FAILURE', {'status': 404}, websocket_id)
-                return 
+                return
             self.exit_group(room_id)
             self.response('EXIT_SUCCESS', {'status': 200, 'user_id': user_id}, websocket_id)
             user = User.objects.get(id=user_id)
             user_profile = UserProfile.objects.get(user=user)
-            msg = {'type' : 'system', 'text': user_profile.nickname+' exited the room', 'image' : ''}
+            msg = {'type': 'system', 'text': user_profile.nickname + ' exited the room', 'image': ''}
             try:
                 serializer = ChatMessageSerializer(data=msg)
                 serializer.is_valid(raise_exception=True)
                 serializer.save(sent_by_id=user_id, chat_id=chatting_id)
                 message_id = ChatMessage.objects.last().id
                 message = ChatMessage.objects.get(id=message_id)
-                async_to_sync(self.channel_layer.group_send)( # enterance system message
+                async_to_sync(self.channel_layer.group_send)(  # enterance system message
                     str(chatting_id),
                     {
                         'type': 'chat_message',
                         'data': ChatMessageSerializer(message).data,
-                        'websocket_id' : websocket_id
+                        'websocket_id': websocket_id
                     }
                 )
             except:
@@ -147,7 +149,7 @@ class ChatConsumer(WebsocketConsumer):
             serializer = ChatMessageSerializer(data=msg)
             serializer.is_valid(raise_exception=True)
             prev_message_time = ChatMessage.objects.last().sent_at
-            revised_time = prev_message_time+timedelta(hours=9)
+            revised_time = prev_message_time + timedelta(hours=9)
             date_msg = revised_time.date()
             date_now = datetime.now().date()
             if date_now != date_msg:
@@ -155,12 +157,12 @@ class ChatConsumer(WebsocketConsumer):
                 new_day_serializer = ChatMessageSerializer(data=new_day_msg)
                 new_day_serializer.is_valid(raise_exception=True)
                 new_day_serializer.save(sent_by_id=user_id, chat_id=chatting_id)
-                async_to_sync(self.channel_layer.group_send)( # enterance system message
+                async_to_sync(self.channel_layer.group_send)(  # enterance system message
                     str(chatting_id),
                     {
                         'type': 'chat_message',
                         'data': ChatMessageSerializer(message).data,
-                        'websocket_id' : websocket_id
+                        'websocket_id': websocket_id
                     }
                 )
             serializer.save(sent_by_id=user_id, chat_id=chatting_id)
@@ -175,7 +177,7 @@ class ChatConsumer(WebsocketConsumer):
                 {
                     'type': 'chat_message',
                     'data': ChatMessageSerializer(message).data,
-                    'websocket_id' : websocket_id
+                    'websocket_id': websocket_id
                 }
             )
 
@@ -183,17 +185,19 @@ class ChatConsumer(WebsocketConsumer):
 
             # 희수 안드 에뮬
             token = 'cgcEjP3DRaaLakdcasEh5l:APA91bExlss0NmSZMBaiKuZDUVrNHROYba6o92fj8C8G10Phs2dPLji-AWK30uI6pbS1n5q7IoAdfi3FOM9ISShhtHWQTZWwE42WKWAG7XY4fQjsG_HdgH35ApRgSQF0hu1V2bBAaz9u'
-            
+
             if sandbox:
                 self.send_notification(msg, room_id, token)
                 return
             # 1. 해당 채팅방 user id 다 가져옴 
             chatting = OrderChat.objects.get(id=chatting_id)
-            participants = [participant['participant_id'] for participant in ParticipantProfile.objects.filter(order_chat_id=chatting_id).values('participant_id')]
+            participants = [participant['participant_id'] for participant in
+                            ParticipantProfile.objects.filter(order_chat_id=chatting_id).values('participant_id')]
             participants.append(chatting.article.writer_id)
             # 2. user id에 해당하는 token 전부 가져옴
-            tokens_id = [user_token['token_id'] for user_token in UserFCMToken.objects.filter(user_id__in = participants, is_active=True).values('token_id')]
-            tokens = [token['fcmtoken'] for token in FCMToken.objects.filter(id__in = tokens_id).values('fcmtoken')]
+            tokens_id = [user_token['token_id'] for user_token in
+                         UserFCMToken.objects.filter(user_id__in=participants, is_active=True).values('token_id')]
+            tokens = [token['fcmtoken'] for token in FCMToken.objects.filter(id__in=tokens_id).values('fcmtoken')]
             # 3. 해당 token들로 알림 Push
             for token in tokens:
                 self.send_notification(msg, room_id, token)
@@ -215,8 +219,8 @@ class ChatConsumer(WebsocketConsumer):
                 body=msg['image'],
             ),
             data={
-                'link': "gatgu://chatting/"+room_id,
-                #'path': "ChattingRoomStack/ChattingRoom",
+                'link': "gatgu://chatting/" + room_id,
+                # 'path': "ChattingRoomStack/ChattingRoom",
                 'type': 'chatting',
                 'payload': jspayload
             },
@@ -224,33 +228,32 @@ class ChatConsumer(WebsocketConsumer):
         )
         response = messaging.send(message)
         return response
-    
+
     def chat_message(self, event):
         data = event['data']
         websocket_id = event['websocket_id']
         self.send(text_data=json.dumps({
-            'data' : data,
-            'type' : 'MESSAGE_SUCCESS',
-            'websocket_id' : websocket_id
+            'data': data,
+            'type': 'MESSAGE_SUCCESS',
+            'websocket_id': websocket_id
         }))
-    
+
     def change_status(self, event):
         data = event['data']
         self.send(text_data=json.dumps({
-            'data' : data,
-            'type' : 'UPDATE_STATUS'
+            'data': data,
+            'type': 'UPDATE_STATUS'
         }))
-    
+
     def response(self, type, data, websocket_id):
         self.send(text_data=json.dumps({
-            'type' : type,
-            'data' : data,
-            'websocket_id' : websocket_id
+            'type': type,
+            'data': data,
+            'websocket_id': websocket_id
         }))
-    
+
     def pong(self, event):
         self.send(text_data=json.dumps({
-            'data' : 'data',
-            'type' : 'PONG'
+            'data': 'data',
+            'type': 'PONG'
         }))
-    
