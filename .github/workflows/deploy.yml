@@ -3,8 +3,7 @@ name: Deploy
 on:
   push:
     branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
+
 jobs:
   deploy:
     name: Deploy
@@ -56,13 +55,14 @@ jobs:
         cd gatgu
         echo '{"SECRET_KEY":"$SECRET_KEY"}' > secrets.json
         echo $FIREBASE_ADMIN_CERT > gatgu-firebase-admin-hs.json
-        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
+        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         FIREBASE_ADMIN_CERT: ${{ secrets.FIREBASE_ADMIN_CERT }}
-        
+
+
     - name: Deploy to ElasticBeanstalk
       run: |
         aws elasticbeanstalk create-application-version \
