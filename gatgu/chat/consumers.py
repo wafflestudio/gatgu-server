@@ -160,7 +160,7 @@ class ChatConsumer(WebsocketConsumer):
                     str(chatting_id),
                     {
                         'type': 'chat_message',
-                        'data': ChatMessageSerializer(message).data,
+                        'data': ChatMessageSerializer(new_day_msg).data,
                         'websocket_id': websocket_id
                     }
                 )
