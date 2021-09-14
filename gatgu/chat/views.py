@@ -60,7 +60,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
     # list of chat user is in
 
     def chat_list(self, user_id):
-        
+
         participants = [str(participant['order_chat_id']) for participant in
                         ParticipantProfile.objects.filter(participant_id=user_id).values('order_chat_id')]
         return participants
@@ -108,7 +108,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             # article 의 status 가 모집중 이 아니면 입장 불가.
             if chatting.article.article_status != Article.GATHERING:
                 return Response({"Could not participate"}, status=status.HTTP_404_NOT_FOUND)
-                
+
             elif chatting.article.article_status == Article.GATHERING:
                 ParticipantProfile.objects.create(order_chat=chatting, participant=user, wish_price=wish_price)
                 return Response(status=status.HTTP_201_CREATED)
@@ -122,19 +122,19 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             data = request.data
 
             if 'pay_status' in data:
-                if 'user_id' in data: # writer's action
+                if 'user_id' in data:  # writer's action
                     if user == chatting.article.writer and data['pay_status'] == 3:
                         user = User.objects.get(id=data['user_id'])
                     else:
                         return Response(status=status.HTTP_403_FORBIDDEN)
-                else: # participant's action
+                else:  # participant's action
                     try:
                         participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
                     except ParticipantProfile.DoesNotExist:
                         return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-                    if data['pay_status'] != 2 or  participant.pay_status != 1:
+                    if data['pay_status'] != 2 or participant.pay_status != 1:
                         return Response(status=status.HTTP_403_FORBIDDEN)
-              
+
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
                 serializer = ParticipantProfileSerializer(participant, data=data, partial=True)
