@@ -31,7 +31,7 @@ from gatgu.settings import BUCKET_NAME
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-from gatgu.utils import BadRequestException
+from gatgu.utils import BadRequestException, NotPermitted
 
 
 class CursorSetPagination(CursorSetPagination):
@@ -57,8 +57,15 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()'''
 
-    # list of chat user is in
+    def list(self, request):
+        # 관리자만 가능
+        # if not request.user.is_superuser:
+        #     return NotPermitted
 
+        serializer = self.get_serializer(OrderChat.objects.all(), many=True)
+        return Response(serializer.data)
+
+    # list of chat user is in
     def chat_list(self, user_id):
 
         participants = [str(participant['order_chat_id']) for participant in
@@ -91,7 +98,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         try:
             chatting = OrderChat.objects.select_related('article').get(id=pk)
         except OrderChat.DoesNotExist:
-            return Response({"없쪙"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"해당 채팅방이 존재하지 않습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         if request.method == "GET":
             participant_profiles = chatting.participant_profile
@@ -220,14 +227,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             str(pk),
             {'type': 'change_status', 'data': serializer.data}
         )
-        return Response(status=status.HTTP_200_OK)
-
-        # could update only writer
-        if chatting.article.writer != request.user:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
         # order_status = request.data.get('order_status')
-        tracking_number = request.data.get('tracking_number')
 
         # # could not update (both at once or nothing)
         # if (order_status is not None and tracking_number is not None) or (
@@ -241,11 +241,12 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         #     else:
         #         chatting.order_status = order_status
 
+        tracking_number = request.data.get('tracking_number')
         if tracking_number is not None:
-            chatting.tracking_number = tracking_number
+            chat.tracking_number = tracking_number
 
-        chatting.save()
-        return Response(status=status.HTTP_200_OK)
+        chat.save()
+        return Response({"message: 성공적으로 수정하였습니다."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['PUT'], serializer_class=ParticipantProfileSerializer)
     def paid(self, request, pk=None):
