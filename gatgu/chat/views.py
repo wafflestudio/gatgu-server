@@ -141,11 +141,11 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 serializer.is_valid(raise_exception=True)
                 serializer.update(participant, serializer.validated_data)
                 serializer.save()
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    str(pk),
-                    {'type': 'change_status', 'data': serializer.data}
-                )
+                #channel_layer = get_channel_layer()
+                #async_to_sync(channel_layer.group_send)(
+                #    pk,
+                #    {'type': 'change_status', 'data': serializer.data}
+                #)
                 return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:
                 return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)

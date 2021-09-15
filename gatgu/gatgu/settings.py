@@ -85,7 +85,7 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
             # "hosts": [("siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com", 6379)],
-            "hosts": ["redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com:6379/3?encoding=utf-8"],
+            "hosts": [("localhost", 6379)],
         }
     }
 }
@@ -223,13 +223,13 @@ EMAIL_HOST = 'smtp.gmail.com'
 # 메일을 호스트하는 서버
 EMAIL_PORT = '587'
 # gmail과의 통신하는 포트
-EMAIL_HOST_USER = 'swppsend@gmail.com'
+EMAIL_HOST_USER = 'hiddenpunch@wafflestudio.com'
 # 발신할 이메일
-EMAIL_HOST_PASSWORD = 'swppsend2020'
+EMAIL_HOST_PASSWORD = 'gatgu2021'
 # 발신할 메일의 비밀번호
 EMAIL_USE_TLS = True
 # TLS 보안 방법
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = "gatgu@wafflestudio.com"
 # 사이트와 관련한 자동응답을 받을 이메일 주소,'team-gatgu@localhost'
 
 # Internationalization
