@@ -185,7 +185,9 @@ class UserViewSet(viewsets.GenericViewSet):
         num_{email}: (int)
         is_confirmed_{email}: (int)
         '''
+
         email = request.data.get("email")
+
         is_confirmed_email = "is_confirmed_{}".format(email)
         num_email = "num_{}".format(email)
 
@@ -194,7 +196,7 @@ class UserViewSet(viewsets.GenericViewSet):
         if chk_email is not None:
             raise MailActivateDone
 
-        # ncache = caches["number_of_confirm"]
+        ncache = caches["number_of_confirm"]
 
         confirm_number = cache.get(num_email)
 
@@ -208,7 +210,6 @@ class UserViewSet(viewsets.GenericViewSet):
         code = generate_code()
         cache.set(email, code, timeout=300)
         cache.set(num_email, confirm_number + 1, timeout=300)
-
         self.send_mail(email, code)
 
         return Response({"message": "성공적으로 인증 메일을 발송하였습니다."}, status=status.HTTP_200_OK)
