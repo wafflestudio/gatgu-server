@@ -63,16 +63,16 @@ def custom_exception_handler(exc: APIException, context):
         #     response.data['detail'] = 'Rdaf'
         else:
             print(type(exc))
-            if not hasattr(exc, 'default_code'):
-                return JsonResponse(
-                    {
-                        'detail': "알 수 없는 에러가 발생했습니다.",
-                        'error_code': 500
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-
-                )
-            response.data['error_code'] = exc.default_code
+            # if not hasattr(exc, 'default_code'):
+            #     return JsonResponse(
+            #         {
+            #             'detail': "알 수 없는 에러가 발생했습니다.",
+            #             'error_code': 500
+            #         },
+            #         status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            #
+            #     )
+            # response.data['error_code'] = exc.default_code
 
     return response
 
