@@ -13,7 +13,6 @@ import datetime
 import json
 from pathlib import Path
 import os
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import boto3
 from botocore.config import Config
@@ -51,6 +50,9 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'chat',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -65,23 +67,24 @@ INSTALLED_APPS = [
     'corsheaders',
 
     'article',
-    'chat',
-    'channels',
     'push_notification',
 
     'report',
 
     'django_crontab',
     'django_redis',
+
+    'storages',
 ]
 
-ASGI_APPLICATION = 'gatgu.routing.application'
+ASGI_APPLICATION = 'gatgu.asgi.application'
+# ASGI_APPLICATION = 'gatgu.routing.application'
 
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('localhost', 6379)],
+            "hosts": ["redis://siksha-redis-001.xevoyk.0001.apn2.cache.amazonaws.com:6379/3?encoding=utf-8"],
         }
     }
 }
@@ -213,20 +216,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Email
 
 EMAIL_HOST = 'smtp.gmail.com'
 # 메일을 호스트하는 서버
 EMAIL_PORT = '587'
 # gmail과의 통신하는 포트
-EMAIL_HOST_USER = 'swppsend@gmail.com'
+EMAIL_HOST_USER = 'hiddenpunch@wafflestudio.com'
 # 발신할 이메일
-EMAIL_HOST_PASSWORD = 'swppsend2020'
+EMAIL_HOST_PASSWORD = 'gatgu2021'
 # 발신할 메일의 비밀번호
 EMAIL_USE_TLS = True
 # TLS 보안 방법
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = "gatgu@wafflestudio.com"
 # 사이트와 관련한 자동응답을 받을 이메일 주소,'team-gatgu@localhost'
 
 # Internationalization
@@ -245,9 +247,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = '/static/'
+# STATIC_URL = '/static/'
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATIC_ROOT = 'static'
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = [
@@ -262,5 +263,14 @@ cred = credentials.Certificate("gatgu-firebase-admin-hs.json")
 firebase_admin.initialize_app(cred)
 
 CLIENT = boto3.client('s3', config=Config(signature_version='s3v4', region_name='ap-northeast-2'))
-BUCKET_NAME = 'gatgu'
+BUCKET_NAME = "gatgu"
 MEDIA_URL = "https://%s/" % "gatgu.s3.ap-northeast-2.amazonaws.com"
+
+AWS_DEFAULT_ACL = 'public-read'
+AWS_S3_CUSTOM_DOMAIN = f'gatgu.s3.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+AWS_STORAGE_BUCKET_NAME = "gatgu"
+# s3 static settings
+AWS_LOCATION = 'STATIC'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

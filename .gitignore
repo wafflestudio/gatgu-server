@@ -391,6 +391,7 @@ dump.rdb
 secrets.json
 
 # AWS files
+.aws
 .aws/*
 
 # FireBaseConf
