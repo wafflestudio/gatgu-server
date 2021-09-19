@@ -58,6 +58,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
+        print(text_data_json)
         type = text_data_json['type']
         if type == 'PING':
             self.send(text_data=json.dumps({
@@ -95,6 +96,7 @@ class ChatConsumer(WebsocketConsumer):
                     serializer.save(sent_by_id=user_id, chat_id=chatting_id)
                     message_id = ChatMessage.objects.last().id
                     message = ChatMessage.objects.get(id=message_id)
+                    print(1)
                     async_to_sync(self.channel_layer.group_send)(  # enterance system message
                         str(chatting_id),
                         {
@@ -177,6 +179,7 @@ class ChatConsumer(WebsocketConsumer):
                 message.image.create(img_url=msg['image'])
             message.save()
             message = ChatMessage.objects.get(id=message_id)
+            print(2)
             async_to_sync(self.channel_layer.group_send)(
                 str(chatting_id),
                 {
