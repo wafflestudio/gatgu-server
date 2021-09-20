@@ -179,6 +179,8 @@ class ChatConsumer(WebsocketConsumer):
                 message.image.create(img_url=msg['image'])
             message.save()
             message = ChatMessage.objects.get(id=message_id)
+            print(self.groups)
+            print(chatting_id)
             print(2)
             self.channel_layer.group_send(
                 str(chatting_id),
@@ -188,6 +190,7 @@ class ChatConsumer(WebsocketConsumer):
                     'websocket_id': websocket_id
                 }
             )
+            print(3)
 
             sandbox = True
 
