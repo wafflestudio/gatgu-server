@@ -159,7 +159,7 @@ class ChatConsumer(WebsocketConsumer):
                 new_day_serializer.is_valid(raise_exception=True)
                 new_day_serializer.save(sent_by_id=user_id, chat_id=chatting_id)
                 async_to_sync(self.channel_layer.group_send)(
-                    chatting_id,
+                    str(chatting_id),
                     {
                         'type': 'chat_message',
                         'data': ChatMessageSerializer(new_day_msg).data,
@@ -180,8 +180,8 @@ class ChatConsumer(WebsocketConsumer):
             message.save()
             message = ChatMessage.objects.get(id=message_id)
             print(2)
-            async_to_sync(self.channel_layer.group_send)(
-                chatting_id,
+            self.channel_layer.group_send(
+                str(chatting_id),
                 {
                     'type': 'chat_message',
                     'data': ChatMessageSerializer(message).data,
