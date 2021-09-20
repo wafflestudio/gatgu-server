@@ -180,8 +180,8 @@ class ChatConsumer(WebsocketConsumer):
             message.save()
             message = ChatMessage.objects.get(id=message_id)
             print(2)
-            await self.channel_layer.group_send(
-                str(chatting_id),
+            async_to_sync(self.channel_layer.group_send)(
+                chatting_id,
                 {
                     'type': 'chat_message',
                     'data': ChatMessageSerializer(message).data,
