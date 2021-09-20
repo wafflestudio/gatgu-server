@@ -151,7 +151,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     pk,
-                    {'type': 'change_status', 'data': serializer.data}
+                    json.dumps({'type': 'change_status', 'data': serializer.data})
                 )
                 return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:
