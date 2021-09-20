@@ -183,8 +183,8 @@ class ChatConsumer(WebsocketConsumer):
             print(self.groups)
             print(chatting_id)
             print(2)
-            self.channel_layer.group_send(
-                str(chatting_id),
+            async_to_sync(self.channel_layer.group_send)(
+                room_id,
                 {
                     'type': 'chat_message',
                     'data': ChatMessageSerializer(message).data,
