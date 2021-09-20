@@ -43,6 +43,7 @@ class ChatConsumer(WebsocketConsumer):
             group_name,
             self.channel_name
         )
+        print(4)
         self.groups.append(group_name)
         return {'type': 'ENTER_SUCCESS'}
 
