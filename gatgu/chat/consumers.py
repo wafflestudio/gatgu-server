@@ -187,7 +187,7 @@ class ChatConsumer(WebsocketConsumer):
                 room_id,
                 {
                     'type': 'chat_message',
-                    'data': ChatMessageSerializer(message).data,
+                    'data': '',
                     'websocket_id': websocket_id
                 }
             )
