@@ -23,7 +23,7 @@ class ChatConsumer(WebsocketConsumer):
         groups = []
         groups.extend(participant_profiles)
         groups.extend(articles)
-
+        print(self.channel_name)
         for group in groups:
             self.enter_group(group)
 
