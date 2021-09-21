@@ -16,9 +16,9 @@ class ChatConsumer(WebsocketConsumer):
 
     def connect(self):
         self.user_id = self.scope['url_route']['kwargs']['user_id']
-        participant_profiles = [str(item['order_chat_id']) for item in
+        participant_profiles = [str(item['order_chat_id']).encode('utf8') for item in
                                 ParticipantProfile.objects.filter(participant_id=self.user_id).values('order_chat_id')]
-        articles = [str(item['id']) for item in Article.objects.filter(writer_id=self.user_id).values('id')]
+        articles = [str(item['id']).encode('utf8') for item in Article.objects.filter(writer_id=self.user_id).values('id')]
 
         groups = []
         groups.extend(participant_profiles)
@@ -187,7 +187,7 @@ class ChatConsumer(WebsocketConsumer):
                 room_id,
                 {
                     'type': 'chat_message',
-                    'data': '',
+                    'data': ChatMessageSerializer(message).data,
                     'websocket_id': websocket_id
                 }
             )
