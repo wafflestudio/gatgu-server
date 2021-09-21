@@ -242,9 +242,10 @@ class ChatConsumer(WebsocketConsumer):
         return response
 
     def chat_message(self, event):
+        print('not send')
         data = event['data']
         websocket_id = event['websocket_id']
-        print('not send')
+        
         self.send(text_data=json.dumps({
             'data': data,
             'type': 'MESSAGE_SUCCESS',
