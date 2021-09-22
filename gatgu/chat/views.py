@@ -166,7 +166,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             #   2. data param 있을때(추방가능한 유저의 아이디 인지 validate)
             if chatting.article.writer == user:
                 exile_id = request.data.get('user_id')
-                if exile_id not in chatting.participant_profile.participant.id:
+                if not OrderChat.objects.filter(id=chatting.id, participant_profile__participant_id=exile_id).exists():
                     return Response(status=status.HTTP_400_BAD_REQUEST)
             else:
                 exile_id = user.id
