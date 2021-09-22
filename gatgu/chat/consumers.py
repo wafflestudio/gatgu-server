@@ -40,7 +40,7 @@ class ChatConsumer(WebsocketConsumer):
         if group_name in self.groups:
             return {'type': 'ENTER_FAILURE'}
         async_to_sync(self.channel_layer.group_add)(
-            json.dumps(group_name),
+            group_name,
             self.channel_name
         )
         print(4)
