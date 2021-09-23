@@ -33,7 +33,6 @@ from asgiref.sync import async_to_sync
 
 from gatgu.utils import BadRequestException, NotPermitted
 
-import json
 
 
 class CursorSetPagination(CursorSetPagination):
