@@ -23,7 +23,6 @@ class ChatConsumer(WebsocketConsumer):
         groups = []
         groups.extend(participant_profiles)
         groups.extend(articles)
-        print(self.channel_name)
         for group in groups:
             self.enter_group(group)
 
@@ -43,7 +42,6 @@ class ChatConsumer(WebsocketConsumer):
             group_name,
             self.channel_name
         )
-        print(4)
         self.groups.append(group_name)
         return {'type': 'ENTER_SUCCESS'}
 
@@ -59,7 +57,6 @@ class ChatConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        print(text_data_json)
         type = text_data_json['type']
         if type == 'PING':
             self.send(text_data=json.dumps({
@@ -97,7 +94,6 @@ class ChatConsumer(WebsocketConsumer):
                     serializer.save(sent_by_id=user_id, chat_id=chatting_id)
                     message_id = ChatMessage.objects.last().id
                     message = ChatMessage.objects.get(id=message_id)
-                    print(1)
                     async_to_sync(self.channel_layer.group_send)(  # enterance system message
                         str(chatting_id),
                         {
@@ -180,9 +176,6 @@ class ChatConsumer(WebsocketConsumer):
                 message.image.create(img_url=msg['image'])
             message.save()
             message = ChatMessage.objects.get(id=message_id)
-            print(self.groups)
-            print(chatting_id)
-            print(2)
             async_to_sync(self.channel_layer.group_send)(
                 room_id,
                 {
@@ -191,7 +184,6 @@ class ChatConsumer(WebsocketConsumer):
                     'websocket_id': websocket_id
                 }
             )
-            print(3)
 
             sandbox = True
 
@@ -242,7 +234,6 @@ class ChatConsumer(WebsocketConsumer):
         return response
 
     def chat_message(self, event):
-        print('not send')
         data = event['data']
         websocket_id = event['websocket_id']
         
@@ -251,7 +242,6 @@ class ChatConsumer(WebsocketConsumer):
             'type': 'MESSAGE_SUCCESS',
             'websocket_id': websocket_id
         }))
-        print('send')
 
     def change_status(self, event):
         data = event['data']

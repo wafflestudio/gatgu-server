@@ -224,24 +224,11 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.update(chat, serializer.validated_data)
         serializer.save()
-        #channel_layer = get_channel_layer()
-        #async_to_sync(channel_layer.group_send)(
-        #    str(pk),
-        #    {'type': 'change_status', 'data': serializer.data}
-        #)
-        # order_status = request.data.get('order_status')
-
-        # # could not update (both at once or nothing)
-        # if (order_status is not None and tracking_number is not None) or (
-        #         order_status is None and tracking_number is None):
-        #     return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        # if order_status is not None:
-        #     # validate (order_status's range 1 ~ 4)
-        #     if order_status not in [i for i, s in OrderChat.ORDER_STATUS]:
-        #         return Response(status=status.HTTP_400_BAD_REQUEST)
-        #     else:
-        #         chatting.order_status = order_status
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            pk,
+            {'type': 'change_status', 'data': serializer.data}
+        )
 
         tracking_number = request.data.get('tracking_number')
         if tracking_number is not None:
