@@ -34,6 +34,7 @@ from asgiref.sync import async_to_sync
 from gatgu.utils import BadRequestException, NotPermitted
 
 
+
 class CursorSetPagination(CursorSetPagination):
     ordering = '-sent_at'
 
@@ -150,7 +151,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                 serializer.save()
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
-                    str(pk),
+                    pk,
                     {'type': 'change_status', 'data': serializer.data}
                 )
                 return Response(status=status.HTTP_200_OK)
@@ -164,7 +165,7 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             #   2. data param 있을때(추방가능한 유저의 아이디 인지 validate)
             if chatting.article.writer == user:
                 exile_id = request.data.get('user_id')
-                if exile_id not in chatting.participant_profile.participant.id:
+                if not OrderChat.objects.filter(id=chatting.id, participant_profile__participant_id=exile_id).exists():
                     return Response(status=status.HTTP_400_BAD_REQUEST)
             else:
                 exile_id = user.id
@@ -224,22 +225,9 @@ class OrderChatViewSet(viewsets.GenericViewSet):
         serializer.save()
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            str(pk),
+            pk,
             {'type': 'change_status', 'data': serializer.data}
         )
-        # order_status = request.data.get('order_status')
-
-        # # could not update (both at once or nothing)
-        # if (order_status is not None and tracking_number is not None) or (
-        #         order_status is None and tracking_number is None):
-        #     return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        # if order_status is not None:
-        #     # validate (order_status's range 1 ~ 4)
-        #     if order_status not in [i for i, s in OrderChat.ORDER_STATUS]:
-        #         return Response(status=status.HTTP_400_BAD_REQUEST)
-        #     else:
-        #         chatting.order_status = order_status
 
         tracking_number = request.data.get('tracking_number')
         if tracking_number is not None:
