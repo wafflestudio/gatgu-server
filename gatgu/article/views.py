@@ -115,18 +115,6 @@ class ArticleViewSet(viewsets.GenericViewSet):
             articles = articles.filter(deleted_at=None)
 
         articles = articles.prefetch_related(self.order_chat)
-
-        ## cache test
-        # cache_key = 'article_list'
-        # c_data = cache.get('article_list')
-        # if c_data is None:
-        #
-        #     c_data = self.get_serializer(articles, many=True).data
-        #     cache.set(cache_key, c_data, timeout=10)
-        #     return Response({"cache miss"}, status=status.HTTP_400_BAD_REQUEST)
-        # else:
-        #     return Response({"cache hit"}, status=status.HTTP_200_OK)
-
         page = self.paginate_queryset(articles)
         assert page is not None
         serializer = self.get_serializer(page, many=True)
@@ -149,11 +137,11 @@ class ArticleViewSet(viewsets.GenericViewSet):
             ParticipantProfile.objects.filter(
                 order_chat__article_id=OuterRef('id'), pay_status__gte=2)
         )
-        articles = self.get_queryset()\
+        articles = self.get_queryset() \
             .annotate(have_activated_participant=have_activated_participant)
 
         # 거래 진행중인 유저 있고 & 상태 모집중 -> 상태 거래중
-        articles_update_to_IN_PROCESS1 = articles\
+        articles_update_to_IN_PROCESS1 = articles \
             .filter(have_activated_participant=True, article_status=Article.GATHERING) \
             .update(article_status=Article.IN_PROCESS)
         # 거래 진행중인 유저 없고 & 상태 거래중 -> 상태 모집중
@@ -200,8 +188,6 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if user != article.writer:
             raise NotPermitted
 
-
-
         serializer = self.get_serializer(article, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         if 'article_status' in data:
@@ -211,7 +197,6 @@ class ArticleViewSet(viewsets.GenericViewSet):
         if 'time_in' in data:
             time_in = datetime.datetime.fromtimestamp(float(data.get('time_in') / 1000))
             serializer.save(time_in=time_in)
-
 
         # 상태 체크 및 업데이트 api 추가
         # if article.article_status == 4 and article.time_in >= datetime.date.today():
