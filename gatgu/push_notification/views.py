@@ -30,6 +30,21 @@ class FCMViewSet(viewsets.GenericViewSet):
         except IntegrityError:
             return Response({"message: you already have this token"}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message: This token Successfully registered"}, status=status.HTTP_201_CREATED)
+    
+    @action(methods=['PUT'], detail=False)
+    def activate(self, request):
+        user = request.user
+        data = request.data
+        
+        try:
+            user_token = UserFCMToken.objects.get(user=user)
+            active = data['active']
+            user_token.is_active = active
+            user_token.save()
+            return Response(status=status.HTTP_200_OK)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
 
     @action(methods=['PUT'], detail=False)
     def messaging(self, request):

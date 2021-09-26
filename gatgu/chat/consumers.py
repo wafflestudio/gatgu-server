@@ -228,10 +228,10 @@ class ChatConsumer(WebsocketConsumer):
                 body=msg['image'],
             ),
             data={
-                'link': "gatgu://chatting/" + room_id,
+                'link': "gatgu://chatting-room/" + room_id,
                 # 'path': "ChattingRoomStack/ChattingRoom",
-                'type': 'chatting',
-                'payload': jspayload
+                #'type': 'chatting',
+                #'payload': jspayload
             },
             token=token,
         )
