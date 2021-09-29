@@ -185,7 +185,7 @@ class ChatConsumer(WebsocketConsumer):
                 }
             )
 
-            sandbox = True
+            sandbox = False
 
             # 희수 안드 에뮬
             token = 'cgcEjP3DRaaLakdcasEh5l:APA91bExlss0NmSZMBaiKuZDUVrNHROYba6o92fj8C8G10Phs2dPLji-AWK30uI6pbS1n5q7IoAdfi3FOM9ISShhtHWQTZWwE42WKWAG7XY4fQjsG_HdgH35ApRgSQF0hu1V2bBAaz9u'
@@ -194,16 +194,20 @@ class ChatConsumer(WebsocketConsumer):
                 self.send_notification(msg, room_id, token)
                 return
             # 1. 해당 채팅방 user id 다 가져옴 
+            print(1)
             chatting = OrderChat.objects.get(id=chatting_id)
             participants = [participant['participant_id'] for participant in
                             ParticipantProfile.objects.filter(order_chat_id=chatting_id).values('participant_id')]
             participants.append(chatting.article.writer_id)
+            print(2)
             # 2. user id에 해당하는 token 전부 가져옴
             tokens_id = [user_token['token_id'] for user_token in
                          UserFCMToken.objects.filter(user_id__in=participants, is_active=True).values('token_id')]
             tokens = [token['fcmtoken'] for token in FCMToken.objects.filter(id__in=tokens_id).values('fcmtoken')]
+            print(3)
             # 3. 해당 token들로 알림 Push
             for token in tokens:
+                print(token)
                 self.send_notification(msg, room_id, token)
             return
         except:
