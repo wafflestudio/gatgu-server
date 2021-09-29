@@ -199,6 +199,7 @@ class ChatConsumer(WebsocketConsumer):
             participants = [participant['participant_id'] for participant in
                             ParticipantProfile.objects.filter(order_chat_id=chatting_id).values('participant_id')]
             participants.append(chatting.article.writer_id)
+            print(participants)
             print(2)
             # 2. user id에 해당하는 token 전부 가져옴
             tokens_id = [user_token['token_id'] for user_token in
