@@ -73,14 +73,9 @@ class ArticleSerializer(serializers.ModelSerializer):
         img_urls = validated_data.pop('img_urls', '')
         article = super(ArticleSerializer, self).create(validated_data)
 
-        if img_urls:
-            for item in img_urls:
-                ArticleImage.objects.create(article_id=article.id,
-                                            img_url=item)
-        # default image
-        else:
+        for item in img_urls:
             ArticleImage.objects.create(article_id=article.id,
-                                        img_url="http://placekitten.com/200/300")
+                                        img_url=item)
 
         OrderChat.objects.create(article=article)
         return article
