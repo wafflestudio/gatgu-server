@@ -156,8 +156,13 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
 
     def get_images(self, article):
         # image하나만 받아올 것 ( 대표사진 )
-        return ArticleImageSerializer(article.images, many=True).data
+        first_article = article.images
 
+        # 데이터가 없을 때 예외처리 필요
+        try:
+            return ArticleImageSerializer(first_article, many=True).data[0]
+        except IndexError:
+            return ArticleImageSerializer('').data
 
 class ArticleRetrieveSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')

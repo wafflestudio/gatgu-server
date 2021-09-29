@@ -8,7 +8,7 @@ from botocore.config import Config
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
-from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F, Exists
+from django.db.models import Prefetch, Subquery, OuterRef, Count, IntegerField, Sum, F, Exists, Min
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -99,17 +99,17 @@ class ArticleViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(writer=user, time_in=time_in)
+        new_article = serializer.save(writer=user, time_in=time_in)
 
-        article_id = Article.objects.last().id
-        article = Article.objects.prefetch_related(self.order_chat).get(id=article_id)
+        article = Article.objects.prefetch_related(self.order_chat).get(id=new_article.id)
 
         return Response(self.get_serializer(article).data, status=status.HTTP_201_CREATED)
         # return Response({"message: Article successfully posted."}, status=status.HTTP_201_CREATED)
 
     def list(self, request):
         filter_kwargs = self.get_query_params(self.request.query_params)
-        articles = self.get_queryset().filter(**filter_kwargs)
+        first_img = Prefetch('images', queryset=ArticleImage.objects.order_by('id'))
+        articles = Article.objects.prefetch_related(first_img).filter(**filter_kwargs)
 
         if not request.user.is_superuser:
             articles = articles.filter(deleted_at=None)

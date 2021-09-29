@@ -43,7 +43,8 @@ SECRET_KEY = get_secret("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
+# DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
+DEBUG_TOOLBAR = True
 
 ALLOWED_HOSTS = ['*']
 
