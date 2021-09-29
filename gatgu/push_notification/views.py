@@ -25,6 +25,8 @@ class FCMViewSet(viewsets.GenericViewSet):
 
         FCMToken.objects.create(fcmtoken=token)
         token_obj = FCMToken.objects.last()
+        print('aa')
+        print(data)
         try:
             UserFCMToken.objects.create(user=user, token=token_obj)
         except IntegrityError:
