@@ -23,13 +23,13 @@ class FCMViewSet(viewsets.GenericViewSet):
         # comes from Client
         token = data.get('token')
 
-        if FCMToken.objects.filter(token=token).exists(): # same device
+        if FCMToken.objects.filter(fcmtoken=token).exists(): # same device
             return Response({"message: already registered"}, status=status.HTTP_200_OK)
         elif UserFCMToken.objects.filter(user=user).exists():
             user_fcm = UserFCMToken.objects.get(user=user)
             print(user_fcm)
             print(user_fcm['token'])
-            FCMToken.objects.filter(token=user_fcm['token']).delete()
+            FCMToken.objects.filter(fcmtoken=user_fcm['token']).delete()
         FCMToken.objects.create(fcmtoken=token)
         token_obj = FCMToken.objects.last()
         try:
