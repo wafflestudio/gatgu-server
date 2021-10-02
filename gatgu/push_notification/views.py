@@ -28,8 +28,8 @@ class FCMViewSet(viewsets.GenericViewSet):
         elif UserFCMToken.objects.filter(user=user).exists():
             user_fcm = UserFCMToken.objects.get(user=user)
             print(user_fcm)
-            print(user_fcm.token)
-            tobe_deleted = FCMToken.objects.get(fcmtoken=user_fcm.token)
+            print(user_fcm.token.fcmtoken)
+            tobe_deleted = FCMToken.objects.get(fcmtoken=user_fcm.fcmtoken)
             print(tobe_deleted)
             tobe_deleted.delete()
         FCMToken.objects.create(fcmtoken=token)
