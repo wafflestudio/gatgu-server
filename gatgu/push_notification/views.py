@@ -25,7 +25,7 @@ class FCMViewSet(viewsets.GenericViewSet):
 
         if FCMToken.objects.filter(token=token).exists(): # same device
             return Response({"message: already registered"}, status=status.HTTP_200_OK)
-        else if UserFCMToken.objects.filter(user=user).exists():
+        elif UserFCMToken.objects.filter(user=user).exists():
             user_fcm = UserFCMToken.objects.get(user=user)
             print(user_fcm)
             print(user_fcm['token'])
