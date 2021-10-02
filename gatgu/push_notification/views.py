@@ -29,7 +29,7 @@ class FCMViewSet(viewsets.GenericViewSet):
             user_fcm = UserFCMToken.objects.get(user=user)
             print(user_fcm)
             print(user_fcm.token.fcmtoken)
-            tobe_deleted = FCMToken.objects.get(fcmtoken=user_fcm.fcmtoken)
+            tobe_deleted = FCMToken.objects.get(fcmtoken=user_fcm.token.fcmtoken)
             print(tobe_deleted)
             tobe_deleted.delete()
         FCMToken.objects.create(fcmtoken=token)
