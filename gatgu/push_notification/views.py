@@ -23,10 +23,15 @@ class FCMViewSet(viewsets.GenericViewSet):
         # comes from Client
         token = data.get('token')
 
+        if FCMToken.objects.filter(token=token).exists(): # same device
+            return Response({"message: already registered"}, status=status.HTTP_200_OK)
+        else if UserFCMToken.objects.filter(user=user).exists():
+            user_fcm = UserFCMToken.objects.get(user=user)
+            print(user_fcm)
+            print(user_fcm['token'])
+            FCMToken.objects.filter(token=user_fcm['token']).delete()
         FCMToken.objects.create(fcmtoken=token)
         token_obj = FCMToken.objects.last()
-        print('aa')
-        print(data)
         try:
             UserFCMToken.objects.create(user=user, token=token_obj)
         except IntegrityError:
