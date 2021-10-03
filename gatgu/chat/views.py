@@ -129,6 +129,8 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             user = request.user
             data = request.data
 
+            print(data)
+
             if 'pay_status' in data:
                 if 'user_id' in data:  # writer's action
                     if user == chatting.article.writer and data['pay_status'] == 3:
@@ -140,6 +142,8 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                         participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
                     except ParticipantProfile.DoesNotExist:
                         return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                    print(data['pay_status'])
+                    print(participant.pay_status)
                     if data['pay_status'] != 2 or participant.pay_status != 1:
                         return Response(status=status.HTTP_403_FORBIDDEN)
 
