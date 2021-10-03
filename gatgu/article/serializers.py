@@ -73,14 +73,9 @@ class ArticleSerializer(serializers.ModelSerializer):
         img_urls = validated_data.pop('img_urls', '')
         article = super(ArticleSerializer, self).create(validated_data)
 
-        if img_urls:
-            for item in img_urls:
-                ArticleImage.objects.create(article_id=article.id,
-                                            img_url=item)
-        # default image
-        else:
+        for item in img_urls:
             ArticleImage.objects.create(article_id=article.id,
-                                        img_url="http://placekitten.com/200/300")
+                                        img_url=item)
 
         OrderChat.objects.create(article=article)
         return article
@@ -156,8 +151,13 @@ class SimpleArticleSerializer(serializers.ModelSerializer):
 
     def get_images(self, article):
         # image하나만 받아올 것 ( 대표사진 )
-        return ArticleImageSerializer(article.images, many=True).data
+        first_article = article.images
 
+        # 데이터가 없을 때 예외처리 필요
+        try:
+            return ArticleImageSerializer(first_article, many=True).data[0]
+        except IndexError:
+            return ArticleImageSerializer('').data
 
 class ArticleRetrieveSerializer(serializers.ModelSerializer):
     article_id = serializers.ReadOnlyField(source='id')
