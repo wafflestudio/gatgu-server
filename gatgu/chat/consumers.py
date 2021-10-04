@@ -58,6 +58,7 @@ class ChatConsumer(WebsocketConsumer):
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
         type = text_data_json['type']
+        print(text_data_json)
         if type == 'PING':
             self.send(text_data=json.dumps({
                 'type': 'PONG'
@@ -143,6 +144,7 @@ class ChatConsumer(WebsocketConsumer):
                 return
             return
         if not room_id in self.groups:
+            print("not room")
             self.response('MESSAGE_FAILURE', {}, websocket_id, chatting_id)
             return
         msg = data['message']
@@ -168,7 +170,6 @@ class ChatConsumer(WebsocketConsumer):
                 )
         except:
             pass
-
         try:
             serializer = ChatMessageSerializer(data=msg)
             serializer.is_valid(raise_exception=True)
