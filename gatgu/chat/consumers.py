@@ -73,20 +73,20 @@ class ChatConsumer(WebsocketConsumer):
         if type == 'ENTER':
             try:
                 chatting = OrderChat.objects.get(id=chatting_id)
-                print(chatting.article.writer_id)
+                writer_id = chatting.article.writer_id
             except OrderChat.DoesNotExist:
                 self.response('ENTER_FAILURE', {'status': 404}, websocket_id, chatting_id)
                 return
             if chatting.article.writer_id == user_id:
-                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id)
+                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id, writer_id)
                 return
             elif OrderChat.objects.filter(id=chatting_id, participant_profile__participant_id=user_id).exists():
-                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id)
+                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id, writer_id)
                 return
             elif chatting.article.article_status == 1:
                 ParticipantProfile.objects.create(order_chat=chatting, participant_id=user_id, wish_price=0)
                 self.enter_group(room_id)
-                self.response('ENTER_SUCCESS', {'status': 201, 'user_id': user_id}, websocket_id, chatting_id)
+                self.response('ENTER_SUCCESS', {'status': 201, 'user_id': user_id}, websocket_id, chatting_id, writer_id)
                 user = User.objects.get(id=user_id)
                 user_profile = UserProfile.objects.get(user=user)
                 msg = {'type': 'system', 'text': user_profile.nickname + ' entered the room', 'image': ''}
@@ -218,6 +218,7 @@ class ChatConsumer(WebsocketConsumer):
                 self.send_notification(msg, room_id, token)
             return
         except:
+            print(0)
             self.response('MESSAGE_FAILURE', {}, websocket_id, chatting_id)
             return
 
