@@ -73,6 +73,7 @@ class ChatConsumer(WebsocketConsumer):
         if type == 'ENTER':
             try:
                 chatting = OrderChat.objects.get(id=chatting_id)
+                print(chatting.article.writer_id)
             except OrderChat.DoesNotExist:
                 self.response('ENTER_FAILURE', {'status': 404}, websocket_id, chatting_id)
                 return
@@ -261,13 +262,22 @@ class ChatConsumer(WebsocketConsumer):
             'type': 'UPDATE_STATUS'
         }))
 
-    def response(self, type, data, websocket_id, room_id):
-        self.send(text_data=json.dumps({
+    def response(self, type, data, websocket_id, room_id, writer_id=-1):
+        if not writer_id == -1: # enter_success
+            self.send(text_data=json.dumps({
             'type': type,
             'data': data,
             'websocket_id': websocket_id,
-            'room_id': room_id
-        }))
+            'room_id': room_id,
+            'writer_id': writer_id
+            }))
+        else:
+            self.send(text_data=json.dumps({
+                'type': type,
+                'data': data,
+                'websocket_id': websocket_id,
+                'room_id': room_id
+            }))
 
     def pong(self, event):
         self.send(text_data=json.dumps({
