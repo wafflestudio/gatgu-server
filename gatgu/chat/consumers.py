@@ -225,6 +225,7 @@ class ChatConsumer(WebsocketConsumer):
             return
 
     def send_notification(self, msg, room_id, token):
+        response = ''
         payload = {
             'params': {
                 'room_id': room_id
@@ -253,7 +254,6 @@ class ChatConsumer(WebsocketConsumer):
         except Exception as e:
             print(traceback.format_exc())
             
-        print(response)
         return response
 
     def chat_message(self, event):
