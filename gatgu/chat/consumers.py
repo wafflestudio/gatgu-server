@@ -228,6 +228,9 @@ class ChatConsumer(WebsocketConsumer):
                 'room_id': room_id
             }
         }
+        print(msg)
+        print(room_id)
+        print(token)
         jspayload = json.dumps(payload, separators=(',', ':'))
         message = messaging.Message(
             notification=messaging.Notification(
@@ -242,7 +245,9 @@ class ChatConsumer(WebsocketConsumer):
             },
             token=token,
         )
+        print(4)
         response = messaging.send(message)
+        print(response)
         return response
 
     def chat_message(self, event):
