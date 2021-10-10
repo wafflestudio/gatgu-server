@@ -11,6 +11,8 @@ import time
 
 import json
 
+import traceback
+
 
 class ChatConsumer(WebsocketConsumer):
 
@@ -246,7 +248,11 @@ class ChatConsumer(WebsocketConsumer):
             token=token,
         )
         print(4)
-        response = messaging.send(message)
+        try:
+            response = messaging.send(message)
+        except Exception as e:
+            print(traceback.format_exc())
+            
         print(response)
         return response
 
