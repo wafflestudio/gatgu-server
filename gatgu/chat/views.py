@@ -129,6 +129,8 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             user = request.user
             data = request.data
 
+            print(data)
+
             if 'pay_status' in data:
                 if 'user_id' in data:  # writer's action
                     if user == chatting.article.writer and data['pay_status'] == 3:
@@ -140,6 +142,8 @@ class OrderChatViewSet(viewsets.GenericViewSet):
                         participant = ParticipantProfile.objects.get(order_chat=chatting, participant=user)
                     except ParticipantProfile.DoesNotExist:
                         return Response({'채팅방에 참여하고 있지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                    print(data['pay_status'])
+                    print(participant.pay_status)
                     if data['pay_status'] != 2 or participant.pay_status != 1:
                         return Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -163,17 +167,23 @@ class OrderChatViewSet(viewsets.GenericViewSet):
             # 방장의 요청시
             #   1. 본인 나가기 불가
             #   2. data param 있을때(추방가능한 유저의 아이디 인지 validate)
-            if chatting.article.writer == user:
+            host = chatting.article.writer
+            if host == user:
                 exile_id = request.data.get('user_id')
                 if not OrderChat.objects.filter(id=chatting.id, participant_profile__participant_id=exile_id).exists():
                     return Response(status=status.HTTP_400_BAD_REQUEST)
             else:
                 exile_id = user.id
 
+            # 참가자의 나가기 요청
             try:
                 participant = ParticipantProfile.objects.get(order_chat=chatting, participant_id=exile_id)
                 if participant.pay_status >= 2:
-                    return Response('입금대기중인 유저만 강퇴가능합니다.', status=status.HTTP_400_BAD_REQUEST)
+                    if exile_id != host.id:
+                        return Response('입금 이후에는 퇴장이 불가합니다.', status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response('입금확인 요청 이후에는 강퇴가 불가합니다.', status=status.HTTP_400_BAD_REQUEST)
+
                 participant.delete()
                 return Response(status=status.HTTP_200_OK)
             except ParticipantProfile.DoesNotExist:

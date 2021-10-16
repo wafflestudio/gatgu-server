@@ -55,8 +55,11 @@ class ChattingArticleSerializer(serializers.ModelSerializer):
         )
 
     def get_image(self, article):
-        return article.images.first().img_url
-
+        try:
+            return article.images.first().img_url
+        except AttributeError:
+            return ''
+#
 
 
 class ParticipantProfileSerializer(serializers.ModelSerializer):

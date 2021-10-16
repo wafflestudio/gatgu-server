@@ -11,6 +11,8 @@ import time
 
 import json
 
+import traceback
+
 
 class ChatConsumer(WebsocketConsumer):
 
@@ -58,6 +60,7 @@ class ChatConsumer(WebsocketConsumer):
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
         type = text_data_json['type']
+        print(text_data_json)
         if type == 'PING':
             self.send(text_data=json.dumps({
                 'type': 'PONG'
@@ -72,19 +75,20 @@ class ChatConsumer(WebsocketConsumer):
         if type == 'ENTER':
             try:
                 chatting = OrderChat.objects.get(id=chatting_id)
+                writer_id = chatting.article.writer_id
             except OrderChat.DoesNotExist:
                 self.response('ENTER_FAILURE', {'status': 404}, websocket_id, chatting_id)
                 return
             if chatting.article.writer_id == user_id:
-                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id)
+                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id, writer_id)
                 return
             elif OrderChat.objects.filter(id=chatting_id, participant_profile__participant_id=user_id).exists():
-                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id)
+                self.response('ENTER_SUCCESS', {'status': 200}, websocket_id, chatting_id, writer_id)
                 return
             elif chatting.article.article_status == 1:
                 ParticipantProfile.objects.create(order_chat=chatting, participant_id=user_id, wish_price=0)
                 self.enter_group(room_id)
-                self.response('ENTER_SUCCESS', {'status': 201, 'user_id': user_id}, websocket_id, chatting_id)
+                self.response('ENTER_SUCCESS', {'status': 201, 'user_id': user_id}, websocket_id, chatting_id, writer_id)
                 user = User.objects.get(id=user_id)
                 user_profile = UserProfile.objects.get(user=user)
                 msg = {'type': 'system', 'text': user_profile.nickname + ' entered the room', 'image': ''}
@@ -143,6 +147,7 @@ class ChatConsumer(WebsocketConsumer):
                 return
             return
         if not room_id in self.groups:
+            print("not room")
             self.response('MESSAGE_FAILURE', {}, websocket_id, chatting_id)
             return
         msg = data['message']
@@ -168,7 +173,6 @@ class ChatConsumer(WebsocketConsumer):
                 )
         except:
             pass
-
         try:
             serializer = ChatMessageSerializer(data=msg)
             serializer.is_valid(raise_exception=True)
@@ -216,15 +220,20 @@ class ChatConsumer(WebsocketConsumer):
                 self.send_notification(msg, room_id, token)
             return
         except:
+            print(0)
             self.response('MESSAGE_FAILURE', {}, websocket_id, chatting_id)
             return
 
     def send_notification(self, msg, room_id, token):
+        response = ''
         payload = {
             'params': {
                 'room_id': room_id
             }
         }
+        print(msg)
+        print(room_id)
+        print(token)
         jspayload = json.dumps(payload, separators=(',', ':'))
         message = messaging.Message(
             notification=messaging.Notification(
@@ -239,7 +248,12 @@ class ChatConsumer(WebsocketConsumer):
             },
             token=token,
         )
-        response = messaging.send(message)
+        print(4)
+        try:
+            response = messaging.send(message)
+        except Exception as e:
+            print(traceback.format_exc())
+            
         return response
 
     def chat_message(self, event):
@@ -260,13 +274,22 @@ class ChatConsumer(WebsocketConsumer):
             'type': 'UPDATE_STATUS'
         }))
 
-    def response(self, type, data, websocket_id, room_id):
-        self.send(text_data=json.dumps({
+    def response(self, type, data, websocket_id, room_id, writer_id=-1):
+        if not writer_id == -1: # enter_success
+            self.send(text_data=json.dumps({
             'type': type,
             'data': data,
             'websocket_id': websocket_id,
-            'room_id': room_id
-        }))
+            'room_id': room_id,
+            'writer_id': writer_id
+            }))
+        else:
+            self.send(text_data=json.dumps({
+                'type': type,
+                'data': data,
+                'websocket_id': websocket_id,
+                'room_id': room_id
+            }))
 
     def pong(self, event):
         self.send(text_data=json.dumps({
