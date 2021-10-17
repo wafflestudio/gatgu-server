@@ -43,7 +43,8 @@ class FCMViewSet(viewsets.GenericViewSet):
         data = request.data
         
         try:
-            user_token = UserFCMToken.objects.get(user=user)
+            fcmtoken = FCMToken.objects.get(token=data['token'])
+            user_token = UserFCMToken.objects.get(user=user, fcmtoken=fcmtoken)
             active = data['active']
             user_token.is_active = active
             user_token.save()
@@ -57,7 +58,8 @@ class FCMViewSet(viewsets.GenericViewSet):
         data = request.data
 
         try:
-            user_token = UserFCMToken.objects.get(user=user)
+            fcmtoken = FCMToken.objects.get(token=data['token'])
+            user_token = UserFCMToken.objects.get(user=user, fcmtoken=fcmtoken)
             return Response({'notification': {'chatting': user_token.is_active}}, status=status.HTTP_200_OK)
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
