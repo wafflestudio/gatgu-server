@@ -157,6 +157,9 @@ class UserViewSet(viewsets.GenericViewSet):
     @csrf_exempt
     @action(detail=False, methods=['PUT'])  # 로그아웃
     def logout(self, request):
+        user = request.user
+        data = request.data
+        token = data['token']
         # user = request.user
         # try:
         #     request.session['_auth_user_id']
@@ -168,6 +171,8 @@ class UserViewSet(viewsets.GenericViewSet):
 
         # if _get_user_session_key(request)
         logout(request)
+        tobe_deleted = FCMToken.objects.get(fcmtoken=token)
+        tobe_deleted.delete()
         # if user is None:
         #     return Response({"message": "로그인이 필요합니다. "}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "성공적으로 로그아웃 됐습니다."}, status=status.HTTP_200_OK)
