@@ -6,15 +6,20 @@ from user.serializers import *
 
 class OrderChatSerializer(serializers.ModelSerializer):
     participant_profile = serializers.SerializerMethodField()
+    writer_id = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderChat
         fields = (
             'id',
+            'writer_id',
             # 'order_status',
             'tracking_number',
             'participant_profile',
         )
+    
+    def get_writer_id(self, orderchat):
+        return orderchat.article.writer_id
 
     def get_participant_profile(self, orderchat):
         participants_profile = orderchat.participant_profile

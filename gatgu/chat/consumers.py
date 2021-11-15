@@ -237,8 +237,8 @@ class ChatConsumer(WebsocketConsumer):
         jspayload = json.dumps(payload, separators=(',', ':'))
         message = messaging.Message(
             notification=messaging.Notification(
-                title=msg['text'],
-                body=msg['image'],
+                title = "새로운 채팅이 도착했습니다",
+                body = "사진을 보냈습니다" if msg['image'] == '' else msg['text'],
             ),
             data={
                 'link': "gatgu://chatting-room/" + room_id,
