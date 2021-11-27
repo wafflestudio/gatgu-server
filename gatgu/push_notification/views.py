@@ -56,6 +56,7 @@ class FCMViewSet(viewsets.GenericViewSet):
     def notification_switch(self, request):
         user = request.user
         data = request.data
+        print(request)
         print(user)
         print(data)
 
