@@ -55,13 +55,11 @@ class FCMViewSet(viewsets.GenericViewSet):
     @action(methods=['GET'], detail=False)
     def notification_switch(self, request):
         user = request.user
-        token = request.GET.get('token', '')
+        fcmtoken = request.GET.get('token', '')
 
         try:
-            fcmtoken = FCMToken.objects.get(token=token)
-            print(1)
-            print(fcmtoken)
-            user_token = UserFCMToken.objects.get(user=user, fcmtoken=fcmtoken)
+            token = FCMToken.objects.get(fcmtoken=fcmtoken)
+            user_token = UserFCMToken.objects.get(user=user, token=token)
             print(user_token)
             print(2)
             return Response({'notification': {'chatting': user_token.is_active}}, status=status.HTTP_200_OK)
