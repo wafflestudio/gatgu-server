@@ -41,10 +41,13 @@ class FCMViewSet(viewsets.GenericViewSet):
     def activate(self, request):
         user = request.user
         data = request.data
+        print(user)
+        print(data)
+        print(request.GET.get('token', ''))
         
         try:
-            fcmtoken = FCMToken.objects.get(token=data['token'])
-            user_token = UserFCMToken.objects.get(user=user, fcmtoken=fcmtoken)
+            token = FCMToken.objects.get(fcmtoken=data['token'])
+            user_token = UserFCMToken.objects.get(user=user, token=token)
             active = data['active']
             user_token.is_active = active
             user_token.save()
