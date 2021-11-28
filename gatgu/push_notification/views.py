@@ -59,7 +59,11 @@ class FCMViewSet(viewsets.GenericViewSet):
 
         try:
             fcmtoken = FCMToken.objects.get(token=token)
+            print(1)
+            print(fcmtoken)
             user_token = UserFCMToken.objects.get(user=user, fcmtoken=fcmtoken)
+            print(user_token)
+            print(2)
             return Response({'notification': {'chatting': user_token.is_active}}, status=status.HTTP_200_OK)
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
