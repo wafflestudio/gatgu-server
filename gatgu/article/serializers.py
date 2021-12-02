@@ -2,7 +2,7 @@ import datetime
 from django.db.models import Sum, Subquery, OuterRef, Count, IntegerField, Prefetch
 from django.db.models.functions import Coalesce
 
-from chat.models import OrderChat, ParticipantProfile
+from chat.models import OrderChat, ParticipantProfile, ChatMessage
 from chat.serializers import OrderChatSerializer
 from gatgu.settings import MEDIA_URL
 from gatgu.utils import JSTimestampField
@@ -78,7 +78,7 @@ class ArticleSerializer(serializers.ModelSerializer):
                                         img_url=item)
 
         OrderChat.objects.create(article=article)
-        ChatMessage.objects.create(type='system', text='채팅방이 생성되었습니다.', image='', sent_by_id=article.writer_id, chat_id=article.order_chat.id)
+        ChatMessage.objects.create(type='system', text='채팅방이 생성되었습니다.', sent_by_id=article.writer_id, chat_id=article.order_chat.id)
         return article
 
     @transaction.atomic
