@@ -91,7 +91,7 @@ class ChatConsumer(WebsocketConsumer):
                 self.response('ENTER_SUCCESS', {'status': 201, 'user_id': user_id}, websocket_id, chatting_id, writer_id)
                 user = User.objects.get(id=user_id)
                 user_profile = UserProfile.objects.get(user=user)
-                msg = {'type': 'system', 'text': user_profile.nickname + ' entered the room', 'image': ''}
+                msg = {'type': 'system', 'text': user_profile.nickname + '님이 입장했습니다.', 'image': ''}
                 try:
                     serializer = ChatMessageSerializer(data=msg)
                     serializer.is_valid(raise_exception=True)
@@ -126,7 +126,7 @@ class ChatConsumer(WebsocketConsumer):
             self.response('EXIT_SUCCESS', {'status': 200, 'user_id': user_id}, websocket_id, chatting_id)
             user = User.objects.get(id=user_id)
             user_profile = UserProfile.objects.get(user=user)
-            msg = {'type': 'system', 'text': user_profile.nickname + ' exited the room', 'image': ''}
+            msg = {'type': 'system', 'text': user_profile.nickname + '님이 퇴장했습니다.', 'image': ''}
             try:
                 serializer = ChatMessageSerializer(data=msg)
                 serializer.is_valid(raise_exception=True)

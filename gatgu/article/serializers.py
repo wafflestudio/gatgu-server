@@ -78,6 +78,7 @@ class ArticleSerializer(serializers.ModelSerializer):
                                         img_url=item)
 
         OrderChat.objects.create(article=article)
+        ChatMessage.objects.create(type='system', text='채팅방이 생성되었습니다.', image='', sent_by_id=article.writer_id, chat_id=article.order_chat.id)
         return article
 
     @transaction.atomic
