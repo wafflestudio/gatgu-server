@@ -4,33 +4,31 @@ on:
   push:
     branches: [ main ]
 
+
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: latest
       BUILD_NUMBER: ${{ github.run_number }}
       DOCKER_ID: noaarhk
       DOCKER_REPOSITORY: gatgu
-
-      S3_BUCKET_NAME: elasticbeanstalk-ap-northeast-2-814473694736
-
+      S3_BUCKET_NAME: gatgu
 
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-
+      
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_NOOARHK }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_NOAARHK }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE }}
         aws-region: ap-northeast-2
 
     - name: Upload Dockerrun.aws.json to S3
       run: |
-        zip -r deploy.zip Dockerrun.aws.json
+        zip -r deploy.zip Dockerrun.aws.json gatgu/.ebextensions gatgu/.platform
         aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
 
     - name: Docker Login
@@ -42,10 +40,10 @@ jobs:
     - name: Add public IP to AWS security group
       uses: sohelamin/aws-security-group-add-ip-action@master
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_NOAARHK }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_NOAARHK }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_WAFFLE }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_WAFFLE }}
         aws-region: 'ap-northeast-2'
-        aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID }}
+        aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID_WAFFLE }}
         port: '3306'
         to-port: '3306'
         protocol: 'tcp'
@@ -56,19 +54,22 @@ jobs:
       run: |
         cd gatgu
         echo '{"SECRET_KEY":"$SECRET_KEY"}' > secrets.json
-        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG .
+        echo $FIREBASE_ADMIN_CERT > gatgu-firebase-admin-hs.json
+        docker build -t $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY .
         docker push $DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$DOCKER_ID/$DOCKER_REPOSITORY:$IMAGE_TAG"
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        
+        FIREBASE_ADMIN_CERT: ${{ secrets.FIREBASE_ADMIN_CERT }}
+
+
     - name: Deploy to ElasticBeanstalk
       run: |
         aws elasticbeanstalk create-application-version \
-          --application-name gatgu \
+          --application-name gatgu-server \
           --version-label $BUILD_NUMBER \
           --description $BUILD_NUMBER \
           --source-bundle S3Bucket=$S3_BUCKET_NAME,S3Key='deploy.zip'
         aws elasticbeanstalk update-environment \
-          --environment-name gatgu-env \
+          --environment-name gatgu-server-prod \
           --version-label $BUILD_NUMBER

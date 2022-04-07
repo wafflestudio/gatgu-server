@@ -391,4 +391,9 @@ dump.rdb
 secrets.json
 
 # AWS files
+.aws
 .aws/*
+
+# FireBaseConf
+gatgu-firebase-admin.json
+gatgu-firebase-admin-hs.json
