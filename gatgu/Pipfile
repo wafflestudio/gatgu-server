@@ -9,6 +9,8 @@ mysqlclient = "*"
 django-environ = "*"
 black = "*"
 pre-commit = "*"
+pymysql = "*"
+cryptography = "*"
 
 [dev-packages]
 

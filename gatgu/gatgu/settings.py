@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
 import environ
+import pymysql
 
 from pathlib import Path
 
@@ -77,6 +78,7 @@ WSGI_APPLICATION = "gatgu.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+pymysql.install_as_MySQLdb()
 DATABASES = {"default": env.db()}
 
 
