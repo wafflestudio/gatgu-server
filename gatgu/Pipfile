@@ -7,8 +7,12 @@ name = "pypi"
 django = "*"
 mysqlclient = "*"
 django-environ = "*"
+black = "*"
+pre-commit = "*"
+pymysql = "*"
+cryptography = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"
