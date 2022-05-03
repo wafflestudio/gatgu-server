@@ -19,6 +19,7 @@ from drf_spectacular.views import SpectacularJSONAPIView
 from drf_spectacular.views import SpectacularRedocView
 from drf_spectacular.views import SpectacularSwaggerView
 from drf_spectacular.views import SpectacularYAMLAPIView
+from account import urls as account_urlpatterns
 
 urlpatterns = [
     # Open API 자체를 조회 : json, yaml,
@@ -36,3 +37,5 @@ urlpatterns = [
         name="redoc",
     ),
 ]
+
+urlpatterns += account_urlpatterns
