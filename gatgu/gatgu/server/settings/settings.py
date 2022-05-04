@@ -29,8 +29,9 @@ SECRET_KEY = "django-insecure-a5adt*d)ehs5^v#vv(l75udo5c8x_3u7+muo5q_kc%i9n0iz=_
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+DEBUG_TOOLBAR = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -84,6 +85,8 @@ WSGI_APPLICATION = "gatgu.wsgi.application"
 pymysql.install_as_MySQLdb()
 DATABASES = {"default": env.db()}
 
+AUTH_USER_MODEL = "account.Person"
+AUTHENTICATION_BACKENDS = ["account.backends.EmailBackend"]
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators

@@ -7,14 +7,14 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext as _
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, name, date_joined, password=None):
+    def create_user(self, email, nickname, date_joined, password=None):
         user = self.model(
             email=self.normalize_email(email),
-            name=name,
+            nickname=nickname,
             date_joined=date_joined,
         )
 
@@ -42,11 +42,11 @@ class Person(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = [
-        "name",
+        "nickname",
     ]
 
     def __str__(self):
-        return self.name
+        return self.nickname
 
     def has_perm(self, perm, obj=None):
         return True
@@ -55,7 +55,7 @@ class Person(AbstractBaseUser, PermissionsMixin):
         return True
 
     def get_full_name(self):
-        return self.name
+        return self.nickname
 
     def get_short_name(self):
-        return self.name
+        return self.nickname
