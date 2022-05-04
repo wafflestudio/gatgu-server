@@ -1,5 +1,5 @@
 """
-ASGI config for gatgu project.
+ASGI server for gatgu project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
