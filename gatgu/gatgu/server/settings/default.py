@@ -13,18 +13,14 @@ import os
 import environ
 import pymysql
 
-from pathlib import Path
+env = environ.Env(DEBUG=(bool, False))
+base = environ.Path(__file__) - 3
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+if os.path.isfile(base(".env")):
+    environ.Env.read_env(env_file=base(".env"))
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-env = environ.Env(DEBUG=(bool, True))
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
-
-# Quick-start development server - unsuitable for production
-# See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-a5adt*d)ehs5^v#vv(l75udo5c8x_3u7+muo5q_kc%i9n0iz=_"
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -63,7 +59,7 @@ ROOT_URLCONF = "gatgu.server.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR + "/static/"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -83,7 +79,7 @@ WSGI_APPLICATION = "gatgu.wsgi.application"
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 pymysql.install_as_MySQLdb()
-DATABASES = {"default": env.db()}
+DATABASES = {"default": env.db(default="")}
 
 AUTH_USER_MODEL = "account.Person"
 AUTHENTICATION_BACKENDS = ["account.backends.EmailBackend"]
