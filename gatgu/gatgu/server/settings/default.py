@@ -72,7 +72,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "gatgu.wsgi.application"
+WSGI_APPLICATION = "gatgu.server.wsgi.application"
 
 
 # Database
