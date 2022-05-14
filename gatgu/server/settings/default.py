@@ -54,7 +54,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "gatgu.server.urls"
+ROOT_URLCONF = "server.urls"
 
 TEMPLATES = [
     {
@@ -72,7 +72,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "gatgu.server.wsgi.application"
+WSGI_APPLICATION = "server.wsgi.application"
 
 
 # Database

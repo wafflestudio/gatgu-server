@@ -1,4 +1,5 @@
 # django environ
 .env
+**/migrations/
 
 gatgu-api.yaml

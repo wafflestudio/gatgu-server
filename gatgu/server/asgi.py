@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gatgu.server")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings.default")
 
 application = get_asgi_application()
