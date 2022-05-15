@@ -1,0 +1,12 @@
+GetDistrictResponse:
+  $ref: "schema/district.yaml#/District"
+
+GetNearbyDistrictResponse:
+  required:
+    - districts
+  properties:
+    districts:
+      description: nearby districts list
+      type: array
+      items:
+        $ref: "schema/district.yaml#/District"

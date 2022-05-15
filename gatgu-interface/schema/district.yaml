@@ -1,0 +1,21 @@
+District:
+  description: 행정구역 형식
+  type: object
+  required:
+    - adm_cd
+    - si_nm
+    - sgg_nm
+    - emd_nm
+  properties:
+    adm_cd:
+      description: 행정구역 코드
+      type: string
+    si_nm:
+      description: 시/도 이름
+      type: string
+    sgg_nm:
+      description: 시/군/구 이름
+      type: string
+    emd_nm:
+      description: 읍/면/동 이름
+      type: string

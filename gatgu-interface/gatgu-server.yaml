@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Gatgu Server
+  description: Gatgu REST Api
+  version: 0.0.1
+servers:
+  - url: http://wafflestudio.gatgu.comm
+    description: Dev server
+
+paths:
+  /districts/{adm_cd}:
+    get:
+      tags:
+        - get district
+      description: 행정구역 정보 요청
+      operationId: getDistrict
+      responses:
+        200:
+          description: 행정구역 정보 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "response.yaml#/GetDistrictResponse"
+  /districts/{adm_cd}/nearby:
+    get:
+      tags:
+        - get nearby districts
+      description: 근처 행정구역 정보 요청
+      operationId: getNearbyDistrict
+      responses:
+        200:
+          description: 근처 행정구역 정보 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "response.yaml#/GetNearbyDistrictResponse"
