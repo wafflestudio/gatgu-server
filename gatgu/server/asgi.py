@@ -1,5 +1,5 @@
 """
-ASGI config for gatgu project.
+ASGI server for gatgu project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gatgu.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings.default")
 
 application = get_asgi_application()
