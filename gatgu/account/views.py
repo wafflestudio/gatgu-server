@@ -15,9 +15,9 @@ class PersonViewSet(viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated(),)
 
     def get_permissions(self):
-        if self.action in ("create", "login"):
-            return (AllowAny(),)
-        return self.permission_classes
+        # if self.action in ("create", "login"):
+        return (AllowAny(),)
+        # return self.permission_classes
 
     def create(self, request):
         data = request.data
@@ -39,7 +39,7 @@ class PersonViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(persons, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["POST"])
+    @action(detail=False, methods=["PUT"])
     def login(self, request):
         email = request.data.get("email")
         password = request.data.get("password")

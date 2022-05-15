@@ -21,7 +21,7 @@ if os.path.isfile(base(".env")):
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-SECRET_KEY = "django-insecure-a5adt*d)ehs5^v#vv(l75udo5c8x_3u7+muo5q_kc%i9n0iz=_"
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
