@@ -13,6 +13,8 @@ pymysql = "*"
 cryptography = "*"
 djangorestframework = "*"
 drf-spectacular = "*"
+requests = "*"
+djangorestframework-simplejwt = "*"
 
 [dev-packages]
 

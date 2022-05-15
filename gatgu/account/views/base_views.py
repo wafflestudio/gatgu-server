@@ -1,4 +1,4 @@
-from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth import logout
 from django.contrib.auth.hashers import make_password
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from account.models import User
-from account.serializers import UserSerializer
+from account.serializers.user_serializers import UserSerializer
 
 
 class UserViewSet(viewsets.GenericViewSet):
@@ -37,22 +37,22 @@ class UserViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["PUT"])
-    def login(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
-
-        user = authenticate(request, email=email, password=password)
-
-        if user is None:
-            return Response(
-                {"error": "Wrong Email or Password"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        login(request, user)
-        return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
-
+    # @action(detail=False, methods=["PUT"])
+    # def login(self, request):
+    #     email = request.data.get("email")
+    #     password = request.data.get("password")
+    #
+    #     user = authenticate(request, email=email, password=password)
+    #
+    #     if user is None:
+    #         return Response(
+    #             {"error": "Wrong Email or Password"},
+    #             status=status.HTTP_401_UNAUTHORIZED,
+    #         )
+    #
+    #     login(request, user)
+    #     return Response(self.get_serializer(user).data, status=status.HTTP_200_OK)
+    #
     @action(detail=False, methods=["POST"])
     def logout(self, request):
         logout(request)
