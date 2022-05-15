@@ -1,17 +1,14 @@
 from rest_framework import serializers
 
-from account.models import Person
+from account.models import User
 
 
-class PersonSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Person
+        model = User
         fields = (
             "id",
             "email",
-            "password",
             "nickname",
             "date_joined",
         )

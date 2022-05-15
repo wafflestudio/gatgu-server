@@ -81,8 +81,8 @@ WSGI_APPLICATION = "server.wsgi.application"
 pymysql.install_as_MySQLdb()
 DATABASES = {"default": env.db(default="")}
 
-AUTH_USER_MODEL = "account.Person"
-AUTHENTICATION_BACKENDS = ["account.backends.EmailBackend"]
+AUTH_USER_MODEL = "account.User"
+AUTHENTICATION_BACKENDS = ["account.backends.Backend"]
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators

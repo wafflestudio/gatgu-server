@@ -24,7 +24,7 @@ class UserManager(BaseUserManager):
         return user
 
 
-class Person(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(
         verbose_name=_("Email address"),
         max_length=255,
@@ -33,6 +33,7 @@ class Person(AbstractBaseUser, PermissionsMixin):
     nickname = models.CharField(
         verbose_name=_("Nickname"),
         max_length=30,
+        unique=True,
     )
 
     date_joined = models.DateTimeField(
@@ -44,6 +45,9 @@ class Person(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = [
         "nickname",
     ]
+
+    class Meta:
+        db_table = "gatgu_user"
 
     def __str__(self):
         return self.nickname

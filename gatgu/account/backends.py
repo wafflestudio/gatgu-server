@@ -4,7 +4,7 @@ from django.contrib.auth.backends import ModelBackend
 UserModel = get_user_model()
 
 
-class EmailBackend(ModelBackend):
+class Backend(ModelBackend):
     # username -> email
     # Django ModelBackend.authenticate 재정의
     def authenticate(self, request, email=None, password=None, **kwargs):
